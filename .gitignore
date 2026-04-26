@@ -1,0 +1,15 @@
+/target
+
+# Bench artifacts
+bench-results.md
+
+# Editor / OS
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/
+
+# Local env
+.env
+.env.local
