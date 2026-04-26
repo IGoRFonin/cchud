@@ -120,3 +120,19 @@ RAM (global): RSS пик 97.7 МБ, peak memory footprint 42.2 МБ.
 - При переходе в public — `gh repo edit IGoRFonin/cchud --visibility public --accept-visibility-change-consequences`.
 
 **Последствия:** до Phase 9 распространение через `npx`/`brew` не работает (publish невозможен из private). Phase 9 переключает visibility в первой задаче дистрибуции.
+
+
+---
+
+## 2026-04-26 — Payload schema is snake_case, not camelCase (Phase 2 / Task 2)
+
+**Контекст:** Task 2 plan требует `#[serde(rename_all = "camelCase")]` на `StatusPayload`, `Workspace`. Реальный payload Claude Code (`benches/samples/payload-cchud-sonnet-xlarge.json`) использует snake_case: `session_id`, `transcript_path`, `current_dir`, `project_dir`, `added_dirs`, `display_name`. С `rename_all = "camelCase"` unit-тест `parses_real_payload_sample` падает на `missing field `currentDir``.
+
+**Решение:** убрать `#[serde(rename_all = "camelCase")]` из `StatusPayload` и `Workspace`. Rust-имена полей и так совпадают с JSON-ключами один-в-один.
+
+**Обоснование:**
+- Claude Code эмитит snake_case (зафиксировано в трёх Phase 0 семплах).
+- Default serde rename = identity → snake_case Rust = snake_case JSON, аттрибут вреден.
+- Альтернатива (явный `#[serde(rename = "...")]` на каждом поле) — лишний бойлерплейт без выгоды.
+
+**Последствия:** Step 6 grep-чек плана (`grep -q rename_all`) и DoD-пункт про camelCase устарели — обновлены в коммите. Task 9 (полный envelope) тоже без `rename_all`.

@@ -1,7 +1,10 @@
 //! cchud — Fast Rust statusline for Claude Code CLI.
 //!
-//! Phase 1 skeleton: read JSON payload from stdin, print byte count.
-//! Real widget pipeline lands in Phase 2.
+//! Phase 2 walking skeleton: types defined, render pipeline lands in Task 4.
+
+#![deny(clippy::unwrap_used, clippy::expect_used)]
+
+mod types;
 
 use std::io::{self, Read};
 
