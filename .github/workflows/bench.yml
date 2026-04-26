@@ -28,7 +28,7 @@ jobs:
       - name: Run bench
         run: bash benches/run.sh > bench-results.md
       - name: Comment on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
