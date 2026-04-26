@@ -9,6 +9,7 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
+pub mod context;
 pub mod model;
 pub mod session;
 pub mod static_text;
@@ -84,12 +85,15 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::SessionName => Box::new(session::SessionName),
         WidgetConfig::SessionClock => Box::new(Stub("SessionClock")),
         WidgetConfig::SessionCost => Box::new(Stub("SessionCost")),
-        WidgetConfig::ContextLength => Box::new(Stub("ContextLength")),
-        WidgetConfig::ContextPercentage => Box::new(Stub("ContextPercentage")),
-        WidgetConfig::ContextPercentageUsable => Box::new(Stub("ContextPercentageUsable")),
-        WidgetConfig::ContextBar { .. } => Box::new(Stub("ContextBar")),
-        WidgetConfig::TokensInput => Box::new(Stub("TokensInput")),
-        WidgetConfig::TokensOutput => Box::new(Stub("TokensOutput")),
+        // Phase 3 — Task 4 (context cluster):
+        WidgetConfig::ContextLength => Box::new(context::ContextLength),
+        WidgetConfig::ContextPercentage => Box::new(context::ContextPercentage),
+        WidgetConfig::ContextPercentageUsable => Box::new(context::ContextPercentageUsable),
+        WidgetConfig::ContextBar { params } => Box::new(context::ContextBar {
+            params: params.clone(),
+        }),
+        WidgetConfig::TokensInput => Box::new(context::TokensInput),
+        WidgetConfig::TokensOutput => Box::new(context::TokensOutput),
         WidgetConfig::Worktree => Box::new(Stub("Worktree")),
         WidgetConfig::WorktreeMode => Box::new(Stub("WorktreeMode")),
         WidgetConfig::WorktreeName => Box::new(Stub("WorktreeName")),
