@@ -1,18 +1,46 @@
 //! cchud — Fast Rust statusline for Claude Code CLI.
 //!
-//! Phase 2 walking skeleton: types defined, render pipeline lands in Task 4.
+//! Phase 2 walking skeleton. Reads JSON payload from stdin, renders
+//! configured widgets joined by Plain renderer, prints to stdout.
+//! Config loading lands in Task 6; install command in Task 7.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
+mod render;
 mod types;
 mod widgets;
 
-use std::io::{self, Read};
+use std::process::ExitCode;
 
-fn main() -> io::Result<()> {
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input)?;
-    let len = input.len();
-    println!("cchud (skeleton) | input bytes: {len}");
-    Ok(())
+use crate::render::{Plain, Renderer};
+use crate::types::payload::StatusPayload;
+use crate::widgets::{RenderContext, build_widgets};
+
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        Some("--version") => {
+            println!("{}", env!("CARGO_PKG_VERSION"));
+            ExitCode::SUCCESS
+        }
+        _ => render_pipeline(),
+    }
+}
+
+fn render_pipeline() -> ExitCode {
+    let payload: StatusPayload = match serde_json::from_reader(std::io::stdin().lock()) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("cchud: invalid payload: {e}");
+            return ExitCode::SUCCESS; // AC-007: graceful, ничего в stdout
+        }
+    };
+    let ctx = RenderContext::new(&payload);
+    let widgets = build_widgets();
+    let segments: Vec<String> = widgets.iter().filter_map(|w| w.render(&ctx)).collect();
+    let renderer = Plain {
+        separator: " | ".into(),
+    };
+    println!("{}", renderer.render(&segments));
+    ExitCode::SUCCESS
 }

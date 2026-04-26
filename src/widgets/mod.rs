@@ -11,19 +11,19 @@
 
 use crate::types::payload::StatusPayload;
 
-#[allow(dead_code)]
+pub mod model;
+
 pub trait Widget: Send + Sync {
+    #[allow(dead_code)]
     fn id(&self) -> &'static str;
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String>;
 }
 
-#[allow(dead_code)]
 pub struct RenderContext<'a> {
     pub payload: &'a StatusPayload,
 }
 
 impl<'a> RenderContext<'a> {
-    #[allow(dead_code)]
     #[must_use]
     pub const fn new(payload: &'a StatusPayload) -> Self {
         Self { payload }
@@ -32,8 +32,7 @@ impl<'a> RenderContext<'a> {
 
 /// Build the list of widgets. In Task 4 returns a hardcoded `[Model]`.
 /// In Task 6 (after `Settings` exists) it will iterate `settings.lines[0].widgets`.
-#[allow(dead_code)]
 #[must_use]
 pub fn build_widgets() -> Vec<Box<dyn Widget>> {
-    Vec::new()
+    vec![Box::new(model::Model)]
 }
