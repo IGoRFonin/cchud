@@ -10,7 +10,9 @@
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 pub mod model;
+pub mod session;
 pub mod static_text;
+pub mod trivial;
 
 use crate::types::{
     config::{Settings, WidgetConfig},
@@ -73,12 +75,13 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         }),
 
         // Phase 3 stubs — заменяются на реальные impl в T3–T7:
-        WidgetConfig::Version => Box::new(Stub("Version")),
-        WidgetConfig::ClaudeSessionId => Box::new(Stub("ClaudeSessionId")),
-        WidgetConfig::TerminalWidth => Box::new(Stub("TerminalWidth")),
-        WidgetConfig::OutputStyle => Box::new(Stub("OutputStyle")),
-        WidgetConfig::VimMode => Box::new(Stub("VimMode")),
-        WidgetConfig::SessionName => Box::new(Stub("SessionName")),
+        // Phase 3 — Task 3 (trivial cluster):
+        WidgetConfig::Version => Box::new(trivial::Version),
+        WidgetConfig::ClaudeSessionId => Box::new(trivial::ClaudeSessionId),
+        WidgetConfig::TerminalWidth => Box::new(trivial::TerminalWidth),
+        WidgetConfig::OutputStyle => Box::new(trivial::OutputStyle),
+        WidgetConfig::VimMode => Box::new(trivial::VimMode),
+        WidgetConfig::SessionName => Box::new(session::SessionName),
         WidgetConfig::SessionClock => Box::new(Stub("SessionClock")),
         WidgetConfig::SessionCost => Box::new(Stub("SessionCost")),
         WidgetConfig::ContextLength => Box::new(Stub("ContextLength")),
