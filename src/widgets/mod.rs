@@ -83,8 +83,9 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::OutputStyle => Box::new(trivial::OutputStyle),
         WidgetConfig::VimMode => Box::new(trivial::VimMode),
         WidgetConfig::SessionName => Box::new(session::SessionName),
-        WidgetConfig::SessionClock => Box::new(Stub("SessionClock")),
-        WidgetConfig::SessionCost => Box::new(Stub("SessionCost")),
+        // Phase 3 — Task 5 (cost cluster):
+        WidgetConfig::SessionClock => Box::new(session::SessionClock),
+        WidgetConfig::SessionCost => Box::new(session::SessionCost),
         // Phase 3 — Task 4 (context cluster):
         WidgetConfig::ContextLength => Box::new(context::ContextLength),
         WidgetConfig::ContextPercentage => Box::new(context::ContextPercentage),
