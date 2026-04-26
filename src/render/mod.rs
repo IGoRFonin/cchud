@@ -143,6 +143,7 @@ fn to_anstyle_color(c: Color) -> anstyle::Color {
 pub mod hyperlink;
 pub mod themes;
 pub mod plain;
+pub mod powerline;
 
 #[derive(Debug, Clone)]
 pub struct Segment {
