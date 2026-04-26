@@ -21,7 +21,9 @@ impl Widget for Model {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)]
     use super::*;
+    use crate::config::default_line;
     use crate::types::payload::{ModelInfo, StatusPayload, Workspace};
 
     fn payload_with_display_name(name: &str) -> StatusPayload {
@@ -44,14 +46,16 @@ mod tests {
     #[test]
     fn renders_display_name() {
         let p = payload_with_display_name("Sonnet 4.6");
-        let ctx = RenderContext::new(&p);
+        let s = default_line();
+        let ctx = RenderContext::new(&p, &s);
         assert_eq!(Model.render(&ctx), Some("Sonnet 4.6".into()));
     }
 
     #[test]
     fn returns_none_for_empty_name() {
         let p = payload_with_display_name("");
-        let ctx = RenderContext::new(&p);
+        let s = default_line();
+        let ctx = RenderContext::new(&p, &s);
         assert_eq!(Model.render(&ctx), None);
     }
 }

@@ -6,6 +6,7 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
+mod config;
 mod render;
 mod types;
 mod widgets;
@@ -35,8 +36,9 @@ fn render_pipeline() -> ExitCode {
             return ExitCode::SUCCESS; // AC-007: graceful, ничего в stdout
         }
     };
-    let ctx = RenderContext::new(&payload);
-    let widgets = build_widgets();
+    let settings = config::load();
+    let ctx = RenderContext::new(&payload, &settings);
+    let widgets = build_widgets(&settings);
     let segments: Vec<String> = widgets.iter().filter_map(|w| w.render(&ctx)).collect();
     let renderer = Plain {
         separator: " | ".into(),

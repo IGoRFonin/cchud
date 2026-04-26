@@ -9,9 +9,12 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
-use crate::types::payload::StatusPayload;
-
 pub mod model;
+
+use crate::types::{
+    config::{Settings, WidgetConfig},
+    payload::StatusPayload,
+};
 
 pub trait Widget: Send + Sync {
     #[allow(dead_code)]
@@ -21,18 +24,28 @@ pub trait Widget: Send + Sync {
 
 pub struct RenderContext<'a> {
     pub payload: &'a StatusPayload,
+    #[allow(dead_code)]
+    pub settings: &'a Settings,
 }
 
 impl<'a> RenderContext<'a> {
     #[must_use]
-    pub const fn new(payload: &'a StatusPayload) -> Self {
-        Self { payload }
+    pub const fn new(payload: &'a StatusPayload, settings: &'a Settings) -> Self {
+        Self { payload, settings }
     }
 }
 
-/// Build the list of widgets. In Task 4 returns a hardcoded `[Model]`.
-/// In Task 6 (after `Settings` exists) it will iterate `settings.lines[0].widgets`.
 #[must_use]
-pub fn build_widgets() -> Vec<Box<dyn Widget>> {
-    vec![Box::new(model::Model)]
+pub fn build_widgets(settings: &Settings) -> Vec<Box<dyn Widget>> {
+    settings
+        .lines
+        .first()
+        .map(|line| line.widgets.iter().map(build_one).collect())
+        .unwrap_or_default()
+}
+
+fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
+    match cfg {
+        WidgetConfig::Model { .. } => Box::new(model::Model),
+    }
 }
