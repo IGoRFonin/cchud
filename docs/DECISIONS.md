@@ -104,3 +104,19 @@ RAM (global): RSS пик 97.7 МБ, peak memory footprint 42.2 МБ.
 **Решение:** не обновлять PRD сейчас. Зафиксировать точное число 60 в `docs/widgets.md`. В фазе 1 упомянуть как pre-flight delta если потребуется.
 
 **Последствия:** `docs/widgets.md` — canonical источник списка, 60 строк.
+
+---
+
+## 2026-04-26 — Repo visibility (Phase 1 / Task 5)
+
+**Контекст:** Task 5 публикует skeleton в `IGoRFonin/cchud` на GitHub. PRD не требует public-видимости с момента 0.0.1; имя свободно (Phase 0 OQ-6).
+
+**Решение:** создать репо как **private**. Переключение в public — ручное, после ревью контента (README, ATTRIBUTION, CHANGELOG, lockfile, отсутствие секретов в истории).
+
+**Обоснование:**
+- Skeleton не имеет user-facing полезности (binary печатает заглушку); public не несёт ценности до Phase 3 (0.1.0-alpha).
+- Снижает риск раннего "discovery" с устаревшим README.
+- CI отрабатывает одинаково в private (matrix workers + private actions), бесплатные минуты на personal account достаточны для Phase 1–7.
+- При переходе в public — `gh repo edit IGoRFonin/cchud --visibility public --accept-visibility-change-consequences`.
+
+**Последствия:** до Phase 9 распространение через `npx`/`brew` не работает (publish невозможен из private). Phase 9 переключает visibility в первой задаче дистрибуции.
