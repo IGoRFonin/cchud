@@ -10,6 +10,7 @@
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 pub mod model;
+pub mod static_text;
 
 use crate::types::{
     config::{Settings, WidgetConfig},
@@ -60,10 +61,18 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
     match cfg {
         WidgetConfig::Model { .. } => Box::new(model::Model),
 
-        // Phase 3 stubs — заменяются на реальные impl в T2–T7:
-        WidgetConfig::CustomText { .. } => Box::new(Stub("CustomText")),
-        WidgetConfig::CustomSymbol { .. } => Box::new(Stub("CustomSymbol")),
-        WidgetConfig::Link { .. } => Box::new(Stub("Link")),
+        // Phase 3 — Task 2 (static cluster):
+        WidgetConfig::CustomText { params } => Box::new(static_text::CustomText {
+            params: params.clone(),
+        }),
+        WidgetConfig::CustomSymbol { params } => Box::new(static_text::CustomSymbol {
+            params: params.clone(),
+        }),
+        WidgetConfig::Link { params } => Box::new(static_text::Link {
+            params: params.clone(),
+        }),
+
+        // Phase 3 stubs — заменяются на реальные impl в T3–T7:
         WidgetConfig::Version => Box::new(Stub("Version")),
         WidgetConfig::ClaudeSessionId => Box::new(Stub("ClaudeSessionId")),
         WidgetConfig::TerminalWidth => Box::new(Stub("TerminalWidth")),
