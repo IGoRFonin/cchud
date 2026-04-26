@@ -14,6 +14,7 @@ pub mod model;
 pub mod session;
 pub mod static_text;
 pub mod trivial;
+pub mod worktree;
 
 use crate::types::{
     config::{Settings, WidgetConfig},
@@ -95,11 +96,12 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         }),
         WidgetConfig::TokensInput => Box::new(context::TokensInput),
         WidgetConfig::TokensOutput => Box::new(context::TokensOutput),
-        WidgetConfig::Worktree => Box::new(Stub("Worktree")),
-        WidgetConfig::WorktreeMode => Box::new(Stub("WorktreeMode")),
-        WidgetConfig::WorktreeName => Box::new(Stub("WorktreeName")),
-        WidgetConfig::WorktreeBranch => Box::new(Stub("WorktreeBranch")),
-        WidgetConfig::WorktreeOriginalBranch => Box::new(Stub("WorktreeOriginalBranch")),
+        // Phase 3 — Task 6 (worktree cluster):
+        WidgetConfig::Worktree => Box::new(worktree::Worktree),
+        WidgetConfig::WorktreeMode => Box::new(worktree::WorktreeMode),
+        WidgetConfig::WorktreeName => Box::new(worktree::WorktreeName),
+        WidgetConfig::WorktreeBranch => Box::new(worktree::WorktreeBranch),
+        WidgetConfig::WorktreeOriginalBranch => Box::new(worktree::WorktreeOriginalBranch),
         WidgetConfig::CustomCommand { .. } => Box::new(Stub("CustomCommand")),
     }
 }
