@@ -8,7 +8,7 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Color {
     Rgb(u8, u8, u8),
     Ansi256(u8),
@@ -38,7 +38,7 @@ impl ColorLevel {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct Style {
     pub fg: Option<Color>,
     pub bg: Option<Color>,
@@ -141,6 +141,7 @@ fn to_anstyle_color(c: Color) -> anstyle::Color {
 }
 
 pub mod hyperlink;
+pub mod themes;
 
 #[derive(Debug, Clone)]
 pub struct Segment {
