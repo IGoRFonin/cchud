@@ -11,6 +11,9 @@ keywords = ["claude", "claude-code", "statusline", "cli", "terminal"]
 categories = ["command-line-utilities"]
 readme = "README.md"
 
+[lib]
+path = "src/lib.rs"
+
 [dependencies]
 # Hot-path
 serde = { version = "1", features = ["derive"] }
