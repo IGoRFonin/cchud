@@ -20,7 +20,7 @@ dirs = "6"
 
 # Terminal
 anstyle = "1"
-anstream = "0.6"
+anstream = "1.0"
 nu-ansi-term = "0.50"
 unicode-width = "0.2"
 unicode-segmentation = "1"
