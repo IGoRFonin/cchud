@@ -9,4 +9,5 @@
 
 pub mod ascii_bar;
 pub mod duration;
+pub mod ansi;
 pub mod model_context_size;
