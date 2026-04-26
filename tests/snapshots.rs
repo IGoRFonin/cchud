@@ -8,6 +8,33 @@
 
 use assert_cmd::Command;
 use std::error::Error;
+use std::path::PathBuf;
+use tempfile::TempDir;
+
+fn run_with_home_and_payload(home: &PathBuf, payload: &str) -> String {
+    let output = Command::cargo_bin("cchud")
+        .unwrap()
+        .env("HOME", home)
+        .env("USERPROFILE", home)
+        .write_stdin(payload.to_string())
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "non-zero exit: stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout)
+        .unwrap()
+        .trim_end()
+        .to_string()
+}
+
+fn write_settings(home: &PathBuf, settings_json: &str) {
+    let claude_dir = home.join(".claude");
+    std::fs::create_dir_all(&claude_dir).unwrap();
+    std::fs::write(claude_dir.join("settings.json"), settings_json).unwrap();
+}
 
 #[test]
 fn render_default_line_for_phase0_samples() {
@@ -56,4 +83,101 @@ fn graceful_fallback_on_broken_json() -> Result<(), Box<dyn Error>> {
         "stderr must start with 'cchud:', got {stderr:?}"
     );
     Ok(())
+}
+
+/// Scenario 2: 22-widget config против реального Phase 0 sonnet-xlarge payload.
+/// TerminalWidth исключён (no-TTY под cargo test → None → пустой сегмент).
+/// CustomCommand отдельно в Scenario 5.
+#[test]
+fn scenario_2_full_22_widgets_sonnet_xlarge() {
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path().to_path_buf();
+    let settings = include_str!("../benches/configs/phase-3-22w.json");
+    write_settings(&home, settings);
+    let payload = include_str!("../benches/samples/payload-cchud-sonnet-xlarge.json");
+    let stdout = run_with_home_and_payload(&home, payload);
+    insta::assert_snapshot!("phase3_full_22w_sonnet", stdout);
+}
+
+/// Scenario 3: Worktree-кластер + VimMode на synthetic-семпле.
+#[test]
+fn scenario_3_worktree_vim() {
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path().to_path_buf();
+    let settings = r#"{
+        "cchud": {
+            "version": 1,
+            "lines": [{
+                "widgets": [
+                    {"type": "model"},
+                    {"type": "vim-mode"},
+                    {"type": "worktree"},
+                    {"type": "worktree-mode"},
+                    {"type": "worktree-name"},
+                    {"type": "worktree-branch"},
+                    {"type": "worktree-original-branch"}
+                ]
+            }],
+            "theme": {}
+        }
+    }"#;
+    write_settings(&home, settings);
+    let payload = include_str!("../benches/samples/payload-synthetic-vim-worktree.json");
+    let stdout = run_with_home_and_payload(&home, payload);
+    insta::assert_snapshot!("phase3_worktree_vim", stdout);
+}
+
+/// Scenario 4: Tokens + ContextBar + ContextPercentage + ContextPercentageUsable
+/// — лочит untagged enum CurrentUsage и форматы.
+#[test]
+fn scenario_4_context_cluster() {
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path().to_path_buf();
+    let settings = r#"{
+        "cchud": {
+            "version": 1,
+            "lines": [{
+                "widgets": [
+                    {"type": "tokens-input"},
+                    {"type": "tokens-output"},
+                    {"type": "context-length"},
+                    {"type": "context-percentage"},
+                    {"type": "context-percentage-usable"},
+                    {"type": "context-bar", "width": 10}
+                ]
+            }],
+            "theme": {}
+        }
+    }"#;
+    write_settings(&home, settings);
+    let payload = include_str!("../benches/samples/payload-cchud-sonnet-xlarge.json");
+    let stdout = run_with_home_and_payload(&home, payload);
+    insta::assert_snapshot!("phase3_context_cluster", stdout);
+}
+
+/// Scenario 5: Static cluster + CustomCommand. Unix-only — Windows
+/// behavioural тесты subprocess отложены до Phase 9.
+#[cfg(unix)]
+#[test]
+fn scenario_5_static_and_command() {
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path().to_path_buf();
+    let settings = r#"{
+        "cchud": {
+            "version": 1,
+            "lines": [{
+                "widgets": [
+                    {"type": "custom-text", "text": "demo"},
+                    {"type": "custom-symbol", "symbol": "★"},
+                    {"type": "link", "url": "https://example.com", "label": "Ex"},
+                    {"type": "custom-command", "command": "echo", "args": ["phase-3"], "timeout_ms": 1000}
+                ]
+            }],
+            "theme": {}
+        }
+    }"#;
+    write_settings(&home, settings);
+    let payload = include_str!("../benches/samples/payload-cchud-sonnet-xlarge.json");
+    let stdout = run_with_home_and_payload(&home, payload);
+    insta::assert_snapshot!("phase3_static_and_command", stdout);
 }

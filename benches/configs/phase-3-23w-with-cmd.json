@@ -1,0 +1,33 @@
+{
+  "cchud": {
+    "version": 1,
+    "lines": [{
+      "widgets": [
+        {"type": "model"},
+        {"type": "version"},
+        {"type": "claude-session-id"},
+        {"type": "output-style"},
+        {"type": "session-name"},
+        {"type": "session-clock"},
+        {"type": "session-cost"},
+        {"type": "context-length"},
+        {"type": "context-percentage"},
+        {"type": "context-percentage-usable"},
+        {"type": "context-bar", "width": 10},
+        {"type": "tokens-input"},
+        {"type": "tokens-output"},
+        {"type": "vim-mode"},
+        {"type": "worktree"},
+        {"type": "worktree-mode"},
+        {"type": "worktree-name"},
+        {"type": "worktree-branch"},
+        {"type": "worktree-original-branch"},
+        {"type": "custom-text", "text": "demo"},
+        {"type": "custom-symbol", "symbol": "★"},
+        {"type": "link", "url": "https://example.com", "label": "Example"},
+        {"type": "custom-command", "command": "echo", "args": ["phase-3"], "timeout_ms": 200}
+      ]
+    }],
+    "theme": {}
+  }
+}

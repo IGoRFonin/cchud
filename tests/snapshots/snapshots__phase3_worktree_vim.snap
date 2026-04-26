@@ -1,0 +1,5 @@
+---
+source: tests/snapshots.rs
+expression: stdout
+---
+Sonnet 4.6 | NORMAL | wt-feature | WT | wt-feature | feature/synthetic | main

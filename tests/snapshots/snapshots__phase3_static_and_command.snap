@@ -1,0 +1,5 @@
+---
+source: tests/snapshots.rs
+expression: stdout
+---
+demo | ★ | ]8;;https://example.com\Ex]8;;\ | phase-3

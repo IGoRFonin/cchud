@@ -1,0 +1,5 @@
+---
+source: tests/snapshots.rs
+expression: stdout
+---
+inT: 1 | outT: 232 | 7461 | 25% | 4% | [███░░░░░░░]
