@@ -52,8 +52,7 @@ fn write_defaults(path: &Path, settings: &Settings) -> io::Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let json = serde_json::to_string_pretty(settings)
-        .map_err(io::Error::other)?;
+    let json = serde_json::to_string_pretty(settings).map_err(io::Error::other)?;
     std::fs::write(path, json)
 }
 
