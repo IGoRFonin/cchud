@@ -6,6 +6,7 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
+mod commands;
 mod config;
 mod render;
 mod types;
@@ -24,8 +25,32 @@ fn main() -> ExitCode {
             println!("{}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
+        Some("--help" | "-h") => {
+            print_help();
+            ExitCode::SUCCESS
+        }
+        Some("install") => commands::install::run(&args[1..]),
+        Some(other) if other.starts_with("--") => {
+            eprintln!("cchud: unknown flag: {other}");
+            eprintln!("       run 'cchud --help' for usage");
+            ExitCode::from(2)
+        }
         _ => render_pipeline(),
     }
+}
+
+fn print_help() {
+    println!(
+        "cchud {} — fast Rust statusline for Claude Code",
+        env!("CARGO_PKG_VERSION")
+    );
+    println!();
+    println!("USAGE:");
+    println!("  cchud                  read JSON payload from stdin, render statusline");
+    println!("  cchud install          wire cchud into ~/.claude/settings.json");
+    println!("  cchud install --force  overwrite existing statusLine");
+    println!("  cchud --version        print version");
+    println!("  cchud --help           print this help");
 }
 
 fn render_pipeline() -> ExitCode {
