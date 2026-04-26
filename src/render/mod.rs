@@ -145,6 +145,60 @@ pub mod themes;
 pub mod plain;
 pub mod powerline;
 
+use crate::types::config::Settings;
+
+#[derive(Debug)]
+pub enum Renderer {
+    Plain(plain::Plain),
+    Powerline(powerline::Powerline),
+}
+
+impl Renderer {
+    #[must_use]
+    pub fn from_settings(settings: &Settings) -> Self {
+        // Phase 4 Task 11 expands this to honour theme.kind / theme_name / custom.
+        // Until then, always return Plain to keep main.rs compiling.
+        let level = ColorLevel::detect();
+        let _ = settings;
+        Self::Plain(plain::Plain {
+            separator: " | ".into(),
+            level,
+            hyperlinks: hyperlink::supports_hyperlinks_detect(),
+        })
+    }
+
+    #[must_use]
+    pub fn render(&self, segments: &[Segment]) -> String {
+        match self {
+            Self::Plain(p) => p.render(segments),
+            Self::Powerline(p) => p.render(segments),
+        }
+    }
+}
+
+#[cfg(test)]
+mod renderer_tests {
+    use super::*;
+    use crate::types::config::Settings;
+
+    #[test]
+    fn from_settings_returns_plain_with_default_settings() {
+        let s = Settings::default();
+        let r = Renderer::from_settings(&s);
+        assert!(matches!(r, Renderer::Plain(_)));
+    }
+
+    #[test]
+    fn renderer_dispatches_render_to_plain() {
+        let r = Renderer::Plain(plain::Plain {
+            separator: ", ".into(),
+            level: ColorLevel::None,
+            hyperlinks: false,
+        });
+        assert_eq!(r.render(&[Segment::plain("a"), Segment::plain("b")]), "a, b");
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Segment {
     pub text: String,
