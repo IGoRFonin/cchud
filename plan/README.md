@@ -82,7 +82,7 @@
 - [x] PRD (`docs/prd-cchud.md`)
 - [x] План разбит по фазам
 - [x] Фаза 0 — Проверки
-- [~] Фаза 1 — Init (in progress)
+- [x] Фаза 1 — Init
 - [ ] Фаза 2 — Pipeline
 - [ ] Фаза 3 — MVP
 - [ ] Фаза 4 — Powerline
