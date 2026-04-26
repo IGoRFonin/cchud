@@ -83,8 +83,8 @@
 - [x] План разбит по фазам
 - [x] Фаза 0 — Проверки
 - [x] Фаза 1 — Init
-- [ ] Фаза 2 — Pipeline
-- [ ] Фаза 3 — MVP
+- [x] Фаза 2 — Pipeline
+- [~] Фаза 3 — MVP (next)
 - [ ] Фаза 4 — Powerline
 - [ ] Фаза 5 — Git widgets
 - [ ] Фаза 6 — Transcript

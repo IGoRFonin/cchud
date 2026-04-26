@@ -50,18 +50,18 @@ T8 (install tests) ──► T9 (full envelope + snapshots) ──► T10 (bench
 
 ## Definition of Done всей Фазы 2
 
-- [ ] Все 10 задач завершены, verification-гейты прошли
-- [ ] Локально: `cargo build --release --locked && cargo test --locked && cargo clippy --locked -- -D warnings && cargo fmt --check` зелёные
-- [ ] `git log --oneline | head -10` содержит коммиты от всех 10 задач, каждый с префиксом `feat(phase-2):` / `test(phase-2):` / `chore(phase-2):`
-- [ ] CI matrix зелёный после push'а каждого коммита
-- [ ] `cchud --version` печатает версию из `Cargo.toml`
-- [ ] `cchud install` обрабатывает три кейса: нет файла / чужой statusLine / cchud уже стоит
-- [ ] AC-007 покрыт автоматизированным тестом (битый JSON → exit 0, пустой stdout)
-- [ ] AC-008 покрыт install-тестами (preserves unrelated keys)
-- [ ] Hyperfine: p95 cchud < 5ms на M-серии, `benches/phase-2.md` сохранён в репо
-- [ ] Manual real-CC test пройден ≥ 5 минут, лог в `plan/phase-2/manual-test-log.md`
-- [ ] `git tag phase-2-pipeline` создан и запушен
-- [ ] `plan/README.md` отмечает Phase 2 как `[x]`, Phase 3 как `[~]`
+- [x] Все 10 задач завершены, verification-гейты прошли
+- [x] Локально: `cargo build --release --locked && cargo test --locked && cargo clippy --locked -- -D warnings && cargo fmt --check` зелёные
+- [x] `git log --oneline | head -10` содержит коммиты от всех 10 задач, каждый с префиксом `feat(phase-2):` / `test(phase-2):` / `chore(phase-2):`
+- [x] CI matrix зелёный после push'а каждого коммита
+- [x] `cchud --version` печатает версию из `Cargo.toml`
+- [x] `cchud install` обрабатывает три кейса: нет файла / чужой statusLine / cchud уже стоит (покрыто install-тестами Task 8)
+- [x] AC-007 покрыт автоматизированным тестом (битый JSON → exit 0, пустой stdout)
+- [x] AC-008 покрыт install-тестами (preserves unrelated keys)
+- [x] Hyperfine: p95 cchud < 5ms на M-серии (Mean = 1.3 ms), `benches/phase-2.md` сохранён в репо
+- [ ] Manual real-CC test пройден ≥ 5 минут, лог в `plan/phase-2/manual-test-log.md` *(deferred — шаблон создан, заполнить после ручного запуска в реальном CC)*
+- [x] `git tag phase-2-pipeline` создан и запушен
+- [x] `plan/README.md` отмечает Phase 2 как `[x]`, Phase 3 как `[~]`
 
 ## Связи
 

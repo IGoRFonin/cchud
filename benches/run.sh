@@ -26,3 +26,26 @@ for SAMPLE in $SAMPLES; do
     --export-markdown -
   echo
 done
+
+# --- Phase 2: cchud vs ccstatusline comparison ---
+
+if command -v ccstatusline >/dev/null 2>&1; then
+  COMPARISON_SAMPLE="benches/samples/payload-cchud-sonnet-xlarge.json"
+  echo "### Phase 2 comparison: cchud vs ccstatusline"
+  echo
+  echo "Sample: $(basename "$COMPARISON_SAMPLE")"
+  echo
+  hyperfine \
+    --warmup 20 \
+    --runs 200 \
+    --shell=none \
+    --input "$COMPARISON_SAMPLE" \
+    --command-name "cchud" \
+    "./target/release/cchud" \
+    --command-name "ccstatusline" \
+    "ccstatusline" \
+    --export-markdown -
+  echo
+else
+  echo "### Phase 2 comparison: SKIPPED (ccstatusline not in PATH)"
+fi

@@ -136,3 +136,20 @@ RAM (global): RSS пик 97.7 МБ, peak memory footprint 42.2 МБ.
 - Альтернатива (явный `#[serde(rename = "...")]` на каждом поле) — лишний бойлерплейт без выгоды.
 
 **Последствия:** Step 6 grep-чек плана (`grep -q rename_all`) и DoD-пункт про camelCase устарели — обновлены в коммите. Task 9 (полный envelope) тоже без `rename_all`.
+
+---
+
+## 2026-04-26 — Phase 2 → pipeline + first real binary
+
+- 6 design decisions locked in spec [`docs/superpowers/specs/2026-04-26-phase-2-pipeline-design.md`](./superpowers/specs/2026-04-26-phase-2-pipeline-design.md)
+- Hyperfine на Apple M4 Pro (200 runs, --warmup 20, payload-cchud-sonnet-xlarge.json):
+  - cchud Mean = **1.3 ms** (min 1.1, max 2.3)
+  - ccstatusline 2.2.8 Mean = **230.3 ms** (min 219.5, max 271.7)
+  - **~177× speedup**
+- AC-001 / AC-007 / AC-008 covered by automated tests (`tests/install.rs`, `tests/snapshots.rs`)
+- Manual real-CC test: deferred (см. `plan/phase-2/manual-test-log.md`)
+- Removed: `lexopt` (Phase 2 doesn't need named flags)
+- Added: `serial_test 3`, `tempfile 3` (dev-only)
+- Bin size release: 468 592 bytes (~458 KB; target < 5 MB ✓)
+- Phase 2 tag: `phase-2-pipeline` (annotated, unsigned)
+
