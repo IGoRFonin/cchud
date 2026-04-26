@@ -40,6 +40,15 @@ mod tests {
             },
             transcript_path: None,
             cwd: None,
+            version: None,
+            fast_mode: None,
+            exceeds_200k_tokens: None,
+            output_style: None,
+            cost: None,
+            context_window: None,
+            rate_limits: None,
+            effort: None,
+            thinking: None,
         }
     }
 

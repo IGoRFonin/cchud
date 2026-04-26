@@ -1,0 +1,6 @@
+---
+source: tests/snapshots.rs
+expression: stdout
+input_file: benches/samples/payload-posts-sonnet-fresh.json
+---
+Sonnet 4.6
