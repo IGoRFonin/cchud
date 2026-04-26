@@ -24,6 +24,8 @@ pub enum ColorLevel {
     TrueColor,
 }
 
+pub mod color_sanitize;
+
 impl ColorLevel {
     /// Auto-detect via `supports-color` on stdout. Returns `None` on non-TTY.
     #[must_use]
