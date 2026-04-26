@@ -26,6 +26,9 @@ unicode-segmentation = "1"
 terminal_size = "0.4"
 supports-color = "3"
 
+# Phase 3 — CustomCommand subprocess timeout
+wait-timeout = "0.2"
+
 # Lazy для виджетов (добавятся в фазах 3-7)
 # sonic-rs, gix, ureq, bincode, ratatui, crossterm — позже
 

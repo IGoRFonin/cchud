@@ -153,3 +153,29 @@ RAM (global): RSS пик 97.7 МБ, peak memory footprint 42.2 МБ.
 - Bin size release: 468 592 bytes (~458 KB; target < 5 MB ✓)
 - Phase 2 tag: `phase-2-pipeline` (annotated, unsigned)
 
+---
+
+## 2026-04-26 — WidgetConfig serde tag = kebab-case
+
+`#[serde(rename_all = "kebab-case")]` на `WidgetConfig`. Phase 2 ожидал
+`"type": "Model"` (PascalCase, default serde). Phase 3 переключает на
+kebab-case для паритета с upstream ccstatusline (REQ-006 — будущая
+команда `cchud import` мигрирует существующие пользовательские
+`~/.claude/settings.json` со статуслайном ccstatusline). Phase 2 unit-тест
+`parses_minimal_cchud_block` ретрофитнут (`"Model"` → `"model"`); CI
+зелёный. Пользовательские конфиги Phase 2 alpha — не существуют, потому
+breaking change безопасен.
+
+## 2026-04-26 — Phase 3 ускоряет типизацию cost/context_window
+
+Phase 2 spec обещал "Phase 6 типизирует cost, context_window,
+rate_limits". Phase 3 типизирует cost и context_window раньше — 14 из
+23 виджетов Phase 3 их читают; держать их `Option<serde_json::Value>`
+означало бы `Value::pointer` everywhere в widget-коде, без compile-time
+защиты от опечаток в именах полей. `rate_limits` остаётся `Value` до
+Phase 6 (Phase 3 не имеет виджета, который её читает). Также типизирован
+`output_style` (виджет OutputStyle читает только `name`). Структуры:
+`CostInfo`, `ContextWindowInfo`, `CurrentUsage` (untagged enum
+number|object), `Worktree`, `VimState`, `OutputStyle` — в
+`src/types/payload.rs`.
+

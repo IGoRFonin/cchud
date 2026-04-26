@@ -24,17 +24,98 @@ pub struct Line {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "kebab-case")]
 pub enum WidgetConfig {
+    // Phase 2:
     Model {
         #[serde(flatten, default)]
         params: ModelParams,
+    },
+
+    // Phase 3 — без параметров:
+    Version,
+    ClaudeSessionId,
+    TerminalWidth,
+    OutputStyle,
+    VimMode,
+    SessionName,
+    SessionClock,
+    SessionCost,
+    ContextLength,
+    ContextPercentage,
+    ContextPercentageUsable,
+    TokensInput,
+    TokensOutput,
+    Worktree,
+    WorktreeMode,
+    WorktreeName,
+    WorktreeBranch,
+    WorktreeOriginalBranch,
+
+    // Phase 3 — с параметрами:
+    CustomText {
+        #[serde(flatten)]
+        params: CustomTextParams,
+    },
+    CustomSymbol {
+        #[serde(flatten)]
+        params: CustomSymbolParams,
+    },
+    Link {
+        #[serde(flatten)]
+        params: LinkParams,
+    },
+    CustomCommand {
+        #[serde(flatten)]
+        params: CustomCommandParams,
+    },
+    ContextBar {
+        #[serde(flatten, default)]
+        params: ContextBarParams,
     },
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ModelParams {}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomTextParams {
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomSymbolParams {
+    pub symbol: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinkParams {
+    pub url: String,
+    #[serde(default)]
+    pub label: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomCommandParams {
+    pub command: String,
+    #[serde(default)]
+    pub args: Vec<String>,
+    #[serde(default = "default_command_timeout_ms")]
+    pub timeout_ms: u64,
+}
+const fn default_command_timeout_ms() -> u64 {
+    200
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ContextBarParams {
+    #[serde(default = "default_context_bar_width")]
+    pub width: u32,
+}
+const fn default_context_bar_width() -> u32 {
+    10
+}
 
 /// Empty in Phase 2. Phase 4 will populate (`powerline_colors`, `separator_override`, ...).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -63,7 +144,7 @@ mod tests {
     fn parses_minimal_cchud_block() {
         let json = r#"{
             "version": 1,
-            "lines": [{"widgets": [{"type": "Model"}]}],
+            "lines": [{"widgets": [{"type": "model"}]}],
             "theme": {}
         }"#;
         let s: Settings = serde_json::from_str(json).unwrap();
@@ -84,7 +165,7 @@ mod tests {
     #[test]
     fn rejects_unknown_widget_type() {
         let json = r#"{
-            "lines": [{"widgets": [{"type": "Branch"}]}]
+            "lines": [{"widgets": [{"type": "branch"}]}]
         }"#;
         // Phase 2 не знает про Branch — должен упасть на парсинге.
         // Phase 3 добавит вариант, тест обновится.
@@ -110,5 +191,53 @@ mod tests {
             back.lines[0].widgets[0],
             WidgetConfig::Model { .. }
         ));
+    }
+
+    #[test]
+    fn parses_phase3_widget_kinds() {
+        let json = r#"{
+            "lines": [{"widgets": [
+                {"type": "version"},
+                {"type": "claude-session-id"},
+                {"type": "context-bar", "width": 20},
+                {"type": "custom-text", "text": "hello"},
+                {"type": "custom-symbol", "symbol": "★"},
+                {"type": "link", "url": "https://x.com", "label": "X"},
+                {"type": "custom-command", "command": "echo", "args": ["hi"]}
+            ]}]
+        }"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        assert_eq!(s.lines[0].widgets.len(), 7);
+        assert!(matches!(s.lines[0].widgets[0], WidgetConfig::Version));
+        assert!(matches!(
+            s.lines[0].widgets[1],
+            WidgetConfig::ClaudeSessionId
+        ));
+        match &s.lines[0].widgets[2] {
+            WidgetConfig::ContextBar { params } => assert_eq!(params.width, 20),
+            other => panic!("expected ContextBar, got {other:?}"),
+        }
+        match &s.lines[0].widgets[3] {
+            WidgetConfig::CustomText { params } => assert_eq!(params.text, "hello"),
+            other => panic!("expected CustomText, got {other:?}"),
+        }
+        match &s.lines[0].widgets[6] {
+            WidgetConfig::CustomCommand { params } => {
+                assert_eq!(params.command, "echo");
+                assert_eq!(params.args, vec!["hi".to_string()]);
+                assert_eq!(params.timeout_ms, 200, "default timeout_ms = 200");
+            }
+            other => panic!("expected CustomCommand, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn context_bar_default_width_is_ten() {
+        let json = r#"{"lines":[{"widgets":[{"type":"context-bar"}]}]}"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        match &s.lines[0].widgets[0] {
+            WidgetConfig::ContextBar { params } => assert_eq!(params.width, 10),
+            other => panic!("expected ContextBar, got {other:?}"),
+        }
     }
 }

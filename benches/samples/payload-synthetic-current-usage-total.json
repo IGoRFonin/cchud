@@ -1,0 +1,1 @@
+{"session_id":"synthetic-cu-total-0001","cwd":"/tmp","model":{"id":"claude-sonnet-4-6","display_name":"Sonnet 4.6"},"workspace":{"current_dir":"/tmp"},"version":"2.1.119","context_window":{"total_input_tokens":50,"total_output_tokens":100,"context_window_size":200000,"current_usage":12345,"used_percentage":1,"remaining_percentage":99}}

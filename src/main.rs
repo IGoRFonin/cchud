@@ -10,6 +10,7 @@ mod commands;
 mod config;
 mod render;
 mod types;
+mod util;
 mod widgets;
 
 use std::process::ExitCode;

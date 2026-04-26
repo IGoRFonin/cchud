@@ -124,6 +124,7 @@ dependencies = [
  "terminal_size",
  "unicode-segmentation",
  "unicode-width",
+ "wait-timeout",
 ]
 
 [[package]]

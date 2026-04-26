@@ -12,6 +12,12 @@ use std::error::Error;
 #[test]
 fn render_default_line_for_phase0_samples() {
     insta::glob!("../benches/samples", "payload-*.json", |path| {
+        // Phase 3: synthetic-семплы рендерятся явными snapshot-сценариями
+        // в Task 8 на специфичных configs, не на default-line.
+        let fname = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+        if fname.starts_with("payload-synthetic-") {
+            return;
+        }
         let payload = std::fs::read_to_string(path).unwrap();
         let output = Command::cargo_bin("cchud")
             .unwrap()

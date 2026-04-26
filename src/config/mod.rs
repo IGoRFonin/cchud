@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn root_settings_parses_with_cchud_block() {
-        let json = r#"{"cchud":{"version":1,"lines":[{"widgets":[{"type":"Model"}]}]}}"#;
+        let json = r#"{"cchud":{"version":1,"lines":[{"widgets":[{"type":"model"}]}]}}"#;
         let root: RootSettings = serde_json::from_str(json).unwrap();
         assert!(root.cchud.is_some());
         let cchud = root.cchud.unwrap();

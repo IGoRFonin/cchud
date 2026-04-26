@@ -44,8 +44,45 @@ pub fn build_widgets(settings: &Settings) -> Vec<Box<dyn Widget>> {
         .unwrap_or_default()
 }
 
+/// Stub Widget — placeholder для variants, чьи impl ещё не написаны
+/// (Phase 3: вытесняется match-arms по мере роста кластеров T2–T7).
+struct Stub(&'static str);
+impl Widget for Stub {
+    fn id(&self) -> &'static str {
+        self.0
+    }
+    fn render(&self, _ctx: &RenderContext<'_>) -> Option<String> {
+        None
+    }
+}
+
 fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
     match cfg {
         WidgetConfig::Model { .. } => Box::new(model::Model),
+
+        // Phase 3 stubs — заменяются на реальные impl в T2–T7:
+        WidgetConfig::CustomText { .. } => Box::new(Stub("CustomText")),
+        WidgetConfig::CustomSymbol { .. } => Box::new(Stub("CustomSymbol")),
+        WidgetConfig::Link { .. } => Box::new(Stub("Link")),
+        WidgetConfig::Version => Box::new(Stub("Version")),
+        WidgetConfig::ClaudeSessionId => Box::new(Stub("ClaudeSessionId")),
+        WidgetConfig::TerminalWidth => Box::new(Stub("TerminalWidth")),
+        WidgetConfig::OutputStyle => Box::new(Stub("OutputStyle")),
+        WidgetConfig::VimMode => Box::new(Stub("VimMode")),
+        WidgetConfig::SessionName => Box::new(Stub("SessionName")),
+        WidgetConfig::SessionClock => Box::new(Stub("SessionClock")),
+        WidgetConfig::SessionCost => Box::new(Stub("SessionCost")),
+        WidgetConfig::ContextLength => Box::new(Stub("ContextLength")),
+        WidgetConfig::ContextPercentage => Box::new(Stub("ContextPercentage")),
+        WidgetConfig::ContextPercentageUsable => Box::new(Stub("ContextPercentageUsable")),
+        WidgetConfig::ContextBar { .. } => Box::new(Stub("ContextBar")),
+        WidgetConfig::TokensInput => Box::new(Stub("TokensInput")),
+        WidgetConfig::TokensOutput => Box::new(Stub("TokensOutput")),
+        WidgetConfig::Worktree => Box::new(Stub("Worktree")),
+        WidgetConfig::WorktreeMode => Box::new(Stub("WorktreeMode")),
+        WidgetConfig::WorktreeName => Box::new(Stub("WorktreeName")),
+        WidgetConfig::WorktreeBranch => Box::new(Stub("WorktreeBranch")),
+        WidgetConfig::WorktreeOriginalBranch => Box::new(Stub("WorktreeOriginalBranch")),
+        WidgetConfig::CustomCommand { .. } => Box::new(Stub("CustomCommand")),
     }
 }

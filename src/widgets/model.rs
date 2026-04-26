@@ -46,6 +46,8 @@ mod tests {
             output_style: None,
             cost: None,
             context_window: None,
+            worktree: None,
+            vim: None,
             rate_limits: None,
             effort: None,
             thinking: None,
