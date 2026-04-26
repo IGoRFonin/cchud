@@ -31,9 +31,9 @@ fn run_with_home_and_payload(home: &PathBuf, payload: &str) -> String {
 }
 
 fn write_settings(home: &PathBuf, settings_json: &str) {
-    let claude_dir = home.join(".claude");
-    std::fs::create_dir_all(&claude_dir).unwrap();
-    std::fs::write(claude_dir.join("settings.json"), settings_json).unwrap();
+    let config_dir = home.join(".config/cchud");
+    std::fs::create_dir_all(&config_dir).unwrap();
+    std::fs::write(config_dir.join("settings.json"), settings_json).unwrap();
 }
 
 #[test]
@@ -105,21 +105,19 @@ fn scenario_3_worktree_vim() {
     let tmp = TempDir::new().unwrap();
     let home = tmp.path().to_path_buf();
     let settings = r#"{
-        "cchud": {
-            "version": 1,
-            "lines": [{
-                "widgets": [
-                    {"type": "model"},
-                    {"type": "vim-mode"},
-                    {"type": "worktree"},
-                    {"type": "worktree-mode"},
-                    {"type": "worktree-name"},
-                    {"type": "worktree-branch"},
-                    {"type": "worktree-original-branch"}
-                ]
-            }],
-            "theme": {}
-        }
+        "version": 1,
+        "lines": [{
+            "widgets": [
+                {"type": "model"},
+                {"type": "vim-mode"},
+                {"type": "worktree"},
+                {"type": "worktree-mode"},
+                {"type": "worktree-name"},
+                {"type": "worktree-branch"},
+                {"type": "worktree-original-branch"}
+            ]
+        }],
+        "theme": {}
     }"#;
     write_settings(&home, settings);
     let payload = include_str!("../benches/samples/payload-synthetic-vim-worktree.json");
@@ -134,20 +132,18 @@ fn scenario_4_context_cluster() {
     let tmp = TempDir::new().unwrap();
     let home = tmp.path().to_path_buf();
     let settings = r#"{
-        "cchud": {
-            "version": 1,
-            "lines": [{
-                "widgets": [
-                    {"type": "tokens-input"},
-                    {"type": "tokens-output"},
-                    {"type": "context-length"},
-                    {"type": "context-percentage"},
-                    {"type": "context-percentage-usable"},
-                    {"type": "context-bar", "width": 10}
-                ]
-            }],
-            "theme": {}
-        }
+        "version": 1,
+        "lines": [{
+            "widgets": [
+                {"type": "tokens-input"},
+                {"type": "tokens-output"},
+                {"type": "context-length"},
+                {"type": "context-percentage"},
+                {"type": "context-percentage-usable"},
+                {"type": "context-bar", "width": 10}
+            ]
+        }],
+        "theme": {}
     }"#;
     write_settings(&home, settings);
     let payload = include_str!("../benches/samples/payload-cchud-sonnet-xlarge.json");
@@ -163,18 +159,16 @@ fn scenario_5_static_and_command() {
     let tmp = TempDir::new().unwrap();
     let home = tmp.path().to_path_buf();
     let settings = r#"{
-        "cchud": {
-            "version": 1,
-            "lines": [{
-                "widgets": [
-                    {"type": "custom-text", "text": "demo"},
-                    {"type": "custom-symbol", "symbol": "★"},
-                    {"type": "link", "url": "https://example.com", "label": "Ex"},
-                    {"type": "custom-command", "command": "echo", "args": ["phase-3"], "timeout_ms": 1000}
-                ]
-            }],
-            "theme": {}
-        }
+        "version": 1,
+        "lines": [{
+            "widgets": [
+                {"type": "custom-text", "text": "demo"},
+                {"type": "custom-symbol", "symbol": "★"},
+                {"type": "link", "url": "https://example.com", "label": "Ex"},
+                {"type": "custom-command", "command": "echo", "args": ["phase-3"], "timeout_ms": 1000}
+            ]
+        }],
+        "theme": {}
     }"#;
     write_settings(&home, settings);
     let payload = include_str!("../benches/samples/payload-cchud-sonnet-xlarge.json");

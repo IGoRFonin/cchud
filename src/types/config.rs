@@ -1,4 +1,4 @@
-//! User config schema — parsed from `~/.claude/settings.json` `cchud` block.
+//! User config schema — parsed from `~/.config/cchud/settings.json`.
 //!
 //! Phase 2 supports only `WidgetConfig::Model`. Phase 3 adds 9 more variants.
 //! `ThemeConfig` is an empty slot — populated in Phase 4 (Powerline colors,
