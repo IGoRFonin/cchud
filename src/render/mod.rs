@@ -140,6 +140,54 @@ fn to_anstyle_color(c: Color) -> anstyle::Color {
     }
 }
 
+pub mod hyperlink;
+
+#[derive(Debug, Clone)]
+pub struct Segment {
+    pub text: String,
+    pub style: Style,
+    pub hyperlink: Option<String>,
+}
+
+impl Segment {
+    #[must_use]
+    pub fn plain(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            style: Style::none(),
+            hyperlink: None,
+        }
+    }
+
+    #[must_use]
+    pub fn styled(text: impl Into<String>, style: Style) -> Self {
+        Self {
+            text: text.into(),
+            style,
+            hyperlink: None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod segment_tests {
+    use super::*;
+
+    #[test]
+    fn plain_constructs_neutral_segment() {
+        let s = Segment::plain("hi");
+        assert_eq!(s.text, "hi");
+        assert_eq!(s.style, Style::none());
+        assert!(s.hyperlink.is_none());
+    }
+
+    #[test]
+    fn styled_carries_provided_style() {
+        let s = Segment::styled("hi", Style::none().bold());
+        assert!(s.style.bold);
+    }
+}
+
 #[cfg(test)]
 mod style_tests {
     use super::*;
