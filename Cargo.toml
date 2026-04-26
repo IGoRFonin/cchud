@@ -19,12 +19,12 @@ dirs = "6"
 
 # Terminal
 anstyle = "1"
-anstream = "1.0"
-nu-ansi-term = "0.50"
 unicode-width = "0.2"
 unicode-segmentation = "1"
 terminal_size = "0.4"
 supports-color = "3"
+anstyle-parse = "0.2"
+supports-hyperlinks = "3"
 
 # Phase 3 — CustomCommand subprocess timeout
 wait-timeout = "0.2"
