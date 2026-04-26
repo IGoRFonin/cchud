@@ -10,6 +10,7 @@
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 pub mod context;
+pub mod custom_command;
 pub mod model;
 pub mod session;
 pub mod static_text;
@@ -49,18 +50,6 @@ pub fn build_widgets(settings: &Settings) -> Vec<Box<dyn Widget>> {
         .unwrap_or_default()
 }
 
-/// Stub Widget — placeholder для variants, чьи impl ещё не написаны
-/// (Phase 3: вытесняется match-arms по мере роста кластеров T2–T7).
-struct Stub(&'static str);
-impl Widget for Stub {
-    fn id(&self) -> &'static str {
-        self.0
-    }
-    fn render(&self, _ctx: &RenderContext<'_>) -> Option<String> {
-        None
-    }
-}
-
 fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
     match cfg {
         WidgetConfig::Model { .. } => Box::new(model::Model),
@@ -76,7 +65,6 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
             params: params.clone(),
         }),
 
-        // Phase 3 stubs — заменяются на реальные impl в T3–T7:
         // Phase 3 — Task 3 (trivial cluster):
         WidgetConfig::Version => Box::new(trivial::Version),
         WidgetConfig::ClaudeSessionId => Box::new(trivial::ClaudeSessionId),
@@ -102,6 +90,9 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::WorktreeName => Box::new(worktree::WorktreeName),
         WidgetConfig::WorktreeBranch => Box::new(worktree::WorktreeBranch),
         WidgetConfig::WorktreeOriginalBranch => Box::new(worktree::WorktreeOriginalBranch),
-        WidgetConfig::CustomCommand { .. } => Box::new(Stub("CustomCommand")),
+        // Phase 3 — Task 7 (custom-command):
+        WidgetConfig::CustomCommand { params } => Box::new(custom_command::CustomCommand {
+            params: params.clone(),
+        }),
     }
 }
