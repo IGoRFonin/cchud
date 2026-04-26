@@ -33,8 +33,7 @@ fn read_settings(home: &TempDir) -> serde_json::Value {
 fn cchud_install(home: &TempDir, extra_args: &[&str]) -> std::process::Output {
     Command::cargo_bin("cchud")
         .unwrap()
-        .env("HOME", home.path())
-        .env("USERPROFILE", home.path())
+        .env("CCHUD_SETTINGS", settings_path(home))
         .arg("install")
         .args(extra_args)
         .output()

@@ -54,6 +54,9 @@ pub fn run(args: &[String]) -> ExitCode {
 }
 
 fn settings_path() -> PathBuf {
+    if let Ok(p) = std::env::var("CCHUD_SETTINGS") {
+        return PathBuf::from(p);
+    }
     dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join(".claude/settings.json")
