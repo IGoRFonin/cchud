@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "cchud"
-version = "0.0.1"
+version = "0.1.0-alpha"
 dependencies = [
  "anstream",
  "anstyle",

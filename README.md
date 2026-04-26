@@ -2,7 +2,7 @@
 
 > Fast Rust statusline for Claude Code CLI — drop-in port of [ccstatusline](https://github.com/sirmalloc/ccstatusline) targeting < 5 ms cold-start and < 5 MB RSS.
 
-**Status:** WIP — Phase 1 (skeleton + CI). Not yet usable. See [`plan/README.md`](plan/README.md) for roadmap.
+**Status:** 0.1.0-alpha — 24 of 60 upstream widgets supported (Phase 2 `model` + Phase 3 MVP cluster). Plain renderer; Powerline lands in Phase 4. See [`plan/README.md`](plan/README.md) for roadmap.
 
 ## What
 
@@ -21,7 +21,42 @@ Claude Code invokes the statusline up to 3 times per second. For 4 parallel sess
 
 ## Status
 
-This is a Phase 1 skeleton: project scaffolding, CI matrix on macOS + Ubuntu + Windows, snapshot-test harness over Phase 0 payload fixtures. The binary currently prints `cchud (skeleton) | input bytes: N` — no widgets, no rendering. Real pipeline lands in Phase 2.
+Alpha release: 24 widgets working end-to-end in Claude Code. Plain renderer (single line, ` | ` separator). Powerline visual parity is Phase 4; full `ccstatusline` widget set lands across Phases 5–7.
+
+## Supported widgets (24 / 60)
+
+| Source | Widgets |
+|---|---|
+| Payload (fast) | `model`, `version`, `claude-session-id`, `terminal-width`, `output-style`, `vim-mode`, `session-name`, `session-clock`, `session-cost`, `context-length`, `context-percentage`, `context-percentage-usable`, `context-bar`, `tokens-input`, `tokens-output`, `worktree`, `worktree-mode`, `worktree-name`, `worktree-branch`, `worktree-original-branch` |
+| Static (config) | `custom-text`, `custom-symbol`, `link` |
+| Subprocess | `custom-command` (argv-style, configurable timeout, default 200ms) |
+
+See [`docs/widgets.md`](docs/widgets.md) for the full 60-widget roadmap.
+
+## Configure
+
+`cchud install` wires cchud into `~/.claude/settings.json` as `statusLine.command`. Widget list lives in a **separate** file: `~/.config/cchud/settings.json` (auto-created with defaults on first run):
+
+```json
+{
+  "version": 1,
+  "lines": [{
+    "widgets": [
+      {"type": "model"},
+      {"type": "session-cost"},
+      {"type": "context-percentage"},
+      {"type": "context-bar", "width": 10},
+      {"type": "worktree-name"},
+      {"type": "vim-mode"}
+    ]
+  }],
+  "theme": {}
+}
+```
+
+### CustomCommand security
+
+`custom-command` spawns the configured binary argv-style (no shell). It **inherits the parent process env**, so any `API_KEY` / secret in your shell is visible to the subprocess. Phase 7 will add opt-in env-allowlist + sandboxing.
 
 ## Documents
 

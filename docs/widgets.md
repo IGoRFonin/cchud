@@ -16,32 +16,32 @@
 
 | Name | Phase | Source | Complexity | Status | Note |
 |---|---|---|---|---|---|
-| `model` | 2 | payload | low | TODO | sentinel — первый виджет |
+| `model` | 2 | payload | low | DONE | sentinel — первый виджет |
 | `separator` | 2 | static | low | TODO | встроенный, не файл-виджет |
-| `output-style` | 3 | payload | low | TODO | |
-| `context-length` | 3 | payload | low | TODO | |
-| `context-percentage` | 3 | payload | low | TODO | |
-| `context-percentage-usable` | 3 | payload | mid | TODO | требует model context size table |
-| `context-bar` | 3 | payload | low | TODO | ASCII bar из used_percentage |
-| `session-clock` | 3 | payload | low | TODO | total_duration_ms |
-| `session-cost` | 3 | payload | low | TODO | total_cost_usd |
-| `session-name` | 3 | payload | low | TODO | из transcript_path basename |
-| `version` | 3 | payload | low | TODO | CC version string |
-| `vim-mode` | 3 | payload | low | TODO | context.data.vim.mode |
-| `tokens-input` | 3 | payload | low | TODO | current_usage.input_tokens |
-| `tokens-output` | 3 | payload | low | TODO | current_usage.output_tokens |
+| `output-style` | 3 | payload | low | DONE | |
+| `context-length` | 3 | payload | low | DONE | |
+| `context-percentage` | 3 | payload | low | DONE | |
+| `context-percentage-usable` | 3 | payload | mid | DONE | требует model context size table |
+| `context-bar` | 3 | payload | low | DONE | ASCII bar из used_percentage |
+| `session-clock` | 3 | payload | low | DONE | total_duration_ms |
+| `session-cost` | 3 | payload | low | DONE | total_cost_usd |
+| `session-name` | 3 | payload | low | DONE | из transcript_path basename |
+| `version` | 3 | payload | low | DONE | CC version string |
+| `vim-mode` | 3 | payload | low | DONE | context.data.vim.mode |
+| `tokens-input` | 3 | payload | low | DONE | current_usage.input_tokens |
+| `tokens-output` | 3 | payload | low | DONE | current_usage.output_tokens |
 | `thinking-effort` | 3 | payload | mid | TODO | читает transcript файл |
-| `worktree` | 3 | payload | low | TODO | data.worktree объект |
-| `worktree-mode` | 3 | payload | low | TODO | data.worktree != null |
-| `worktree-name` | 3 | payload | low | TODO | data.worktree.name |
-| `worktree-branch` | 3 | payload | low | TODO | data.worktree.branch |
-| `worktree-original-branch` | 3 | payload | low | TODO | data.worktree.original_branch |
-| `claude-session-id` | 3 | payload | low | TODO | data.session_id |
-| `terminal-width` | 3 | env | low | TODO | terminalWidth / COLUMNS env |
-| `custom-text` | 3 | static | low | TODO | item.customText |
-| `custom-symbol` | 3 | static | low | TODO | item.customSymbol |
-| `custom-command` | 3 | static | mid | TODO | exec shell command |
-| `link` | 3 | static | low | TODO | hyperlink escape seq |
+| `worktree` | 3 | payload | low | DONE | data.worktree объект |
+| `worktree-mode` | 3 | payload | low | DONE | data.worktree != null |
+| `worktree-name` | 3 | payload | low | DONE | data.worktree.name |
+| `worktree-branch` | 3 | payload | low | DONE | data.worktree.branch |
+| `worktree-original-branch` | 3 | payload | low | DONE | data.worktree.original_branch |
+| `claude-session-id` | 3 | payload | low | DONE | data.session_id |
+| `terminal-width` | 3 | env | low | DONE | terminalWidth / COLUMNS env |
+| `custom-text` | 3 | static | low | DONE | item.customText |
+| `custom-symbol` | 3 | static | low | DONE | item.customSymbol |
+| `custom-command` | 3 | static | mid | DONE | exec shell command |
+| `link` | 3 | static | low | DONE | hyperlink escape seq |
 | `git-branch` | 5 | git | mid | TODO | gix: HEAD branch name |
 | `git-changes` | 5 | git | mid | TODO | gix: changed file count |
 | `git-insertions` | 5 | git | mid | TODO | gix: diff insertions |

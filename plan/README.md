@@ -84,8 +84,8 @@
 - [x] Фаза 0 — Проверки
 - [x] Фаза 1 — Init
 - [x] Фаза 2 — Pipeline
-- [~] Фаза 3 — MVP (next)
-- [ ] Фаза 4 — Powerline
+- [x] Фаза 3 — MVP
+- [~] Фаза 4 — Powerline (next)
 - [ ] Фаза 5 — Git widgets
 - [ ] Фаза 6 — Transcript
 - [ ] Фаза 7 — Остальные виджеты

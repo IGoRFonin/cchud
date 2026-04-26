@@ -4,9 +4,9 @@
 
 ## Тестовая сессия
 
-- **Дата:** TBD (проставить при выполнении)
+- **Дата:** 2026-04-27
 - **Версия cchud:** 0.1.0-alpha (`cchud --version`)
-- **Версия Claude Code:** TBD (`claude --version`)
+- **Версия Claude Code:** 2.1.119
 - **OS / arch:** macOS 24.x / arm64 (M-серия)
 
 ## Сценарий
@@ -26,27 +26,27 @@
 
 ## Наблюдения
 
-- [ ] Statusline рендерится без артефактов
-- [ ] Worktree-name и Worktree-branch показывают правильные значения
-- [ ] Vim mode переключается NORMAL ⟷ INSERT при `i` / `Esc`
-- [ ] SessionCost растёт по мере работы
-- [ ] SessionClock тикает (HH:MM:SS / MM:SS форматы)
-- [ ] ContextPercentage обновляется
-- [ ] ContextBar заполняется пропорционально
-- [ ] CustomCommand "echo phase-3" печатает "phase-3"
-- [ ] Лагов на UI Claude Code нет
-- [ ] Stderr CC чист от `cchud:` warning'ов
+- [x] Statusline рендерится без артефактов
+- [x] Worktree-name и Worktree-branch показывают правильные значения
+- [x] Vim mode переключается NORMAL ⟷ INSERT при `i` / `Esc`
+- [x] SessionCost растёт по мере работы
+- [x] SessionClock тикает (HH:MM:SS / MM:SS форматы)
+- [x] ContextPercentage обновляется
+- [x] ContextBar заполняется пропорционально
+- [x] CustomCommand "echo phase-3" печатает "phase-3"
+- [x] Лагов на UI Claude Code нет
+- [x] Stderr CC чист от `cchud:` warning'ов
 
 ## Метрики
 
-- p95 cchud render time (из `hyperfine` Task 8): TBD ms
-- Binary size (`ls -lh target/release/cchud`): TBD MB
+- p95 cchud render time (из `hyperfine` Task 8): < 5 ms (gate passed в T8)
+- Binary size (`ls -lh target/release/cchud`): 589 KB
 
 ## Замечания / отклонения от ожиданий
 
-(Сюда — любые сюрпризы: payload поля в реальном CC отличаются от наших synthetic, отсутствуют ожидаемые виджеты, и т.п. Дата + описание.)
+- 2026-04-27: Конфиг виджетов находится в `~/.config/cchud/settings.json` (не в блоке `cchud` внутри `~/.claude/settings.json` — документация исправлена).
 
 ## Sign-off
 
-- [ ] Все 10 чекбоксов выше отмечены
-- [ ] manual-test-log.md committed в `plan/phase-3/`
+- [x] Все 10 чекбоксов выше отмечены
+- [x] manual-test-log.md committed в `plan/phase-3/`
