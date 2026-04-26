@@ -13,3 +13,6 @@ bench-results.md
 # Local env
 .env
 .env.local
+
+# Claude Code local settings (private)
+.claude/
