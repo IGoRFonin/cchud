@@ -11,6 +11,7 @@
 
 pub mod context;
 pub mod custom_command;
+pub mod git_head;
 pub mod model;
 pub mod session;
 pub mod static_text;
@@ -163,5 +164,10 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::CustomCommand { params } => Box::new(custom_command::CustomCommand {
             params: params.clone(),
         }),
+
+        // Phase 5 — Task 2 (head cluster):
+        WidgetConfig::GitBranch => Box::new(git_head::GitBranch),
+        WidgetConfig::GitSha => Box::new(git_head::GitSha),
+        WidgetConfig::GitRootDir => Box::new(git_head::GitRootDir),
     }
 }

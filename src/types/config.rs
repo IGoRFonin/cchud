@@ -73,6 +73,11 @@ pub enum WidgetConfig {
         #[serde(flatten, default)]
         params: ContextBarParams,
     },
+
+    // Phase 5 — Task 2 (head cluster):
+    GitBranch,
+    GitSha,
+    GitRootDir,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -290,6 +295,19 @@ mod tests {
     fn theme_config_rejects_unknown_kind() {
         let json = r#"{"theme": {"kind": "rainbow"}}"#;
         assert!(serde_json::from_str::<Settings>(json).is_err());
+    }
+
+    #[test]
+    fn parses_phase5_head_widgets() {
+        let json = r#"[
+            { "type": "git-branch" },
+            { "type": "git-sha" },
+            { "type": "git-root-dir" }
+        ]"#;
+        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0], WidgetConfig::GitBranch));
+        assert!(matches!(widgets[1], WidgetConfig::GitSha));
+        assert!(matches!(widgets[2], WidgetConfig::GitRootDir));
     }
 
     #[test]
