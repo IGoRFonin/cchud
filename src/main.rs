@@ -15,7 +15,7 @@ mod widgets;
 
 use std::process::ExitCode;
 
-use crate::render::{Plain, Renderer};
+use crate::render::{Renderer, Segment};
 use crate::types::payload::StatusPayload;
 use crate::widgets::{RenderContext, build_widgets};
 
@@ -65,10 +65,17 @@ fn render_pipeline() -> ExitCode {
     let settings = config::load();
     let ctx = RenderContext::new(&payload, &settings);
     let widgets = build_widgets(&settings);
-    let segments: Vec<String> = widgets.iter().filter_map(|w| w.render(&ctx)).collect();
-    let renderer = Plain {
-        separator: " | ".into(),
-    };
+    let segments: Vec<Segment> = widgets
+        .iter()
+        .filter_map(|w| {
+            w.render(&ctx).map(|text| Segment {
+                text,
+                style: w.default_style(),
+                hyperlink: None,
+            })
+        })
+        .collect();
+    let renderer = Renderer::from_settings(&settings);
     println!("{}", renderer.render(&segments));
     ExitCode::SUCCESS
 }
