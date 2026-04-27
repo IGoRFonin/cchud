@@ -14,6 +14,7 @@ pub mod custom_command;
 pub mod git_diff;
 pub mod git_head;
 pub mod git_status;
+pub mod git_tracking;
 pub mod model;
 pub mod session;
 pub mod static_text;
@@ -181,5 +182,7 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         // Phase 5 — Task 4 (diff stat):
         WidgetConfig::GitInsertions => Box::new(git_diff::GitInsertions),
         WidgetConfig::GitDeletions => Box::new(git_diff::GitDeletions),
+        // Phase 5 — Task 5 (tracking):
+        WidgetConfig::GitAheadBehind => Box::new(git_tracking::GitAheadBehind),
     }
 }

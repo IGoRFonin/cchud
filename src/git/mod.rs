@@ -120,6 +120,16 @@ impl GitInfo {
             .as_ref()
     }
 
+    /// Lazy: ahead/behind против upstream. None если нет upstream или detached HEAD.
+    pub fn tracking(&self) -> Option<&Tracking> {
+        self.tracking
+            .get_or_init(|| {
+                let cwd = self.repo.workdir()?;
+                compute_tracking_shell(cwd)
+            })
+            .as_ref()
+    }
+
     /// Lazy: diff stat между HEAD и working tree (staged + unstaged). None если
     /// unborn HEAD или `workdir()` недоступен. Вызывается только из
     /// `GitInsertions`/`GitDeletions` — нулевая стоимость без этих виджетов.
@@ -131,6 +141,26 @@ impl GitInfo {
             })
             .as_ref()
     }
+}
+
+fn compute_tracking_shell(cwd: &std::path::Path) -> Option<Tracking> {
+    use std::process::Command;
+    let out = Command::new("git")
+        .current_dir(cwd)
+        .args(["rev-list", "--left-right", "--count", "@{upstream}...HEAD"])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let s = String::from_utf8_lossy(&out.stdout);
+    let parts: Vec<&str> = s.split_whitespace().collect();
+    if parts.len() != 2 {
+        return None;
+    }
+    let behind: u32 = parts[0].parse().ok()?;
+    let ahead: u32 = parts[1].parse().ok()?;
+    Some(Tracking { ahead, behind })
 }
 
 fn compute_diff_stat_shell(cwd: &std::path::Path) -> Option<DiffStat> {
@@ -410,6 +440,47 @@ mod tests {
         let d = info.diff_stat().unwrap();
         assert_eq!(d.deletions, 2);
         assert_eq!(d.insertions, 0);
+    }
+
+    #[test]
+    fn tracking_none_without_upstream() {
+        let f = GitFixture::new();
+        let info = GitInfo::discover(f.path()).unwrap();
+        assert!(info.tracking().is_none());
+    }
+
+    #[test]
+    fn tracking_zero_when_in_sync() {
+        let f = GitFixture::new();
+        let bare = tempfile::tempdir().unwrap();
+        let bare_path = bare.path().to_str().unwrap();
+        f.git(&["init", "--bare", bare_path]);
+        f.add_remote("origin", bare_path);
+        f.git(&["push", "-u", "origin", "main"]);
+
+        let info = GitInfo::discover(f.path()).unwrap();
+        let t = info.tracking().expect("must have tracking");
+        assert_eq!(t.ahead, 0);
+        assert_eq!(t.behind, 0);
+    }
+
+    #[test]
+    fn tracking_ahead_after_local_commit() {
+        let f = GitFixture::new();
+        let bare = tempfile::tempdir().unwrap();
+        let bare_path = bare.path().to_str().unwrap();
+        f.git(&["init", "--bare", bare_path]);
+        f.add_remote("origin", bare_path);
+        f.git(&["push", "-u", "origin", "main"]);
+
+        f.write_file("a.txt", "x");
+        f.git(&["add", "a.txt"]);
+        f.commit("c2");
+
+        let info = GitInfo::discover(f.path()).unwrap();
+        let t = info.tracking().unwrap();
+        assert_eq!(t.ahead, 1);
+        assert_eq!(t.behind, 0);
     }
 
     #[test]

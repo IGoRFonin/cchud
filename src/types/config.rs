@@ -88,6 +88,8 @@ pub enum WidgetConfig {
     // Phase 5 — Task 4 (diff stat):
     GitInsertions,
     GitDeletions,
+    // Phase 5 — Task 5 (tracking):
+    GitAheadBehind,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -344,6 +346,13 @@ mod tests {
         assert_eq!(widgets.len(), 6);
         assert!(matches!(widgets[0], WidgetConfig::GitStatus));
         assert!(matches!(widgets[5], WidgetConfig::GitConflicts));
+    }
+
+    #[test]
+    fn parses_phase5_tracking_widget() {
+        let json = r#"[{ "type": "git-ahead-behind" }]"#;
+        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0], WidgetConfig::GitAheadBehind));
     }
 
     #[test]
