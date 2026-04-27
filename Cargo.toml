@@ -33,12 +33,15 @@ supports-hyperlinks = "3"
 wait-timeout = "0.2"
 
 # Phase 5 — git via gix (pure Rust, no libgit2 system dep).
-# Pinned to exact version: gix has frequent minor breaking changes;
-# bumping is a deliberate PR with smoke-тест.
 gix = { version = "=0.81.0", default-features = false, features = ["max-performance-safe", "sha1", "status"] }
 
-# Lazy для виджетов (добавятся в фазах 6-7)
-# sonic-rs, ureq, bincode, ratatui, crossterm — позже
+# Phase 5 — Task 7: GitPr HTTP + cache.
+# ureq sync HTTP (no async runtime); rustls-tls (pure Rust).
+ureq = { version = "2", default-features = false, features = ["json", "tls", "gzip"] }
+bincode = "1"
+
+# Lazy для виджетов (добавятся в фазе 6)
+# sonic-rs, ratatui, crossterm — позже
 
 [dev-dependencies]
 insta = { version = "1", features = ["json", "glob"] }
@@ -46,6 +49,8 @@ assert_cmd = "2"
 predicates = "3"
 serial_test = "3"
 tempfile = "3"
+# Phase 5 T7: HTTP mock for GitPr.
+mockito = "1"
 
 [profile.release]
 lto = true

@@ -13,6 +13,7 @@ pub mod context;
 pub mod custom_command;
 pub mod git_diff;
 pub mod git_head;
+pub mod git_pr;
 pub mod git_remote;
 pub mod git_status;
 pub mod git_tracking;
@@ -193,5 +194,7 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::GitUpstreamRepo => Box::new(git_remote::GitUpstreamRepo),
         WidgetConfig::GitUpstreamOwnerRepo => Box::new(git_remote::GitUpstreamOwnerRepo),
         WidgetConfig::GitIsFork => Box::new(git_remote::GitIsFork),
+        // Phase 5 — Task 7 (PR):
+        WidgetConfig::GitPr => Box::new(git_pr::GitPr),
     }
 }

@@ -19,6 +19,7 @@ use std::path::{Path, PathBuf};
 
 #[cfg(test)]
 pub mod fixture;
+pub mod pr;
 pub mod remote;
 
 /// Главная git-структура, переиспользуемая всеми Phase 5 виджетами.

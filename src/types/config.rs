@@ -98,6 +98,8 @@ pub enum WidgetConfig {
     GitUpstreamRepo,
     GitUpstreamOwnerRepo,
     GitIsFork,
+    // Phase 5 — Task 7 (PR):
+    GitPr,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -372,6 +374,13 @@ mod tests {
         let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
         assert!(matches!(widgets[0], WidgetConfig::GitInsertions));
         assert!(matches!(widgets[1], WidgetConfig::GitDeletions));
+    }
+
+    #[test]
+    fn parses_phase5_pr_widget() {
+        let json = r#"[{ "type": "git-pr" }]"#;
+        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0], WidgetConfig::GitPr));
     }
 
     #[test]
