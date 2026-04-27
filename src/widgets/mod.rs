@@ -11,6 +11,7 @@
 
 pub mod context;
 pub mod custom_command;
+pub mod git_diff;
 pub mod git_head;
 pub mod git_status;
 pub mod model;
@@ -177,5 +178,8 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::GitUnstaged => Box::new(git_status::GitUnstaged),
         WidgetConfig::GitUntracked => Box::new(git_status::GitUntracked),
         WidgetConfig::GitConflicts => Box::new(git_status::GitConflicts),
+        // Phase 5 — Task 4 (diff stat):
+        WidgetConfig::GitInsertions => Box::new(git_diff::GitInsertions),
+        WidgetConfig::GitDeletions => Box::new(git_diff::GitDeletions),
     }
 }

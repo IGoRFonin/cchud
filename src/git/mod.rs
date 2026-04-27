@@ -119,6 +119,48 @@ impl GitInfo {
             .get_or_init(|| compute_status(&self.repo))
             .as_ref()
     }
+
+    /// Lazy: diff stat между HEAD и working tree (staged + unstaged). None если
+    /// unborn HEAD или `workdir()` недоступен. Вызывается только из
+    /// `GitInsertions`/`GitDeletions` — нулевая стоимость без этих виджетов.
+    pub fn diff_stat(&self) -> Option<&DiffStat> {
+        self.diff_stat
+            .get_or_init(|| {
+                let work_dir = self.repo.workdir()?;
+                compute_diff_stat_shell(work_dir)
+            })
+            .as_ref()
+    }
+}
+
+fn compute_diff_stat_shell(cwd: &std::path::Path) -> Option<DiffStat> {
+    use std::process::Command;
+    let out = Command::new("git")
+        .current_dir(cwd)
+        .env("LANG", "C")
+        .args(["diff", "--shortstat", "HEAD"])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let s = String::from_utf8_lossy(&out.stdout);
+    let mut stat = DiffStat::default();
+    for part in s.split(',') {
+        let part = part.trim();
+        if let Some(n) = part
+            .strip_suffix(" insertions(+)")
+            .or_else(|| part.strip_suffix(" insertion(+)"))
+        {
+            stat.insertions = n.trim().parse().unwrap_or(0);
+        } else if let Some(n) = part
+            .strip_suffix(" deletions(-)")
+            .or_else(|| part.strip_suffix(" deletion(-)"))
+        {
+            stat.deletions = n.trim().parse().unwrap_or(0);
+        }
+    }
+    Some(stat)
 }
 
 fn compute_status(repo: &gix::Repository) -> Option<GitStatusCounts> {
@@ -332,6 +374,55 @@ mod tests {
         let first = info.status_counts().unwrap().total();
         f.write_file("new2.txt", "y");
         let second = info.status_counts().unwrap().total();
+        assert_eq!(first, second, "OnceCell must NOT re-compute");
+    }
+
+    #[test]
+    fn diff_stat_zero_for_clean_repo() {
+        let f = GitFixture::new();
+        let info = GitInfo::discover(f.path()).unwrap();
+        let d = info.diff_stat().expect("must compute");
+        assert_eq!(d.insertions, 0);
+        assert_eq!(d.deletions, 0);
+    }
+
+    #[test]
+    fn diff_stat_counts_unstaged_insertions() {
+        let f = GitFixture::new();
+        f.write_file("a.txt", "line1\nline2\n");
+        f.git(&["add", "a.txt"]);
+        f.commit("c2");
+        f.write_file("a.txt", "line1\nline2\nline3\nline4\n");
+        let info = GitInfo::discover(f.path()).unwrap();
+        let d = info.diff_stat().unwrap();
+        assert_eq!(d.insertions, 2, "expected +2 lines");
+        assert_eq!(d.deletions, 0);
+    }
+
+    #[test]
+    fn diff_stat_counts_unstaged_deletions() {
+        let f = GitFixture::new();
+        f.write_file("a.txt", "1\n2\n3\n");
+        f.git(&["add", "a.txt"]);
+        f.commit("c2");
+        f.write_file("a.txt", "1\n");
+        let info = GitInfo::discover(f.path()).unwrap();
+        let d = info.diff_stat().unwrap();
+        assert_eq!(d.deletions, 2);
+        assert_eq!(d.insertions, 0);
+    }
+
+    #[test]
+    fn diff_stat_cached() {
+        let f = GitFixture::new();
+        f.write_file("a.txt", "1\n");
+        f.git(&["add", "a.txt"]);
+        f.commit("c2");
+        f.write_file("a.txt", "1\n2\n");
+        let info = GitInfo::discover(f.path()).unwrap();
+        let first = info.diff_stat().unwrap().insertions;
+        f.write_file("a.txt", "1\n2\n3\n");
+        let second = info.diff_stat().unwrap().insertions;
         assert_eq!(first, second, "OnceCell must NOT re-compute");
     }
 }

@@ -85,6 +85,9 @@ pub enum WidgetConfig {
     GitUnstaged,
     GitUntracked,
     GitConflicts,
+    // Phase 5 — Task 4 (diff stat):
+    GitInsertions,
+    GitDeletions,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -341,5 +344,16 @@ mod tests {
         assert_eq!(widgets.len(), 6);
         assert!(matches!(widgets[0], WidgetConfig::GitStatus));
         assert!(matches!(widgets[5], WidgetConfig::GitConflicts));
+    }
+
+    #[test]
+    fn parses_phase5_diff_widgets() {
+        let json = r#"[
+            { "type": "git-insertions" },
+            { "type": "git-deletions" }
+        ]"#;
+        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0], WidgetConfig::GitInsertions));
+        assert!(matches!(widgets[1], WidgetConfig::GitDeletions));
     }
 }
