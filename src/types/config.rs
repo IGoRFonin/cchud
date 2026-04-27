@@ -117,9 +117,35 @@ const fn default_context_bar_width() -> u32 {
     10
 }
 
-/// Empty in Phase 2. Phase 4 will populate (`powerline_colors`, `separator_override`, ...).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct ThemeConfig {}
+pub struct ThemeConfig {
+    #[serde(default)]
+    pub kind: ThemeKind,
+    /// Built-in theme name. Ignored when `kind != Powerline` or `custom` is set.
+    #[serde(default)]
+    pub theme_name: Option<String>,
+    /// Full custom theme (overrides built-ins). Powerline only.
+    #[serde(default)]
+    pub custom: Option<crate::render::themes::PowerlineTheme>,
+    /// Override separator glyphs (Powerline). First element = primary separator.
+    #[serde(default)]
+    pub separators: Vec<String>,
+    #[serde(default)]
+    pub start_caps: Vec<String>,
+    #[serde(default)]
+    pub end_caps: Vec<String>,
+    /// `None` means auto-detect at runtime.
+    #[serde(default)]
+    pub color_level: Option<crate::render::ColorLevel>,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ThemeKind {
+    #[default]
+    Plain,
+    Powerline,
+}
 
 const fn default_version() -> u32 {
     1
@@ -239,5 +265,37 @@ mod tests {
             WidgetConfig::ContextBar { params } => assert_eq!(params.width, 10),
             other => panic!("expected ContextBar, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn theme_config_default_is_plain_kind() {
+        let s = Settings::default();
+        assert_eq!(s.theme.kind, ThemeKind::Plain);
+        assert!(s.theme.custom.is_none());
+        assert!(s.theme.color_level.is_none());
+    }
+
+    #[test]
+    fn theme_config_parses_powerline_with_name() {
+        let json = r#"{
+            "lines": [],
+            "theme": {"kind": "powerline", "theme_name": "dracula"}
+        }"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        assert_eq!(s.theme.kind, ThemeKind::Powerline);
+        assert_eq!(s.theme.theme_name.as_deref(), Some("dracula"));
+    }
+
+    #[test]
+    fn theme_config_rejects_unknown_kind() {
+        let json = r#"{"theme": {"kind": "rainbow"}}"#;
+        assert!(serde_json::from_str::<Settings>(json).is_err());
+    }
+
+    #[test]
+    fn theme_config_parses_color_level_override() {
+        let json = r#"{"theme": {"color_level": "true-color"}}"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        assert_eq!(s.theme.color_level, Some(crate::render::ColorLevel::TrueColor));
     }
 }

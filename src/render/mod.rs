@@ -14,7 +14,8 @@ pub enum Color {
     Ansi256(u8),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum ColorLevel {
     #[default]
     None,
@@ -156,15 +157,42 @@ pub enum Renderer {
 impl Renderer {
     #[must_use]
     pub fn from_settings(settings: &Settings) -> Self {
-        // Phase 4 Task 11 expands this to honour theme.kind / theme_name / custom.
-        // Until then, always return Plain to keep main.rs compiling.
-        let level = ColorLevel::detect();
-        let _ = settings;
-        Self::Plain(plain::Plain {
-            separator: " | ".into(),
-            level,
-            hyperlinks: hyperlink::supports_hyperlinks_detect(),
-        })
+        use crate::types::config::ThemeKind;
+
+        let level = settings
+            .theme
+            .color_level
+            .unwrap_or_else(ColorLevel::detect);
+        let hyperlinks = level != ColorLevel::None && hyperlink::supports_hyperlinks_detect();
+
+        match settings.theme.kind {
+            ThemeKind::Plain => Self::Plain(plain::Plain {
+                separator: " | ".into(),
+                level,
+                hyperlinks,
+            }),
+            ThemeKind::Powerline => {
+                let theme: themes::PowerlineTheme = settings
+                    .theme
+                    .custom
+                    .clone()
+                    .or_else(|| {
+                        settings
+                            .theme
+                            .theme_name
+                            .as_deref()
+                            .and_then(themes::lookup)
+                            .map(Into::into)
+                    })
+                    .unwrap_or_else(|| (&themes::DEFAULT).into());
+
+                let mut p = powerline::Powerline::new(theme, level, hyperlinks);
+                if let Some(sep) = settings.theme.separators.first().and_then(|s| s.chars().next()) {
+                    p.separator_left = sep;
+                }
+                Self::Powerline(p)
+            }
+        }
     }
 
     #[must_use]
@@ -196,6 +224,25 @@ mod renderer_tests {
             hyperlinks: false,
         });
         assert_eq!(r.render(&[Segment::plain("a"), Segment::plain("b")]), "a, b");
+    }
+
+    #[test]
+    fn from_settings_returns_powerline_when_kind_is_powerline() {
+        let json = r#"{"theme": {"kind": "powerline", "theme_name": "dracula"}}"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        let r = Renderer::from_settings(&s);
+        assert!(matches!(r, Renderer::Powerline(_)));
+    }
+
+    #[test]
+    fn powerline_falls_back_to_default_for_unknown_theme_name() {
+        let json = r#"{"theme": {"kind": "powerline", "theme_name": "nope"}}"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        let r = Renderer::from_settings(&s);
+        match r {
+            Renderer::Powerline(p) => assert_eq!(p.theme.name, "default"),
+            other => panic!("expected powerline, got {other:?}"),
+        }
     }
 }
 
