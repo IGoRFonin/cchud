@@ -19,6 +19,7 @@ use std::path::{Path, PathBuf};
 
 #[cfg(test)]
 pub mod fixture;
+pub mod remote;
 
 /// Главная git-структура, переиспользуемая всеми Phase 5 виджетами.
 #[allow(dead_code)]
@@ -257,12 +258,14 @@ fn parse_remotes(repo: &gix::Repository) -> HashMap<String, RemoteInfo> {
             continue;
         };
         let url_str = url.to_bstring().to_string();
+        let (owner, repo) =
+            remote::parse_url(&url_str).map_or((None, None), |(o, r)| (Some(o), Some(r)));
         out.insert(
             name.to_string(),
             RemoteInfo {
                 url: url_str,
-                owner: None,
-                repo: None,
+                owner,
+                repo,
             },
         );
     }
@@ -339,8 +342,11 @@ mod tests {
             info.remotes.get("upstream").unwrap().url,
             "https://github.com/baz/bar.git"
         );
-        // T6 заполнит owner/repo.
-        assert!(info.remotes.get("origin").unwrap().owner.is_none());
+        // T6 заполняет owner/repo через parse_url.
+        assert_eq!(
+            info.remotes.get("origin").unwrap().owner.as_deref(),
+            Some("foo")
+        );
     }
 
     #[test]

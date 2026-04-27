@@ -13,6 +13,7 @@ pub mod context;
 pub mod custom_command;
 pub mod git_diff;
 pub mod git_head;
+pub mod git_remote;
 pub mod git_status;
 pub mod git_tracking;
 pub mod model;
@@ -184,5 +185,13 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::GitDeletions => Box::new(git_diff::GitDeletions),
         // Phase 5 — Task 5 (tracking):
         WidgetConfig::GitAheadBehind => Box::new(git_tracking::GitAheadBehind),
+        // Phase 5 — Task 6 (remote):
+        WidgetConfig::GitOriginOwner => Box::new(git_remote::GitOriginOwner),
+        WidgetConfig::GitOriginRepo => Box::new(git_remote::GitOriginRepo),
+        WidgetConfig::GitOriginOwnerRepo => Box::new(git_remote::GitOriginOwnerRepo),
+        WidgetConfig::GitUpstreamOwner => Box::new(git_remote::GitUpstreamOwner),
+        WidgetConfig::GitUpstreamRepo => Box::new(git_remote::GitUpstreamRepo),
+        WidgetConfig::GitUpstreamOwnerRepo => Box::new(git_remote::GitUpstreamOwnerRepo),
+        WidgetConfig::GitIsFork => Box::new(git_remote::GitIsFork),
     }
 }

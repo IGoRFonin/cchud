@@ -90,6 +90,14 @@ pub enum WidgetConfig {
     GitDeletions,
     // Phase 5 — Task 5 (tracking):
     GitAheadBehind,
+    // Phase 5 — Task 6 (remote):
+    GitOriginOwner,
+    GitOriginRepo,
+    GitOriginOwnerRepo,
+    GitUpstreamOwner,
+    GitUpstreamRepo,
+    GitUpstreamOwnerRepo,
+    GitIsFork,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -364,5 +372,21 @@ mod tests {
         let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
         assert!(matches!(widgets[0], WidgetConfig::GitInsertions));
         assert!(matches!(widgets[1], WidgetConfig::GitDeletions));
+    }
+
+    #[test]
+    fn parses_phase5_remote_widgets() {
+        let json = r#"[
+            { "type": "git-origin-owner" },
+            { "type": "git-origin-repo" },
+            { "type": "git-origin-owner-repo" },
+            { "type": "git-upstream-owner" },
+            { "type": "git-upstream-repo" },
+            { "type": "git-upstream-owner-repo" },
+            { "type": "git-is-fork" }
+        ]"#;
+        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        assert_eq!(widgets.len(), 7);
+        assert!(matches!(widgets[6], WidgetConfig::GitIsFork));
     }
 }
