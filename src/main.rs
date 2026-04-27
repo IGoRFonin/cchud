@@ -71,7 +71,7 @@ fn render_pipeline() -> ExitCode {
             w.render(&ctx).map(|text| Segment {
                 text,
                 style: w.default_style(),
-                hyperlink: None,
+                hyperlink: w.hyperlink(&ctx),
             })
         })
         .collect();

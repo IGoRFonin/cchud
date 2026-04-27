@@ -55,13 +55,20 @@ impl Widget for Link {
         if self.params.url.is_empty() {
             return None;
         }
-        let label = self.params.label.as_deref().unwrap_or(&self.params.url);
-        // OSC 8 hyperlink: ESC ] 8 ; ; URL ST  TEXT  ESC ] 8 ; ; ST
-        // ST (string terminator) = ESC \ (0x1b 0x5c).
-        Some(format!(
-            "\x1b]8;;{url}\x1b\\{label}\x1b]8;;\x1b\\",
-            url = self.params.url,
-        ))
+        let label = self
+            .params
+            .label
+            .as_deref()
+            .unwrap_or(&self.params.url)
+            .to_string();
+        if label.is_empty() { None } else { Some(label) }
+    }
+    fn hyperlink(&self, _ctx: &RenderContext<'_>) -> Option<String> {
+        if self.params.url.is_empty() {
+            None
+        } else {
+            Some(self.params.url.clone())
+        }
     }
 }
 
@@ -153,7 +160,7 @@ mod tests {
     }
 
     #[test]
-    fn link_emits_osc8_with_label() {
+    fn link_renders_label_only() {
         let p = empty_payload();
         let s = default_line();
         let ctx = RenderContext::new(&p, &s);
@@ -163,20 +170,12 @@ mod tests {
                 label: Some("Example".into()),
             },
         };
-        let out = w.render(&ctx).unwrap();
-        // Проверяем точные байты OSC 8: ESC ] 8 ; ; URL ESC \ TEXT ESC ] 8 ; ; ESC \
-        assert_eq!(
-            out,
-            "\u{1b}]8;;https://example.com\u{1b}\\Example\u{1b}]8;;\u{1b}\\"
-        );
-        // И семантические проверки:
-        assert!(out.starts_with("\u{1b}]8;;"));
-        assert!(out.contains("Example"));
-        assert!(out.ends_with("\u{1b}]8;;\u{1b}\\"));
+        assert_eq!(w.render(&ctx), Some("Example".into()));
+        assert_eq!(w.hyperlink(&ctx), Some("https://example.com".into()));
     }
 
     #[test]
-    fn link_falls_back_to_url_when_label_absent() {
+    fn link_falls_back_to_url_label_when_label_absent() {
         let p = empty_payload();
         let s = default_line();
         let ctx = RenderContext::new(&p, &s);
@@ -186,12 +185,8 @@ mod tests {
                 label: None,
             },
         };
-        let out = w.render(&ctx).unwrap();
-        // label секция = url
-        assert_eq!(
-            out,
-            "\u{1b}]8;;https://x.com\u{1b}\\https://x.com\u{1b}]8;;\u{1b}\\"
-        );
+        assert_eq!(w.render(&ctx), Some("https://x.com".into()));
+        assert_eq!(w.hyperlink(&ctx), Some("https://x.com".into()));
     }
 
     #[test]

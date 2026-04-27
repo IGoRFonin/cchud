@@ -2,4 +2,4 @@
 source: tests/snapshots.rs
 expression: stdout
 ---
-Sonnet 4.6 | 2.1.119 | acf930ea | default | acf930ea-c916-44f9-a757-0f094f159ee3 | 07:58 | $0.72 | 7461 | 25% | 4% | [███░░░░░░░] | inT: 1 | outT: 232 | demo | ★ | ]8;;https://example.com\Example]8;;\
+Sonnet 4.6 | 2.1.119 | acf930ea | default | acf930ea-c916-44f9-a757-0f094f159ee3 | 07:58 | $0.72 | 7461 | 25% | 4% | [███░░░░░░░] | inT: 1 | outT: 232 | demo | ★ | Example

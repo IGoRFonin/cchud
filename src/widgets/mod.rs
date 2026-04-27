@@ -30,6 +30,10 @@ pub trait Widget: Send + Sync {
     fn default_style(&self) -> crate::render::Style {
         crate::render::Style::none()
     }
+    /// Optional URL to wrap the rendered text in OSC 8. Default: none.
+    fn hyperlink(&self, _ctx: &RenderContext<'_>) -> Option<String> {
+        None
+    }
 }
 
 pub struct RenderContext<'a> {
