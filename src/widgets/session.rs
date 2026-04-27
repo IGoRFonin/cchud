@@ -37,6 +37,10 @@ impl Widget for SessionCost {
         let cost = ctx.payload.cost.as_ref()?.total_cost_usd?;
         Some(format!("${cost:.2}"))
     }
+    fn default_style(&self) -> crate::render::Style {
+        // Green — upstream parity for cost display.
+        crate::render::Style::none().fg(crate::render::Color::Rgb(80, 200, 80))
+    }
 }
 
 pub struct SessionClock;

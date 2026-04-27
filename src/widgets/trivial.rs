@@ -66,6 +66,9 @@ impl Widget for OutputStyle {
             Some(name.to_string())
         }
     }
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none().italic()
+    }
 }
 
 pub struct VimMode;
@@ -81,6 +84,9 @@ impl Widget for VimMode {
         } else {
             Some(mode.to_string())
         }
+    }
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none().bold()
     }
 }
 

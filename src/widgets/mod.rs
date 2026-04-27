@@ -26,6 +26,10 @@ pub trait Widget: Send + Sync {
     #[allow(dead_code)]
     fn id(&self) -> &'static str;
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String>;
+    /// Default upstream style. Themes may override via `widget_styles[id]`.
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none()
+    }
 }
 
 pub struct RenderContext<'a> {
@@ -48,6 +52,48 @@ pub fn build_widgets(settings: &Settings) -> Vec<Box<dyn Widget>> {
         .first()
         .map(|line| line.widgets.iter().map(build_one).collect())
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod default_style_tests {
+    use super::*;
+    use crate::render::Style;
+
+    #[test]
+    fn model_default_style_is_bold() {
+        let s = model::Model.default_style();
+        assert!(s.bold);
+    }
+
+    #[test]
+    fn worktree_default_style_is_dim() {
+        for w in [
+            &worktree::Worktree as &dyn Widget,
+            &worktree::WorktreeMode,
+            &worktree::WorktreeName,
+            &worktree::WorktreeBranch,
+            &worktree::WorktreeOriginalBranch,
+        ] {
+            assert!(w.default_style().dim, "{} should be dim", w.id());
+        }
+    }
+
+    #[test]
+    fn session_cost_has_green_fg() {
+        let s = session::SessionCost.default_style();
+        assert!(s.fg.is_some());
+    }
+
+    #[test]
+    fn unaffected_widgets_use_style_none() {
+        assert_eq!(model::Model.default_style().fg, None); // bold-only, no fg
+        assert_eq!(
+            session::SessionClock.default_style(),
+            Style::none(),
+            "SessionClock has no upstream style"
+        );
+    }
 }
 
 fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {

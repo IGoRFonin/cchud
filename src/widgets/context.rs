@@ -76,6 +76,9 @@ impl Widget for ContextBar {
         let pct = cw.used_percentage?;
         Some(ascii_bar::render(pct, self.params.width))
     }
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none().fg(crate::render::Color::Rgb(80, 200, 220))
+    }
 }
 
 pub struct TokensInput;

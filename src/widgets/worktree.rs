@@ -26,6 +26,9 @@ impl Widget for Worktree {
             Some(name.to_string())
         }
     }
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none().dim()
+    }
 }
 
 pub struct WorktreeMode;
@@ -40,6 +43,9 @@ impl Widget for WorktreeMode {
         } else {
             None
         }
+    }
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none().dim()
     }
 }
 
@@ -57,6 +63,9 @@ impl Widget for WorktreeName {
             Some(name.to_string())
         }
     }
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none().dim()
+    }
 }
 
 pub struct WorktreeBranch;
@@ -73,6 +82,9 @@ impl Widget for WorktreeBranch {
             Some(b.to_string())
         }
     }
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none().dim()
+    }
 }
 
 pub struct WorktreeOriginalBranch;
@@ -88,6 +100,9 @@ impl Widget for WorktreeOriginalBranch {
         } else {
             Some(b.to_string())
         }
+    }
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none().dim()
     }
 }
 

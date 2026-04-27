@@ -17,6 +17,10 @@ impl Widget for Model {
             Some(name.clone())
         }
     }
+
+    fn default_style(&self) -> crate::render::Style {
+        crate::render::Style::none().bold()
+    }
 }
 
 #[cfg(test)]
