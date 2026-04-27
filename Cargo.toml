@@ -35,7 +35,7 @@ wait-timeout = "0.2"
 # Phase 5 — git via gix (pure Rust, no libgit2 system dep).
 # Pinned to exact version: gix has frequent minor breaking changes;
 # bumping is a deliberate PR with smoke-тест.
-gix = { version = "=0.81.0", default-features = false, features = ["max-performance-safe", "sha1"] }
+gix = { version = "=0.81.0", default-features = false, features = ["max-performance-safe", "sha1", "status"] }
 
 # Lazy для виджетов (добавятся в фазах 6-7)
 # sonic-rs, ureq, bincode, ratatui, crossterm — позже

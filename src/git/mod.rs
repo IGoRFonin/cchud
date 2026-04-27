@@ -112,6 +112,53 @@ impl GitInfo {
             tracking: OnceCell::new(),
         })
     }
+
+    /// Lazy: считает status один раз, кэширует. None если gix вернул ошибку.
+    pub fn status_counts(&self) -> Option<&GitStatusCounts> {
+        self.status_counts
+            .get_or_init(|| compute_status(&self.repo))
+            .as_ref()
+    }
+}
+
+fn compute_status(repo: &gix::Repository) -> Option<GitStatusCounts> {
+    use gix::status::plumbing::index_as_worktree::EntryStatus;
+
+    let mut counts = GitStatusCounts::default();
+
+    let iter = repo
+        .status(gix::progress::Discard)
+        .ok()?
+        .into_iter(None::<gix::bstr::BString>)
+        .ok()?;
+
+    for item in iter.flatten() {
+        match item {
+            gix::status::Item::TreeIndex(_) => counts.staged += 1,
+            gix::status::Item::IndexWorktree(gix::status::index_worktree::Item::Modification {
+                status,
+                ..
+            }) => match status {
+                EntryStatus::Change(_) => counts.unstaged += 1,
+                EntryStatus::Conflict { .. } => counts.conflicts += 1,
+                EntryStatus::NeedsUpdate(_) | EntryStatus::IntentToAdd => {}
+            },
+            gix::status::Item::IndexWorktree(
+                gix::status::index_worktree::Item::DirectoryContents { entry, .. },
+            ) => {
+                if matches!(entry.status, gix::dir::entry::Status::Untracked) {
+                    counts.untracked += 1;
+                }
+            }
+            gix::status::Item::IndexWorktree(gix::status::index_worktree::Item::Rewrite {
+                ..
+            }) => {
+                counts.unstaged += 1;
+            }
+        }
+    }
+
+    Some(counts)
 }
 
 fn parse_head(repo: &gix::Repository) -> Head {
@@ -233,5 +280,58 @@ mod tests {
             conflicts: 4,
         };
         assert_eq!(s.total(), 10);
+    }
+
+    #[test]
+    fn status_counts_clean_repo() {
+        let f = GitFixture::new();
+        let info = GitInfo::discover(f.path()).unwrap();
+        let s = info.status_counts().expect("must compute");
+        assert_eq!(s.total(), 0);
+    }
+
+    #[test]
+    fn status_counts_untracked_file() {
+        let f = GitFixture::new();
+        f.write_file("new.txt", "x");
+        let info = GitInfo::discover(f.path()).unwrap();
+        let s = info.status_counts().unwrap();
+        assert_eq!(s.untracked, 1);
+        assert_eq!(s.total(), 1);
+    }
+
+    #[test]
+    fn status_counts_staged_file() {
+        let f = GitFixture::new();
+        f.write_file("a.txt", "1");
+        f.git(&["add", "a.txt"]);
+        let info = GitInfo::discover(f.path()).unwrap();
+        let s = info.status_counts().unwrap();
+        assert_eq!(s.staged, 1);
+        assert_eq!(s.untracked, 0);
+    }
+
+    #[test]
+    fn status_counts_unstaged_modification() {
+        let f = GitFixture::new();
+        f.write_file("a.txt", "1");
+        f.git(&["add", "a.txt"]);
+        f.commit("c2");
+        f.write_file("a.txt", "2");
+        let info = GitInfo::discover(f.path()).unwrap();
+        let s = info.status_counts().unwrap();
+        assert_eq!(s.unstaged, 1);
+        assert_eq!(s.staged, 0);
+    }
+
+    #[test]
+    fn status_counts_cached_after_first_call() {
+        let f = GitFixture::new();
+        f.write_file("new.txt", "x");
+        let info = GitInfo::discover(f.path()).unwrap();
+        let first = info.status_counts().unwrap().total();
+        f.write_file("new2.txt", "y");
+        let second = info.status_counts().unwrap().total();
+        assert_eq!(first, second, "OnceCell must NOT re-compute");
     }
 }

@@ -78,6 +78,13 @@ pub enum WidgetConfig {
     GitBranch,
     GitSha,
     GitRootDir,
+    // Phase 5 — Task 3 (status cluster):
+    GitStatus,
+    GitChanges,
+    GitStaged,
+    GitUnstaged,
+    GitUntracked,
+    GitConflicts,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -318,5 +325,21 @@ mod tests {
             s.theme.color_level,
             Some(crate::render::ColorLevel::TrueColor)
         );
+    }
+
+    #[test]
+    fn parses_phase5_status_widgets() {
+        let json = r#"[
+            { "type": "git-status" },
+            { "type": "git-changes" },
+            { "type": "git-staged" },
+            { "type": "git-unstaged" },
+            { "type": "git-untracked" },
+            { "type": "git-conflicts" }
+        ]"#;
+        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        assert_eq!(widgets.len(), 6);
+        assert!(matches!(widgets[0], WidgetConfig::GitStatus));
+        assert!(matches!(widgets[5], WidgetConfig::GitConflicts));
     }
 }

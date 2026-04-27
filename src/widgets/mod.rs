@@ -12,6 +12,7 @@
 pub mod context;
 pub mod custom_command;
 pub mod git_head;
+pub mod git_status;
 pub mod model;
 pub mod session;
 pub mod static_text;
@@ -169,5 +170,12 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::GitBranch => Box::new(git_head::GitBranch),
         WidgetConfig::GitSha => Box::new(git_head::GitSha),
         WidgetConfig::GitRootDir => Box::new(git_head::GitRootDir),
+        // Phase 5 — Task 3 (status cluster):
+        WidgetConfig::GitStatus => Box::new(git_status::GitStatus),
+        WidgetConfig::GitChanges => Box::new(git_status::GitChanges),
+        WidgetConfig::GitStaged => Box::new(git_status::GitStaged),
+        WidgetConfig::GitUnstaged => Box::new(git_status::GitUnstaged),
+        WidgetConfig::GitUntracked => Box::new(git_status::GitUntracked),
+        WidgetConfig::GitConflicts => Box::new(git_status::GitConflicts),
     }
 }
