@@ -12,10 +12,10 @@ use std::path::PathBuf;
 use tempfile::TempDir;
 
 fn run_with_home_and_payload(home: &PathBuf, payload: &str) -> String {
+    let config_path = home.join(".config/cchud/settings.json");
     let output = Command::cargo_bin("cchud")
         .unwrap()
-        .env("HOME", home)
-        .env("USERPROFILE", home)
+        .env("CCHUD_CONFIG", config_path)
         .write_stdin(payload.to_string())
         .output()
         .unwrap();

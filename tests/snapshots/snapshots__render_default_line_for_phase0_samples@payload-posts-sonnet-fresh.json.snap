@@ -1,6 +1,7 @@
 ---
 source: tests/snapshots.rs
+assertion_line: 62
 expression: stdout
 input_file: benches/samples/payload-posts-sonnet-fresh.json
 ---
-Sonnet 4.6
+Sonnet 4.6 | 176:24:03 | $0.00
