@@ -33,7 +33,6 @@ impl ColorLevel {
     pub fn detect() -> Self {
         if let Ok(forced) = std::env::var("CCHUD_TEST_COLOR_LEVEL") {
             return match forced.as_str() {
-                "none" => Self::None,
                 "ansi256" => Self::Ansi256,
                 "true-color" | "truecolor" => Self::TrueColor,
                 _ => Self::None,
@@ -48,6 +47,7 @@ impl ColorLevel {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Style {
     pub fg: Option<Color>,
     pub bg: Option<Color>,
@@ -142,7 +142,7 @@ impl Style {
     }
 }
 
-fn to_anstyle_color(c: Color) -> anstyle::Color {
+const fn to_anstyle_color(c: Color) -> anstyle::Color {
     match c {
         Color::Rgb(r, g, b) => anstyle::Color::Rgb(anstyle::RgbColor(r, g, b)),
         Color::Ansi256(n) => anstyle::Color::Ansi256(anstyle::Ansi256Color(n)),
@@ -150,9 +150,9 @@ fn to_anstyle_color(c: Color) -> anstyle::Color {
 }
 
 pub mod hyperlink;
-pub mod themes;
 pub mod plain;
 pub mod powerline;
+pub mod themes;
 
 use crate::types::config::Settings;
 
@@ -195,7 +195,12 @@ impl Renderer {
                     .unwrap_or_else(|| (&themes::DEFAULT).into());
 
                 let mut p = powerline::Powerline::new(theme, level, hyperlinks);
-                if let Some(sep) = settings.theme.separators.first().and_then(|s| s.chars().next()) {
+                if let Some(sep) = settings
+                    .theme
+                    .separators
+                    .first()
+                    .and_then(|s| s.chars().next())
+                {
                     p.separator_left = sep;
                 }
                 Self::Powerline(p)
@@ -231,7 +236,10 @@ mod renderer_tests {
             level: ColorLevel::None,
             hyperlinks: false,
         });
-        assert_eq!(r.render(&[Segment::plain("a"), Segment::plain("b")]), "a, b");
+        assert_eq!(
+            r.render(&[Segment::plain("a"), Segment::plain("b")]),
+            "a, b"
+        );
     }
 
     #[test]
@@ -263,6 +271,7 @@ pub struct Segment {
 
 impl Segment {
     #[must_use]
+    #[allow(dead_code)]
     pub fn plain(text: impl Into<String>) -> Self {
         Self {
             text: text.into(),
@@ -272,6 +281,7 @@ impl Segment {
     }
 
     #[must_use]
+    #[allow(dead_code)]
     pub fn styled(text: impl Into<String>, style: Style) -> Self {
         Self {
             text: text.into(),
@@ -315,7 +325,10 @@ mod style_tests {
         let s = Style::none().fg(Color::Rgb(255, 0, 0));
         let out = s.render("x", ColorLevel::TrueColor);
         assert!(out.contains("\x1b["), "expected ANSI escape");
-        assert!(out.contains("38;2;255;0;0"), "expected truecolor fg, got: {out:?}");
+        assert!(
+            out.contains("38;2;255;0;0"),
+            "expected truecolor fg, got: {out:?}"
+        );
         assert!(out.ends_with("\x1b[0m"), "expected reset");
     }
 
@@ -323,14 +336,20 @@ mod style_tests {
     fn ansi256_level_downgrades_rgb() {
         let s = Style::none().fg(Color::Rgb(255, 0, 0));
         let out = s.render("x", ColorLevel::Ansi256);
-        assert!(out.contains("38;5;196"), "expected 256-color red, got: {out:?}");
+        assert!(
+            out.contains("38;5;196"),
+            "expected 256-color red, got: {out:?}"
+        );
     }
 
     #[test]
     fn bold_emits_effect() {
         let s = Style::none().bold();
         let out = s.render("x", ColorLevel::TrueColor);
-        assert!(out.contains("\x1b[1m") || out.contains(";1m"), "got: {out:?}");
+        assert!(
+            out.contains("\x1b[1m") || out.contains(";1m"),
+            "got: {out:?}"
+        );
     }
 
     #[test]

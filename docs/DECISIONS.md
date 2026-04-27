@@ -179,3 +179,30 @@ Phase 6 (Phase 3 не имеет виджета, который её читае�
 number|object), `Worktree`, `VimState`, `OutputStyle` — в
 `src/types/payload.rs`.
 
+---
+
+## D-2026-04-27 — gix vs git2 для Phase 5
+
+**Контекст:** Phase 5 требует читать git state (HEAD, status, diff, remotes, tracking). Два кандидата:
+- `git2` (libgit2 bindings) — зрелый, но требует libgit2 + cmake systemstack, сложности на Windows и в `cargo install`-сценарии.
+- `gix` (pure Rust) — без C зависимостей, быстрый, но API менее стабилен (breaking changes между minor).
+
+**Решение:** `gix = "=0.81.0"`, `default-features = false`, `features = ["max-performance-safe", "sha1"]`.
+
+**Обоснование:**
+1. **Дистрибуция через `cargo install` / npm-loader**: pure Rust → бинарь без рантайм-зависимостей. libgit2 в WASM/musl-сборках доставляет проблем.
+2. **Cold-start budget < 8 ms p95**: gix `discover()` ~100 µs, status ~1-2 ms на репе среднего размера. git2 сопоставим, но имеет startup overhead на загрузке libgit2.so.
+3. **Pin на точную версию**: gix меняет `gix::head::Head` API между minor; обновление gix → отдельный PR со smoke-тестом фикстур из `git::fixture`.
+4. **Фичи**: `default-features = false` исключает worktree/transport/protocol — мы только читаем локальное состояние. `sha1` нужен явно при `default-features = false`.
+
+**Нюанс реализации:** gix-actor 0.40.1 (вышел после gix 0.81.0) мигрировал на winnow 1.0, тогда как gix-object 0.58.0 ещё на winnow 0.7. Cargo.lock пинит `gix-actor = "=0.40.0"` через `cargo update gix-actor --precise 0.40.0`.
+
+**Trade-offs приняты:**
+- Зависимость от ручного bump'а gix. Митигация: CI-бенч на каждом обновлении.
+- Если gix окажется неподходящим (например, регрессии в diff API) — fallback на `git2` остаётся опцией; интерфейс `GitInfo` спрятан за `pub(crate)` `repo: gix::Repository`.
+
+**Альтернативы рассмотрены:**
+- shell-out на `git` CLI: ~2-5 ms на каждый вызов из-за subprocess fork; неприемлемо для 6+ status-виджетов.
+- кастомный read-only git parser: переизобретение, не оправдано.
+
+**Owner:** Igor Fonin

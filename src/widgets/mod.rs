@@ -40,12 +40,31 @@ pub struct RenderContext<'a> {
     pub payload: &'a StatusPayload,
     #[allow(dead_code)]
     pub settings: &'a Settings,
+    /// Phase 5: lazy git discover. None если cwd не git-репо.
+    #[allow(dead_code)]
+    git: std::cell::OnceCell<Option<crate::git::GitInfo>>,
 }
 
 impl<'a> RenderContext<'a> {
     #[must_use]
     pub const fn new(payload: &'a StatusPayload, settings: &'a Settings) -> Self {
-        Self { payload, settings }
+        Self {
+            payload,
+            settings,
+            git: std::cell::OnceCell::new(),
+        }
+    }
+
+    /// Lazy: вызывает `gix::discover(cwd)` максимум один раз. None если
+    /// payload без cwd или cwd вне git-репо.
+    #[allow(dead_code)]
+    pub fn git(&self) -> Option<&crate::git::GitInfo> {
+        self.git
+            .get_or_init(|| {
+                let cwd = self.payload.workspace.current_dir.as_str();
+                crate::git::GitInfo::discover(std::path::Path::new(cwd))
+            })
+            .as_ref()
     }
 }
 

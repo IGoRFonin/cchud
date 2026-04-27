@@ -8,6 +8,7 @@
 
 mod commands;
 mod config;
+mod git;
 mod render;
 mod types;
 mod util;

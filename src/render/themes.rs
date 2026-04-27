@@ -1,8 +1,8 @@
 //! Powerline themes — Phase 4 Task 7.
 //!
-//! 5 hardcoded built-ins as `static BuiltinTheme` (refs only — no LazyLock).
+//! 5 hardcoded built-ins as `static BuiltinTheme` (refs only — no `LazyLock`).
 //! Runtime `PowerlineTheme` is owned (serde-friendly). Lookup converts
-//! BuiltinTheme → PowerlineTheme on demand (5 small Vec allocs per startup).
+//! `BuiltinTheme` → `PowerlineTheme` on demand (5 small Vec allocs per startup).
 //!
 //! Color values mirror upstream `ccstatusline/src/utils/themes/*.ts`.
 
@@ -152,7 +152,13 @@ mod tests {
 
     #[test]
     fn lookup_finds_all_five() {
-        for name in ["default", "dracula", "solarized-dark", "nord", "gruvbox-dark"] {
+        for name in [
+            "default",
+            "dracula",
+            "solarized-dark",
+            "nord",
+            "gruvbox-dark",
+        ] {
             assert!(lookup(name).is_some(), "missing builtin: {name}");
         }
     }
@@ -199,7 +205,11 @@ mod tests {
         // Per spec decision #10/11 — phase 4 keeps widget_styles available but
         // does not populate it for builtins. Custom themes can override.
         for theme in [&DEFAULT, &DRACULA, &SOLARIZED_DARK, &NORD, &GRUVBOX_DARK] {
-            assert!(theme.widget_styles.is_empty(), "{} should not preset widget styles", theme.name);
+            assert!(
+                theme.widget_styles.is_empty(),
+                "{} should not preset widget styles",
+                theme.name
+            );
         }
     }
 }

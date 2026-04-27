@@ -32,8 +32,13 @@ supports-hyperlinks = "3"
 # Phase 3 — CustomCommand subprocess timeout
 wait-timeout = "0.2"
 
-# Lazy для виджетов (добавятся в фазах 3-7)
-# sonic-rs, gix, ureq, bincode, ratatui, crossterm — позже
+# Phase 5 — git via gix (pure Rust, no libgit2 system dep).
+# Pinned to exact version: gix has frequent minor breaking changes;
+# bumping is a deliberate PR with smoke-тест.
+gix = { version = "=0.81.0", default-features = false, features = ["max-performance-safe", "sha1"] }
+
+# Lazy для виджетов (добавятся в фазах 6-7)
+# sonic-rs, ureq, bincode, ratatui, crossterm — позже
 
 [dev-dependencies]
 insta = { version = "1", features = ["json", "glob"] }

@@ -10,6 +10,7 @@
 
 /// Strip CSI + OSC ANSI sequences, return printable text.
 #[must_use]
+#[allow(dead_code)]
 pub fn strip(input: &str) -> String {
     use anstyle_parse::{Parser, Perform};
 
@@ -37,6 +38,7 @@ pub fn strip(input: &str) -> String {
 
 /// Visible width = unicode-width of stripped string.
 #[must_use]
+#[allow(dead_code)]
 pub fn visible_width(input: &str) -> usize {
     use unicode_width::UnicodeWidthStr;
     UnicodeWidthStr::width(strip(input).as_str())

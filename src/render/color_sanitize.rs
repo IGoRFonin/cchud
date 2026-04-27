@@ -12,7 +12,7 @@
 use super::{Color, ColorLevel};
 
 #[must_use]
-pub fn adapt_color(color: Color, level: ColorLevel) -> Option<Color> {
+pub const fn adapt_color(color: Color, level: ColorLevel) -> Option<Color> {
     match (color, level) {
         (_, ColorLevel::None) => None,
         (Color::Rgb(_, _, _), ColorLevel::TrueColor) | (Color::Ansi256(_), _) => Some(color),
@@ -21,6 +21,7 @@ pub fn adapt_color(color: Color, level: ColorLevel) -> Option<Color> {
 }
 
 #[must_use]
+#[allow(clippy::cast_possible_truncation)]
 pub const fn rgb_to_ansi256(r: u8, g: u8, b: u8) -> u8 {
     // Grayscale check: r==g==b → 24-step gray ramp (codes 232..=255).
     if r == g && g == b {
@@ -79,7 +80,7 @@ mod tests {
 
     #[test]
     fn rgb_to_ansi256_grayscale_endpoints() {
-        assert_eq!(rgb_to_ansi256(0, 0, 0), 16);    // black
+        assert_eq!(rgb_to_ansi256(0, 0, 0), 16); // black
         assert_eq!(rgb_to_ansi256(255, 255, 255), 231); // white
         assert_eq!(rgb_to_ansi256(128, 128, 128), 243); // 232 + (120u16 * 24 / 247) = 243
     }

@@ -296,6 +296,9 @@ mod tests {
     fn theme_config_parses_color_level_override() {
         let json = r#"{"theme": {"color_level": "true-color"}}"#;
         let s: Settings = serde_json::from_str(json).unwrap();
-        assert_eq!(s.theme.color_level, Some(crate::render::ColorLevel::TrueColor));
+        assert_eq!(
+            s.theme.color_level,
+            Some(crate::render::ColorLevel::TrueColor)
+        );
     }
 }

@@ -16,6 +16,7 @@ pub const DEFAULT_SEPARATOR_LEFT: char = '\u{e0b0}';
 pub const DEFAULT_SEPARATOR_RIGHT: char = '\u{e0b2}';
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Powerline {
     pub theme: PowerlineTheme,
     pub separator_left: char,
@@ -28,7 +29,7 @@ pub struct Powerline {
 
 impl Powerline {
     #[must_use]
-    pub fn new(theme: PowerlineTheme, level: ColorLevel, hyperlinks: bool) -> Self {
+    pub const fn new(theme: PowerlineTheme, level: ColorLevel, hyperlinks: bool) -> Self {
         Self {
             theme,
             separator_left: DEFAULT_SEPARATOR_LEFT,
@@ -166,7 +167,10 @@ mod tests {
         let style = Style::none().bg(Color::Rgb(123, 45, 67));
         let segs = [Segment::styled("x", style)];
         let out = p.render(&segs);
-        assert!(out.contains("48;2;123;45;67"), "expected forced bg in {out:?}");
+        assert!(
+            out.contains("48;2;123;45;67"),
+            "expected forced bg in {out:?}"
+        );
     }
 
     #[test]

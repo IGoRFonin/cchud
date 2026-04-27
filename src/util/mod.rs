@@ -7,7 +7,7 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
+pub mod ansi;
 pub mod ascii_bar;
 pub mod duration;
-pub mod ansi;
 pub mod model_context_size;

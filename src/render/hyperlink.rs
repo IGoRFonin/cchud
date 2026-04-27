@@ -5,9 +5,9 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
-/// Wrap `text` with OSC 8 hyperlink to `url` if `supported`. Otherwise return
-/// `text` unchanged. Uses ST = `\x1b\\` (BEL `\x07` is also valid; we follow
-/// upstream ccstatusline which uses ESC-backslash for broadest compat).
+/// Wrap `text` with OSC 8 hyperlink to `url` if `supported`.
+///
+/// Uses `\x1b\\` (ESC-backslash) as ST; follows upstream ccstatusline convention.
 #[must_use]
 pub fn link(text: &str, url: &str, supported: bool) -> String {
     if supported {

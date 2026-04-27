@@ -6,8 +6,8 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
-use super::{ColorLevel, Segment};
 use super::hyperlink::link;
+use super::{ColorLevel, Segment};
 
 #[derive(Debug)]
 pub struct Plain {
@@ -57,25 +57,27 @@ mod tests {
     #[test]
     fn filters_empty_segments() {
         let r = p(ColorLevel::None, false);
-        let segs = [
-            Segment::plain("a"),
-            Segment::plain(""),
-            Segment::plain("b"),
-        ];
+        let segs = [Segment::plain("a"), Segment::plain(""), Segment::plain("b")];
         assert_eq!(r.render(&segs), "a | b");
     }
 
     #[test]
     fn level_none_strips_color() {
         let r = p(ColorLevel::None, false);
-        let segs = [Segment::styled("x", Style::none().fg(Color::Rgb(255, 0, 0)))];
+        let segs = [Segment::styled(
+            "x",
+            Style::none().fg(Color::Rgb(255, 0, 0)),
+        )];
         assert_eq!(r.render(&segs), "x");
     }
 
     #[test]
     fn truecolor_emits_ansi() {
         let r = p(ColorLevel::TrueColor, false);
-        let segs = [Segment::styled("x", Style::none().fg(Color::Rgb(255, 0, 0)))];
+        let segs = [Segment::styled(
+            "x",
+            Style::none().fg(Color::Rgb(255, 0, 0)),
+        )];
         let out = r.render(&segs);
         assert!(out.contains("\x1b["), "expected ANSI in {out:?}");
     }
