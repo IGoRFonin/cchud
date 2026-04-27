@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-04-27
+
+- Powerline-рендеринг (`theme.kind: powerline`) с 5 встроенными темами
+  (default, dracula, solarized-dark, nord, gruvbox-dark).
+- OSC 8 hyperlinks для `link`-виджета — runtime detect.
+- Цветовой downgrade Rgb → Ansi256 → None по уровню терминала.
+- ANSI strip + visible width helper (`util::ansi`).
+- Trait `Widget::default_style` — upstream-паритет цветов для Model/Worktree*/SessionCost/ContextBar/VimMode/OutputStyle.
+- Schema `theme.{kind,theme_name,custom,separators,start_caps,end_caps,color_level}`.
+- Удалены unused deps `anstream`, `nu-ansi-term`. Добавлены `anstyle-parse`, `supports-hyperlinks`.
+
 ## [0.1.0-alpha] — 2026-04-26
 
 ### Added
@@ -55,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No widgets yet. Real pipeline lands in Phase 2.
 - Repository is private; switch to public is a manual decision after content review.
 
-[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v0.1.0-alpha...HEAD
+[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/IGoRFonin/cchud/compare/v0.1.0-alpha...v0.2.0
 [0.1.0-alpha]: https://github.com/IGoRFonin/cchud/releases/tag/v0.1.0-alpha
 [0.0.1]: https://github.com/IGoRFonin/cchud/releases/tag/v0.0.1

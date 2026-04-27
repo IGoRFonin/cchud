@@ -2,7 +2,7 @@
 
 > Fast Rust statusline for Claude Code CLI — drop-in port of [ccstatusline](https://github.com/sirmalloc/ccstatusline) targeting < 5 ms cold-start and < 5 MB RSS.
 
-**Status:** 0.1.0-alpha — 24 of 60 upstream widgets supported (Phase 2 `model` + Phase 3 MVP cluster). Plain renderer; Powerline lands in Phase 4. See [`plan/README.md`](plan/README.md) for roadmap.
+**Status:** 0.2.0 — 24 of 60 upstream widgets supported. Plain and Powerline renderers available. See [`plan/README.md`](plan/README.md) for roadmap.
 
 ## What
 
@@ -21,7 +21,7 @@ Claude Code invokes the statusline up to 3 times per second. For 4 parallel sess
 
 ## Status
 
-Alpha release: 24 widgets working end-to-end in Claude Code. Plain renderer (single line, ` | ` separator). Powerline visual parity is Phase 4; full `ccstatusline` widget set lands across Phases 5–7.
+Alpha release: 24 widgets working end-to-end in Claude Code. Plain renderer (` | ` separator) and Powerline renderer (segmented, 5 built-in themes). Full `ccstatusline` widget set lands across Phases 5–7.
 
 ## Supported widgets (24 / 60)
 
@@ -53,6 +53,31 @@ See [`docs/widgets.md`](docs/widgets.md) for the full 60-widget roadmap.
   "theme": {}
 }
 ```
+
+### Powerline
+
+Set `theme.kind` to `powerline` to enable the segmented Powerline style. A Nerd Font (or compatible) must be installed in your terminal for the separator glyphs to render correctly.
+
+```json
+{
+  "version": 1,
+  "lines": [{
+    "widgets": [
+      {"type": "model"},
+      {"type": "session-cost"},
+      {"type": "context-bar", "width": 10}
+    ]
+  }],
+  "theme": {
+    "kind": "powerline",
+    "theme_name": "default"
+  }
+}
+```
+
+Built-in themes: `default`, `dracula`, `solarized-dark`, `nord`, `gruvbox-dark`.
+
+> **Note:** Powerline separators require a [Nerd Font](https://www.nerdfonts.com/) or a terminal that ships its own powerline glyphs (e.g. Ghostty, Warp). Without one, you will see `?` boxes instead of arrows.
 
 ### CustomCommand security
 
