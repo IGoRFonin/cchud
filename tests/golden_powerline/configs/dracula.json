@@ -1,0 +1,8 @@
+{
+    "version": 1,
+    "lines": [{"widgets": [
+        {"type": "model"}, {"type": "session-cost"},
+        {"type": "context-percentage"}, {"type": "worktree"}
+    ]}],
+    "theme": {"kind": "powerline", "theme_name": "dracula"}
+}

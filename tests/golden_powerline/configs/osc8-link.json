@@ -1,0 +1,7 @@
+{
+    "version": 1,
+    "lines": [{"widgets": [
+        {"type": "link", "url": "https://example.com", "label": "Docs"}
+    ]}],
+    "theme": {"kind": "plain"}
+}

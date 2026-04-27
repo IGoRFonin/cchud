@@ -1,0 +1,6 @@
+---
+source: tests/snapshots.rs
+expression: stdout
+input_file: benches/samples/payload-cchud-sonnet-xlarge2.json
+---
+[1mSonnet 4.6[0m | [38;2;80;200;80m$0.77[0m

@@ -151,6 +151,73 @@ fn scenario_4_context_cluster() {
     insta::assert_snapshot!("phase3_context_cluster", stdout);
 }
 
+/// Phase 4 — Powerline + plain-with-color + OSC 8 hyperlink.
+/// Forces `CCHUD_TEST_COLOR_LEVEL=true-color` for deterministic ANSI bytes.
+#[test]
+#[serial_test::serial]
+fn phase4_powerline_glob() {
+    let configs_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/golden_powerline/configs");
+
+    insta::glob!("../benches/samples", "payload-cchud-*.json", |payload_path| {
+        let payload = std::fs::read_to_string(payload_path).unwrap();
+        let payload_name = payload_path.file_stem().unwrap().to_str().unwrap();
+
+        for entry in std::fs::read_dir(&configs_dir).unwrap() {
+            let entry = entry.unwrap();
+            let cfg_path = entry.path();
+            if cfg_path.extension().and_then(|s| s.to_str()) != Some("json") {
+                continue;
+            }
+            // OSC 8 config tested separately below — skip here.
+            let cfg_name = cfg_path.file_stem().unwrap().to_str().unwrap();
+
+            let tmp = TempDir::new().unwrap();
+            let home = tmp.path().to_path_buf();
+            let settings = std::fs::read_to_string(&cfg_path).unwrap();
+            write_settings(&home, &settings);
+
+            let output = Command::cargo_bin("cchud")
+                .unwrap()
+                .env("HOME", &home)
+                .env("USERPROFILE", &home)
+                .env("CCHUD_TEST_COLOR_LEVEL", "true-color")
+                .env("NO_HYPERLINKS", "1") // keep OSC 8 out of generic configs
+                .write_stdin(payload.clone())
+                .output()
+                .unwrap();
+            assert!(output.status.success());
+            let stdout = String::from_utf8(output.stdout).unwrap().trim_end().to_string();
+
+            let snap_name = format!("phase4_{cfg_name}__{payload_name}");
+            insta::assert_snapshot!(snap_name, stdout);
+        }
+    });
+}
+
+#[test]
+#[serial_test::serial]
+fn phase4_osc8_link() {
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path().to_path_buf();
+    let settings = include_str!("golden_powerline/configs/osc8-link.json");
+    write_settings(&home, settings);
+
+    let payload = include_str!("../benches/samples/payload-cchud-sonnet-xlarge.json");
+    let output = Command::cargo_bin("cchud")
+        .unwrap()
+        .env("HOME", &home)
+        .env("USERPROFILE", &home)
+        .env("CCHUD_TEST_COLOR_LEVEL", "none") // colors off, only OSC 8 wrapping
+        .env("FORCE_HYPERLINK", "1") // supports_hyperlinks honors this
+        .write_stdin(payload.to_string())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap().trim_end().to_string();
+    insta::assert_snapshot!("phase4_osc8_link", stdout);
+}
+
 /// Scenario 5: Static cluster + CustomCommand. Unix-only — Windows
 /// behavioural тесты subprocess отложены до Phase 9.
 #[cfg(unix)]

@@ -1,0 +1,6 @@
+---
+source: tests/snapshots.rs
+expression: stdout
+input_file: benches/samples/payload-cchud-sonnet-xlarge2.json
+---
+]8;;https://example.com\Docs]8;;\

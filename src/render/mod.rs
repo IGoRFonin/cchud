@@ -31,10 +31,18 @@ impl ColorLevel {
     /// Auto-detect via `supports-color` on stdout. Returns `None` on non-TTY.
     #[must_use]
     pub fn detect() -> Self {
+        if let Ok(forced) = std::env::var("CCHUD_TEST_COLOR_LEVEL") {
+            return match forced.as_str() {
+                "none" => Self::None,
+                "ansi256" => Self::Ansi256,
+                "true-color" | "truecolor" => Self::TrueColor,
+                _ => Self::None,
+            };
+        }
         match supports_color::on(supports_color::Stream::Stdout) {
             None => Self::None,
             Some(s) if s.has_16m => Self::TrueColor,
-            Some(_) => Self::Ansi256, // covers Has16 and Has256
+            Some(_) => Self::Ansi256,
         }
     }
 }
@@ -352,6 +360,17 @@ mod tests {
     #[test]
     fn color_level_default_is_none() {
         assert_eq!(ColorLevel::default(), ColorLevel::None);
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn detect_honours_env_override() {
+        // SAFETY: serial test guarded by name uniqueness; this var is only read here.
+        unsafe { std::env::set_var("CCHUD_TEST_COLOR_LEVEL", "true-color") };
+        assert_eq!(ColorLevel::detect(), ColorLevel::TrueColor);
+        unsafe { std::env::set_var("CCHUD_TEST_COLOR_LEVEL", "none") };
+        assert_eq!(ColorLevel::detect(), ColorLevel::None);
+        unsafe { std::env::remove_var("CCHUD_TEST_COLOR_LEVEL") };
     }
 
     #[test]
