@@ -20,7 +20,6 @@ const FETCH_TIMEOUT: Duration = Duration::from_millis(200);
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PrInfo {
     pub number: u32,
-    pub state: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,6 +44,11 @@ impl PrCache {
 }
 
 fn cache_path() -> Option<PathBuf> {
+    // Override for hermetic tests — never set in production builds.
+    #[cfg(test)]
+    if let Ok(p) = std::env::var("CCHUD_TEST_CACHE_PATH") {
+        return Some(PathBuf::from(p));
+    }
     Some(dirs::cache_dir()?.join("cchud").join("pr-cache.bincode"))
 }
 
@@ -84,7 +88,7 @@ fn now_secs() -> u64 {
 
 /// Auth priority:
 /// 1. `GITHUB_TOKEN` env
-/// 2. `gh auth token` subprocess (~50 ms, кэшируется в первый вызов)
+/// 2. `gh auth token` subprocess (~50 ms, called on every cache-miss without env token)
 /// 3. None — анонимный запрос (rate limit 60/h)
 #[must_use]
 pub fn github_token() -> Option<String> {
@@ -108,7 +112,6 @@ pub fn github_token() -> Option<String> {
 #[derive(Deserialize)]
 struct PrJson {
     number: u32,
-    state: String,
 }
 
 fn fetch_pr(
@@ -132,10 +135,7 @@ fn fetch_pr(
     }
     let prs: Vec<PrJson> = resp.into_json().ok()?;
     let p = prs.into_iter().next()?;
-    Some(PrInfo {
-        number: p.number,
-        state: p.state,
-    })
+    Some(PrInfo { number: p.number })
 }
 
 /// Look up `(owner, repo, branch)` in cache. Cache-hit (< TTL) → return.
@@ -197,10 +197,7 @@ mod tests {
             "foo/bar:main".into(),
             CachedPr {
                 fetched_at: 1234,
-                pr: Some(PrInfo {
-                    number: 42,
-                    state: "open".into(),
-                }),
+                pr: Some(PrInfo { number: 42 }),
             },
         );
         let bytes = bincode::serialize(&cache).unwrap();
@@ -247,13 +244,7 @@ mod tests {
             .create();
 
         let pr = fetch_pr(&server.url(), "foo", "bar", "main", None);
-        assert_eq!(
-            pr,
-            Some(PrInfo {
-                number: 42,
-                state: "open".into()
-            })
-        );
+        assert_eq!(pr, Some(PrInfo { number: 42 }));
     }
 
     #[test]
@@ -262,6 +253,7 @@ mod tests {
         let mut server = mockito::Server::new();
         let _m = server
             .mock("GET", "/repos/foo/bar/pulls")
+            .match_query(mockito::Matcher::Any)
             .with_status(404)
             .create();
         let pr = fetch_pr(&server.url(), "foo", "bar", "main", None);
@@ -274,6 +266,7 @@ mod tests {
         let mut server = mockito::Server::new();
         let _m = server
             .mock("GET", "/repos/foo/bar/pulls")
+            .match_query(mockito::Matcher::Any)
             .with_status(200)
             .with_body("[]")
             .create();
@@ -285,14 +278,15 @@ mod tests {
     #[serial]
     fn fetch_includes_authorization_header_when_token_set() {
         let mut server = mockito::Server::new();
-        let _m = server
+        let m = server
             .mock("GET", "/repos/foo/bar/pulls")
+            .match_query(mockito::Matcher::Any)
             .match_header("authorization", "Bearer mytoken")
             .with_status(200)
             .with_body("[]")
             .create();
         let _ = fetch_pr(&server.url(), "foo", "bar", "main", Some("mytoken"));
-        // Mockito panics if matcher fails — explicit assertion.
+        m.assert();
     }
 
     #[test]
@@ -307,5 +301,68 @@ mod tests {
             elapsed < Duration::from_millis(500),
             "must respect timeout, took {elapsed:?}"
         );
+    }
+
+    #[test]
+    #[serial]
+    fn cache_hit_skips_network_fetch() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("pr-cache.bincode");
+        // SAFETY: serial test — no concurrent env mutation.
+        unsafe { std::env::set_var("CCHUD_TEST_CACHE_PATH", &path) };
+
+        // Pre-seed fresh cache entry.
+        let mut cache = PrCache::fresh();
+        let now = now_secs();
+        cache.entries.insert(
+            "foo/bar:main".into(),
+            CachedPr {
+                fetched_at: now,
+                pr: Some(PrInfo { number: 99 }),
+            },
+        );
+        std::fs::write(&path, bincode::serialize(&cache).unwrap()).unwrap();
+
+        // Server has no mocks — any hit would return 501 and fail fetch_pr.
+        let server = mockito::Server::new();
+        let pr = lookup_or_fetch_with_base(&server.url(), "foo", "bar", "main");
+        assert_eq!(pr, Some(PrInfo { number: 99 }));
+
+        // SAFETY: serial test — no concurrent env mutation.
+        unsafe { std::env::remove_var("CCHUD_TEST_CACHE_PATH") };
+    }
+
+    #[test]
+    #[serial]
+    fn stale_entry_returned_when_fetch_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("pr-cache.bincode");
+        // SAFETY: serial test — no concurrent env mutation.
+        unsafe {
+            std::env::set_var("CCHUD_TEST_CACHE_PATH", &path);
+            // Bypass gh subprocess call in github_token().
+            std::env::set_var("GITHUB_TOKEN", "test-token");
+        }
+
+        // Pre-seed stale entry (fetched_at = 0 → older than TTL_SECS).
+        let mut cache = PrCache::fresh();
+        cache.entries.insert(
+            "foo/bar:main".into(),
+            CachedPr {
+                fetched_at: 0,
+                pr: Some(PrInfo { number: 77 }),
+            },
+        );
+        std::fs::write(&path, bincode::serialize(&cache).unwrap()).unwrap();
+
+        // Port 1 refuses connections immediately — simulates offline.
+        let pr = lookup_or_fetch_with_base("http://127.0.0.1:1", "foo", "bar", "main");
+        assert_eq!(pr, Some(PrInfo { number: 77 }));
+
+        // SAFETY: serial test — no concurrent env mutation.
+        unsafe {
+            std::env::remove_var("GITHUB_TOKEN");
+            std::env::remove_var("CCHUD_TEST_CACHE_PATH");
+        }
     }
 }
