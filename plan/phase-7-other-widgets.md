@@ -24,6 +24,64 @@
 Возможные дополнительные (если не покрыты фазой 3/6):
 - `ClaudeAccountEmail`, `ClaudeSessionId`, `ThinkingEffort` — из payload, если ещё не в фазе 6
 
+## Deferred from Phase 4 (Powerline scope completion)
+
+Phase 4 spec ([`docs/superpowers/specs/2026-04-27-phase-4-powerline-design.md`](../docs/superpowers/specs/2026-04-27-phase-4-powerline-design.md), решения #10 и #11) сознательно не покрывает следующие части upstream `Settings`/`WidgetItem` чтобы удержать scope phase 4 в 3–4 дня. Phase 7 закрывает их:
+
+### 7.0a. Per-widget style overrides (upstream `WidgetItem.color/backgroundColor/bold`)
+
+Расширить каждый вариант `WidgetConfig` опциональным `style: WidgetStyleOverride` (через `#[serde(flatten)]`):
+
+```rust
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct WidgetStyleOverride {
+    #[serde(default)]
+    pub color: Option<String>,            // hex `#rrggbb` или имя темы
+    #[serde(default)]
+    pub background_color: Option<String>,
+    #[serde(default)]
+    pub bold: Option<bool>,
+}
+```
+
+Применяется в `Renderer` поверх `Widget::default_style()` и `theme.widget_styles[id]` (приоритет: per-widget config > theme override > widget default).
+
+### 7.0b. Глобальные настройки темы
+
+Расширить `ThemeConfig` (Phase 4 ввёл базовые поля) полями:
+
+```rust
+pub struct ThemeConfig {
+    // ... поля из Phase 4 ...
+    #[serde(default)]
+    pub global_bold: bool,
+    #[serde(default)]
+    pub inherit_separator_colors: bool,
+    #[serde(default)]
+    pub override_background_color: Option<String>,
+    #[serde(default)]
+    pub override_foreground_color: Option<String>,
+    #[serde(default)]
+    pub minimalist_mode: bool,
+    #[serde(default)]
+    pub flex_mode: FlexMode,             // Full / FullMinus40 / ...
+    #[serde(default)]
+    pub compact_threshold: u32,          // 1–99, default 60
+    #[serde(default)]
+    pub auto_align: bool,
+    #[serde(default)]
+    pub continue_theme_across_lines: bool,
+}
+```
+
+Соответствующая логика в `render::powerline.rs` (продолжение цикла тем между строк, авто-выравнивание сегментов, минималистичный рендер). Pipeline обновляется в `Renderer::render` — `globalBold` форсит `bold=true` на каждом сегменте перед `Style::render`; `inheritSeparatorColors` копирует bg сегмента на разделитель; `overrideBackgroundColor`/`overrideForegroundColor` — глобальный paint всех сегментов.
+
+### Тесты и snapshots
+
+- Unit-тесты на каждый override (≥3 на пункт).
+- Snapshot-конфиги: `globalBold=true`, `minimalistMode=true`, `inheritSeparatorColors=true`, per-widget color override.
+- Интеграция с уже существующими 5 темами phase 4 — все тесты phase 4 должны остаться зелёными.
+
 ## Шаги
 
 ### 7.1. System / env виджеты
@@ -184,10 +242,14 @@ CHANGELOG: "Feature parity with ccstatusline 2.2.8 (60+ widgets)". README обн
 - [ ] `CustomCommand` с timeout не блокирует cchud при зависшем shell-скрипте
 - [ ] `cchud import` (заглушка из Фазы 2 → реальная реализация) понимает все типы виджетов из ccstatusline-конфига
 - [ ] Hyperfine: < 5 мс p95 на типичном конфиге (8–15 виджетов), < 12 мс на full-set (60+)
+- [ ] Per-widget style overrides (`color`, `background_color`, `bold`) работают на всех виджетах; покрыты unit-тестами и snapshot'ами (см. 7.0a)
+- [ ] Расширенные настройки темы (`global_bold`, `inherit_separator_colors`, `override_background_color`, `override_foreground_color`, `minimalist_mode`, `flex_mode`, `compact_threshold`, `auto_align`, `continue_theme_across_lines`) реализованы и покрыты тестами (см. 7.0b)
+- [ ] Snapshot'ы Phase 4 остаются зелёными (никаких регрессий цвета на стандартных темах)
 - [ ] Релиз **0.5.0** на GitHub Releases (single-platform пока, multi-platform в Фазе 9)
 
 ## Связи
 
+- **Фаза 4** ([`phase-4-powerline.md`](./phase-4-powerline.md), spec [`../docs/superpowers/specs/2026-04-27-phase-4-powerline-design.md`](../docs/superpowers/specs/2026-04-27-phase-4-powerline-design.md)) — заложила theme-level стилизацию и базовый `ThemeConfig`. Phase 7 завершает upstream-паритет добавляя per-widget overrides и глобальные настройки темы.
 - **Фаза 8** TUI-конфигуратор использует полный реестр виджетов как палитру
 - **Фаза 9** релиз 1.0.0 (после TUI и дистрибуции)
 

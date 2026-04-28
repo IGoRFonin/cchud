@@ -10,19 +10,17 @@
 //! - `RenderContext::git()` обеспечивает однократный `discover()` за render.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
-// T1 scaffolding — all structs/functions used in T2–T5.
-#![allow(dead_code)]
 
 use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+#[cfg(test)]
 pub mod fixture;
 pub mod pr;
 pub mod remote;
 
 /// Главная git-структура, переиспользуемая всеми Phase 5 виджетами.
-#[allow(dead_code)]
 pub struct GitInfo {
     /// `gix::Repository` — переиспользуется внутренними методами для status/diff.
     pub(crate) repo: gix::Repository,
@@ -83,6 +81,7 @@ pub struct Tracking {
 
 #[derive(Debug, Clone)]
 pub struct RemoteInfo {
+    #[allow(dead_code)]
     pub url: String,
     /// Заполняется в T6 (`parse_url`). В T1 — None.
     pub owner: Option<String>,

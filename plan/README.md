@@ -85,9 +85,9 @@
 - [x] Фаза 1 — Init
 - [x] Фаза 2 — Pipeline
 - [x] Фаза 3 — MVP
-- [~] Фаза 4 — Powerline (next)
-- [ ] Фаза 5 — Git widgets
-- [ ] Фаза 6 — Transcript
+- [x] Фаза 4 — Powerline
+- [x] Фаза 5 — Git widgets
+- [~] Фаза 6 — Transcript (next)
 - [ ] Фаза 7 — Остальные виджеты
 - [ ] Фаза 8 — TUI
 - [ ] Фаза 9 — Distribution

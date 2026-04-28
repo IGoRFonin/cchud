@@ -42,26 +42,26 @@
 | `custom-symbol` | 3 | static | low | DONE | item.customSymbol |
 | `custom-command` | 3 | static | mid | DONE | exec shell command |
 | `link` | 3 | static | low | DONE | hyperlink escape seq |
-| `git-branch` | 5 | git | mid | TODO | gix: HEAD branch name |
-| `git-changes` | 5 | git | mid | TODO | gix: changed file count |
-| `git-insertions` | 5 | git | mid | TODO | gix: diff insertions |
-| `git-deletions` | 5 | git | mid | TODO | gix: diff deletions |
-| `git-root-dir` | 5 | git | mid | TODO | gix: repo root path |
-| `git-status` | 5 | git | mid | TODO | gix: status summary |
-| `git-staged` | 5 | git | mid | TODO | gix: staged file count |
-| `git-unstaged` | 5 | git | mid | TODO | gix: unstaged changes |
-| `git-untracked` | 5 | git | mid | TODO | gix: untracked files |
-| `git-ahead-behind` | 5 | git | mid | TODO | gix: commits ahead/behind upstream |
-| `git-conflicts` | 5 | git | mid | TODO | gix: merge conflicts |
-| `git-sha` | 5 | git | mid | TODO | gix: HEAD SHA |
-| `git-origin-owner` | 5 | git | mid | TODO | git-remote.ts: parse origin URL |
-| `git-origin-repo` | 5 | git | mid | TODO | git-remote.ts |
-| `git-origin-owner-repo` | 5 | git | mid | TODO | git-remote.ts |
-| `git-upstream-owner` | 5 | git | mid | TODO | git-remote.ts: upstream remote |
-| `git-upstream-repo` | 5 | git | mid | TODO | git-remote.ts |
-| `git-upstream-owner-repo` | 5 | git | mid | TODO | git-remote.ts |
-| `git-is-fork` | 5 | git | mid | TODO | origin ≠ upstream owner |
-| `git-pr` | 5 | http | high | TODO | fetchGitReviewData — GitHub API |
+| `git-branch` | 5 | git | mid | DONE | gix: HEAD branch name |
+| `git-changes` | 5 | git | mid | DONE | gix: changed file count |
+| `git-insertions` | 5 | git | mid | DONE | gix: diff insertions |
+| `git-deletions` | 5 | git | mid | DONE | gix: diff deletions |
+| `git-root-dir` | 5 | git | mid | DONE | gix: repo root path |
+| `git-status` | 5 | git | mid | DONE | gix: status summary |
+| `git-staged` | 5 | git | mid | DONE | gix: staged file count |
+| `git-unstaged` | 5 | git | mid | DONE | gix: unstaged changes |
+| `git-untracked` | 5 | git | mid | DONE | gix: untracked files |
+| `git-ahead-behind` | 5 | git | mid | DONE | gix: commits ahead/behind upstream |
+| `git-conflicts` | 5 | git | mid | DONE | gix: merge conflicts |
+| `git-sha` | 5 | git | mid | DONE | gix: HEAD SHA |
+| `git-origin-owner` | 5 | git | mid | DONE | hand-parser: parse origin URL |
+| `git-origin-repo` | 5 | git | mid | DONE | hand-parser |
+| `git-origin-owner-repo` | 5 | git | mid | DONE | hand-parser |
+| `git-upstream-owner` | 5 | git | mid | DONE | hand-parser: upstream remote |
+| `git-upstream-repo` | 5 | git | mid | DONE | hand-parser |
+| `git-upstream-owner-repo` | 5 | git | mid | DONE | hand-parser |
+| `git-is-fork` | 5 | git | mid | DONE | origin ≠ upstream owner |
+| `git-pr` | 5 | http | high | DONE | GitHub API, disk-cached, offline soft-fail |
 | `tokens-cached` | 6 | transcript | mid | TODO | tokenMetrics из JSONL |
 | `tokens-total` | 6 | transcript | mid | TODO | tokenMetrics |
 | `input-speed` | 6 | transcript | mid | TODO | speedMetrics.input |

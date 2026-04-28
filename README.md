@@ -2,7 +2,7 @@
 
 > Fast Rust statusline for Claude Code CLI — drop-in port of [ccstatusline](https://github.com/sirmalloc/ccstatusline) targeting < 5 ms cold-start and < 5 MB RSS.
 
-**Status:** 0.2.0 — 24 of 60 upstream widgets supported. Plain and Powerline renderers available. See [`plan/README.md`](plan/README.md) for roadmap.
+**Status:** 0.3.0 — 46 of 60 upstream widgets supported. Plain and Powerline renderers, 20 git-widgets via gix. See [`plan/README.md`](plan/README.md) for roadmap.
 
 ## What
 
@@ -21,15 +21,17 @@ Claude Code invokes the statusline up to 3 times per second. For 4 parallel sess
 
 ## Status
 
-Alpha release: 24 widgets working end-to-end in Claude Code. Plain renderer (` | ` separator) and Powerline renderer (segmented, 5 built-in themes). Full `ccstatusline` widget set lands across Phases 5–7.
+46 widgets working end-to-end in Claude Code. Plain renderer (` | ` separator) and Powerline renderer (segmented, 5 built-in themes). 20 git-widgets via `gix 0.81` (pure Rust, no libgit2). Full `ccstatusline` widget set lands across Phases 6–7.
 
-## Supported widgets (24 / 60)
+## Supported widgets (46 / 60)
 
 | Source | Widgets |
 |---|---|
 | Payload (fast) | `model`, `version`, `claude-session-id`, `terminal-width`, `output-style`, `vim-mode`, `session-name`, `session-clock`, `session-cost`, `context-length`, `context-percentage`, `context-percentage-usable`, `context-bar`, `tokens-input`, `tokens-output`, `worktree`, `worktree-mode`, `worktree-name`, `worktree-branch`, `worktree-original-branch` |
 | Static (config) | `custom-text`, `custom-symbol`, `link` |
 | Subprocess | `custom-command` (argv-style, configurable timeout, default 200ms) |
+| Git (gix) | `git-branch`, `git-sha`, `git-root-dir`, `git-status`, `git-changes`, `git-staged`, `git-unstaged`, `git-untracked`, `git-conflicts`, `git-insertions`, `git-deletions`, `git-ahead-behind`, `git-origin-owner`, `git-origin-repo`, `git-origin-owner-repo`, `git-upstream-owner`, `git-upstream-repo`, `git-upstream-owner-repo`, `git-is-fork` |
+| HTTP | `git-pr` (GitHub API, disk-cached, offline-tolerant) |
 
 See [`docs/widgets.md`](docs/widgets.md) for the full 60-widget roadmap.
 
@@ -53,6 +55,26 @@ See [`docs/widgets.md`](docs/widgets.md) for the full 60-widget roadmap.
   "theme": {}
 }
 ```
+
+### Git widgets quickstart
+
+```json
+{
+  "lines": [{
+    "widgets": [
+      { "type": "model" },
+      { "type": "separator" },
+      { "type": "git-branch" },
+      { "type": "git-status" },
+      { "type": "separator" },
+      { "type": "context-percentage" },
+      { "type": "session-cost" }
+    ]
+  }]
+}
+```
+
+`git-pr` requires a GitHub remote and uses `GITHUB_TOKEN` or `gh auth token` for auth. Results are disk-cached at `~/.cache/cchud/pr-cache.bincode` (TTL 30 s). Missing token → anonymous (60 req/h limit).
 
 ### Powerline
 
@@ -82,6 +104,19 @@ Built-in themes: `default`, `dracula`, `solarized-dark`, `nord`, `gruvbox-dark`.
 ### CustomCommand security
 
 `custom-command` spawns the configured binary argv-style (no shell). It **inherits the parent process env**, so any `API_KEY` / secret in your shell is visible to the subprocess. Phase 7 will add opt-in env-allowlist + sandboxing.
+
+## Performance
+
+Hyperfine p95 on Apple M4 Pro (cold-start, release binary):
+
+| Config | p95 |
+|---|---:|
+| 22-widget plain (Phase 3) | < 5 ms |
+| 21-widget git+PR cache-hit (Phase 5) | < 8 ms |
+
+## Dependencies
+
+Runtime: `gix = "=0.81.0"` (pure Rust git, no libgit2), `ureq 2` + `rustls-tls` (git-pr HTTP), `bincode 1` (PR disk cache).
 
 ## Documents
 

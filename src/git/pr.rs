@@ -114,13 +114,15 @@ struct PrJson {
     number: u32,
 }
 
+/// `Ok(Some)` = PR found. `Ok(None)` = API responded, no open PR.
+/// `Err(())` = network/HTTP/parse error — caller should fall back to stale.
 fn fetch_pr(
     api_base: &str,
     owner: &str,
     repo: &str,
     branch: &str,
     token: Option<&str>,
-) -> Option<PrInfo> {
+) -> Result<Option<PrInfo>, ()> {
     let url = format!("{api_base}/repos/{owner}/{repo}/pulls?head={owner}:{branch}&state=open");
     let mut req = ureq::get(&url)
         .set("User-Agent", "cchud")
@@ -129,13 +131,12 @@ fn fetch_pr(
     if let Some(t) = token {
         req = req.set("Authorization", &format!("Bearer {t}"));
     }
-    let resp = req.call().ok()?;
+    let resp = req.call().map_err(|_| ())?;
     if resp.status() != 200 {
-        return None;
+        return Err(());
     }
-    let prs: Vec<PrJson> = resp.into_json().ok()?;
-    let p = prs.into_iter().next()?;
-    Some(PrInfo { number: p.number })
+    let prs: Vec<PrJson> = resp.into_json().map_err(|_| ())?;
+    Ok(prs.into_iter().next().map(|p| PrInfo { number: p.number }))
 }
 
 /// Look up `(owner, repo, branch)` in cache. Cache-hit (< TTL) → return.
@@ -164,24 +165,24 @@ pub fn lookup_or_fetch_with_base(
     }
 
     let token = github_token();
-    let pr = fetch_pr(api_base, owner, repo, branch, token.as_deref());
-
-    // Если fetch упал, но есть stale запись — отдадим её.
-    if pr.is_none() {
-        if let Some(entry) = cache.entries.get(&key) {
-            return entry.pr.clone();
+    match fetch_pr(api_base, owner, repo, branch, token.as_deref()) {
+        Ok(pr) => {
+            // API ответил — кэшируем даже Ok(None) ("нет PR" — тоже стабильный факт).
+            cache.entries.insert(
+                key,
+                CachedPr {
+                    fetched_at: now,
+                    pr: pr.clone(),
+                },
+            );
+            write_cache(&cache);
+            pr
+        }
+        Err(()) => {
+            // Сеть упала — отдаём stale если есть, иначе None.
+            cache.entries.get(&key).and_then(|e| e.pr.clone())
         }
     }
-
-    cache.entries.insert(
-        key,
-        CachedPr {
-            fetched_at: now,
-            pr: pr.clone(),
-        },
-    );
-    write_cache(&cache);
-    pr
 }
 
 #[cfg(test)]
@@ -244,7 +245,7 @@ mod tests {
             .create();
 
         let pr = fetch_pr(&server.url(), "foo", "bar", "main", None);
-        assert_eq!(pr, Some(PrInfo { number: 42 }));
+        assert_eq!(pr, Ok(Some(PrInfo { number: 42 })));
     }
 
     #[test]
@@ -257,7 +258,7 @@ mod tests {
             .with_status(404)
             .create();
         let pr = fetch_pr(&server.url(), "foo", "bar", "main", None);
-        assert!(pr.is_none());
+        assert_eq!(pr, Err(()));
     }
 
     #[test]
@@ -271,7 +272,7 @@ mod tests {
             .with_body("[]")
             .create();
         let pr = fetch_pr(&server.url(), "foo", "bar", "main", None);
-        assert!(pr.is_none());
+        assert_eq!(pr, Ok(None));
     }
 
     #[test]
@@ -296,7 +297,7 @@ mod tests {
         let start = std::time::Instant::now();
         let pr = fetch_pr("http://127.0.0.1:1", "foo", "bar", "main", None);
         let elapsed = start.elapsed();
-        assert!(pr.is_none());
+        assert!(pr.is_err());
         assert!(
             elapsed < Duration::from_millis(500),
             "must respect timeout, took {elapsed:?}"

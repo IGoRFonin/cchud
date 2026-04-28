@@ -1,6 +1,6 @@
 [package]
 name = "cchud"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Igor Fonin <menotoa1@gmail.com>"]
@@ -40,9 +40,6 @@ gix = { version = "=0.81.0", default-features = false, features = ["max-performa
 ureq = { version = "2", default-features = false, features = ["json", "tls", "gzip"] }
 bincode = "1"
 
-# Test fixtures — GitFixture (used from integration tests; not behind cfg(test)).
-tempfile = "3"
-
 # Lazy для виджетов (добавятся в фазе 6)
 # sonic-rs, ratatui, crossterm — позже
 
@@ -51,6 +48,7 @@ insta = { version = "1", features = ["json", "glob"] }
 assert_cmd = "2"
 predicates = "3"
 serial_test = "3"
+tempfile = "3"
 # Phase 5 T7: HTTP mock for GitPr.
 mockito = "1"
 

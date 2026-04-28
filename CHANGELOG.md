@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-04-28
+
+### Added (Phase 5 — Git widgets)
+
+20 git-виджетов через `gix 0.81` (pure Rust, без libgit2):
+
+**Head (3):** `git-branch`, `git-sha` (7-char short), `git-root-dir`
+
+**Status (6):** `git-status` (summary `M1 ~2 ?3 ✗4`), `git-changes`, `git-staged`, `git-unstaged`, `git-untracked`, `git-conflicts`
+
+**Diff stat (2):** `git-insertions` (`+N`), `git-deletions` (`-N`) — lazy, считаются только при наличии в строке.
+
+**Tracking (1):** `git-ahead-behind` (`↑3↓1`)
+
+**Remote (7):** `git-origin-{owner,repo,owner-repo}`, `git-upstream-{owner,repo,owner-repo}`, `git-is-fork`. Hand-parser URL без regex (4 формата: SSH short/explicit, HTTPS с/без `.git`).
+
+**HTTP (1):** `git-pr` через GitHub API. Auth priority: `GITHUB_TOKEN` → `gh auth token` → анонимно. Дисковый кэш `~/.cache/cchud/pr-cache.bincode` с TTL 30 s, hard timeout 200 ms, offline soft-fail.
+
+### Performance
+
+- p95 < 8 ms на 21-widget config (включая `git-pr` cache-hit) — см. `benches/phase-5.md`
+- `git-pr` cache-hit overhead: ~0.4 ms vs baseline без HTTP виджета
+- Один `gix::status` вызов на 6 status-виджетов через `OnceCell`
+
+### Internals
+
+- `src/git/mod.rs`: `GitInfo` lazy через `OnceCell` для `status_counts`/`diff_stat`/`tracking`
+- `RenderContext::git()` — единственная точка входа, `discover()` максимум один раз за render
+- `src/git/remote.rs`: hand-parser, экономит ~300 KB бинаря vs `regex` dep
+- `src/git/pr.rs`: schema-versioned `PrCache` (mismatch → silent reset)
+
+### Dependencies
+
+- `gix = "=0.81.0"` (pinned exact, runtime)
+- `ureq = "2"` with `rustls-tls` (runtime — для GitPr)
+- `bincode = "1"` (runtime — кэш)
+- `mockito = "1"` (dev-dep, GitHub API mock)
+
+### Decisions
+
+См. `docs/DECISIONS.md` D-2026-04-27 — gix vs git2.
+
+### Scope notes
+
+5 worktree-виджетов (`worktree`, `worktree-mode`, `worktree-name`, `worktree-branch`, `worktree-original-branch`) уже были реализованы в Phase 3 через `payload.worktree`. Phase 5 их не дублирует. Total widget coverage: 46/60.
+
 ## [0.2.0] — 2026-04-27
 
 - Powerline-рендеринг (`theme.kind: powerline`) с 5 встроенными темами
@@ -66,7 +112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No widgets yet. Real pipeline lands in Phase 2.
 - Repository is private; switch to public is a manual decision after content review.
 
-[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/IGoRFonin/cchud/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/IGoRFonin/cchud/compare/v0.1.0-alpha...v0.2.0
 [0.1.0-alpha]: https://github.com/IGoRFonin/cchud/releases/tag/v0.1.0-alpha
 [0.0.1]: https://github.com/IGoRFonin/cchud/releases/tag/v0.0.1

@@ -5,10 +5,12 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use cchud::git::fixture::GitFixture;
+#[path = "../src/git/fixture.rs"]
+mod fixture;
 use cchud::types::config::Settings;
 use cchud::types::payload::{ModelInfo, StatusPayload, Workspace};
 use cchud::widgets::{RenderContext, build_widgets};
+use fixture::GitFixture;
 
 fn payload(cwd: &str) -> StatusPayload {
     StatusPayload {
