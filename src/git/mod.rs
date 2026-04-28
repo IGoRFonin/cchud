@@ -17,7 +17,6 @@ use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-#[cfg(test)]
 pub mod fixture;
 pub mod pr;
 pub mod remote;

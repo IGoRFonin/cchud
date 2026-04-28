@@ -5,10 +5,9 @@
 //! фикстур избыточно: тесты должны быть быстрыми и читаемыми, а gix init
 //! API меняется между minor.
 
-#![cfg(test)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::missing_panics_doc)]
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
 
@@ -17,24 +16,32 @@ pub struct GitFixture {
     pub dir: TempDir,
 }
 
+impl Default for GitFixture {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GitFixture {
     /// Создать пустой git-репо с одним commit'ом и веткой `main`.
+    #[must_use]
     pub fn new() -> Self {
         let dir = TempDir::new().unwrap();
-        run(&dir.path(), &["init", "-b", "main"]);
-        run(&dir.path(), &["config", "user.email", "test@cchud.dev"]);
-        run(&dir.path(), &["config", "user.name", "cchud-test"]);
+        run(dir.path(), &["init", "-b", "main"]);
+        run(dir.path(), &["config", "user.email", "test@cchud.dev"]);
+        run(dir.path(), &["config", "user.name", "cchud-test"]);
         // Один пустой commit, чтобы HEAD ссылался на коммит, а не unborn ref.
-        run(&dir.path(), &["commit", "--allow-empty", "-m", "init"]);
+        run(dir.path(), &["commit", "--allow-empty", "-m", "init"]);
         Self { dir }
     }
 
     /// Путь к рабочему дереву.
+    #[must_use]
     pub fn path(&self) -> &Path {
         self.dir.path()
     }
 
-    /// Написать файл и `git add`.
+    /// Написать файл в рабочее дерево.
     pub fn write_file(&self, rel: &str, content: &str) {
         let abs = self.dir.path().join(rel);
         if let Some(parent) = abs.parent() {
@@ -45,17 +52,17 @@ impl GitFixture {
 
     /// Запустить произвольную git-команду в репо.
     pub fn git(&self, args: &[&str]) {
-        run(&self.dir.path(), args);
+        run(self.dir.path(), args);
     }
 
     /// Создать commit (требует предварительный `add`).
     pub fn commit(&self, msg: &str) {
-        run(&self.dir.path(), &["commit", "-m", msg]);
+        run(self.dir.path(), &["commit", "-m", msg]);
     }
 
     /// Добавить remote.
     pub fn add_remote(&self, name: &str, url: &str) {
-        run(&self.dir.path(), &["remote", "add", name, url]);
+        run(self.dir.path(), &["remote", "add", name, url]);
     }
 }
 

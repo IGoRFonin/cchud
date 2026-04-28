@@ -1,0 +1,27 @@
+{
+  "lines": [{
+    "widgets": [
+      { "type": "model" },
+      { "type": "git-branch" },
+      { "type": "git-sha" },
+      { "type": "git-root-dir" },
+      { "type": "git-status" },
+      { "type": "git-changes" },
+      { "type": "git-staged" },
+      { "type": "git-unstaged" },
+      { "type": "git-untracked" },
+      { "type": "git-conflicts" },
+      { "type": "git-insertions" },
+      { "type": "git-deletions" },
+      { "type": "git-ahead-behind" },
+      { "type": "git-origin-owner" },
+      { "type": "git-origin-repo" },
+      { "type": "git-origin-owner-repo" },
+      { "type": "git-upstream-owner" },
+      { "type": "git-upstream-repo" },
+      { "type": "git-upstream-owner-repo" },
+      { "type": "git-is-fork" },
+      { "type": "git-pr" }
+    ]
+  }]
+}

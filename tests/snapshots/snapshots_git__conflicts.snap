@@ -1,0 +1,23 @@
+---
+source: tests/snapshots_git.rs
+expression: out
+---
+GitBranch = main
+GitSha = [SHA]
+GitRootDir = [TMPDIR]
+GitStatus = ✗1
+GitChanges = 1
+GitStaged = 
+GitUnstaged = 
+GitUntracked = 
+GitConflicts = 1
+GitInsertions = +4
+GitDeletions = 
+GitAheadBehind = 
+GitOriginOwner = 
+GitOriginRepo = 
+GitOriginOwnerRepo = 
+GitUpstreamOwner = 
+GitUpstreamRepo = 
+GitUpstreamOwnerRepo = 
+GitIsFork =
