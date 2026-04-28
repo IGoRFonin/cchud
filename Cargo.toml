@@ -60,6 +60,8 @@ serial_test = "3"
 tempfile = "3"
 # Phase 5 T7: HTTP mock for GitPr.
 mockito = "1"
+# Phase 6 T4: explicit mtime control in append-merge test.
+filetime = "0.2"
 
 [profile.release]
 lto = true

@@ -187,6 +187,7 @@ dependencies = [
  "assert_cmd",
  "bincode",
  "dirs",
+ "filetime",
  "gix",
  "insta",
  "mockito",
