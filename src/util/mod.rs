@@ -10,5 +10,6 @@
 pub mod ansi;
 pub mod ascii_bar;
 pub mod duration;
+pub mod format_tokens;
 pub mod model_context_size;
 pub mod now;

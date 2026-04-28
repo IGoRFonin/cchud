@@ -14,17 +14,12 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
-pub mod jsonl_types;
-pub mod parser;
-pub mod store;
+mod jsonl_types;
+mod parser;
+mod store;
 
 #[cfg(test)]
 pub mod fixture;
 
-// Re-exports populated by T2 (types) and T4 (store).
-// Виджеты Phase 6 берут TranscriptStats и load_or_build_incremental
-// через эти re-exports, без знания о parser/store deeper internals.
-pub use jsonl_types::{
-    BillingBlock, CacheFile, CacheMeta, FORMAT_VERSION, MessageStats, TranscriptStats,
-};
+pub use jsonl_types::{MessageStats, TranscriptStats};
 pub use store::load_or_build_incremental;

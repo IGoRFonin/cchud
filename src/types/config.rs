@@ -100,6 +100,13 @@ pub enum WidgetConfig {
     GitIsFork,
     // Phase 5 — Task 7 (PR):
     GitPr,
+
+    // Phase 6 — Task 6 (transcript tokens cluster):
+    TokensCached,
+    TokensTotal,
+    InputSpeed,
+    OutputSpeed,
+    TotalSpeed,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -381,6 +388,21 @@ mod tests {
         let json = r#"[{ "type": "git-pr" }]"#;
         let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
         assert!(matches!(widgets[0], WidgetConfig::GitPr));
+    }
+
+    #[test]
+    fn parses_phase6_token_widgets() {
+        let json = r#"[
+            { "type": "tokens-cached" },
+            { "type": "tokens-total" },
+            { "type": "input-speed" },
+            { "type": "output-speed" },
+            { "type": "total-speed" }
+        ]"#;
+        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        assert_eq!(widgets.len(), 5);
+        assert!(matches!(widgets[0], WidgetConfig::TokensCached));
+        assert!(matches!(widgets[4], WidgetConfig::TotalSpeed));
     }
 
     #[test]

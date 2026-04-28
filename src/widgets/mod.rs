@@ -4,8 +4,8 @@
 //! (immutable view of payload + settings) and returns `Option<String>`
 //! (None = "nothing to show", filtered out by the renderer).
 //!
-//! Phase 5 will add `git: OnceCell<Option<GitInfo>>` to `RenderContext`.
-//! Phase 6 will add `transcript: OnceCell<Option<TranscriptCache>>`.
+//! Phase 5 added `git: OnceCell<Option<GitInfo>>` to `RenderContext`.
+//! Phase 6 added `transcript: OnceCell<Option<TranscriptStats>>`.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
@@ -20,6 +20,7 @@ pub mod git_tracking;
 pub mod model;
 pub mod session;
 pub mod static_text;
+pub mod transcript_tokens;
 pub mod trivial;
 pub mod worktree;
 
@@ -55,6 +56,7 @@ pub struct RenderContext<'a> {
     transcript: std::cell::OnceCell<Option<crate::cache::TranscriptStats>>,
     /// Phase 6: текущее время в Unix-ms. Дефолт = `unix_now_ms()`.
     /// Тесты могут перезаписать через field-init синтаксис.
+    #[allow(dead_code)]
     pub now_ms: u64,
 }
 
@@ -287,5 +289,12 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::GitIsFork => Box::new(git_remote::GitIsFork),
         // Phase 5 — Task 7 (PR):
         WidgetConfig::GitPr => Box::new(git_pr::GitPr),
+
+        // Phase 6 — Task 6 (transcript tokens cluster):
+        WidgetConfig::TokensCached => Box::new(transcript_tokens::TokensCached),
+        WidgetConfig::TokensTotal => Box::new(transcript_tokens::TokensTotal),
+        WidgetConfig::InputSpeed => Box::new(transcript_tokens::InputSpeed),
+        WidgetConfig::OutputSpeed => Box::new(transcript_tokens::OutputSpeed),
+        WidgetConfig::TotalSpeed => Box::new(transcript_tokens::TotalSpeed),
     }
 }
