@@ -123,10 +123,7 @@ impl GitInfo {
     /// Lazy: ahead/behind против upstream. None если нет upstream или detached HEAD.
     pub fn tracking(&self) -> Option<&Tracking> {
         self.tracking
-            .get_or_init(|| {
-                let cwd = self.repo.workdir()?;
-                compute_tracking_shell(cwd)
-            })
+            .get_or_init(|| compute_tracking_gix(&self.repo))
             .as_ref()
     }
 
@@ -135,62 +132,153 @@ impl GitInfo {
     /// `GitInsertions`/`GitDeletions` — нулевая стоимость без этих виджетов.
     pub fn diff_stat(&self) -> Option<&DiffStat> {
         self.diff_stat
-            .get_or_init(|| {
-                let work_dir = self.repo.workdir()?;
-                compute_diff_stat_shell(work_dir)
-            })
+            .get_or_init(|| compute_diff_stat_gix(&self.repo))
             .as_ref()
     }
 }
 
-fn compute_tracking_shell(cwd: &std::path::Path) -> Option<Tracking> {
-    use std::process::Command;
-    let out = Command::new("git")
-        .current_dir(cwd)
-        .args(["rev-list", "--left-right", "--count", "@{upstream}...HEAD"])
-        .output()
-        .ok()?;
-    if !out.status.success() {
-        return None;
-    }
-    let s = String::from_utf8_lossy(&out.stdout);
-    let parts: Vec<&str> = s.split_whitespace().collect();
-    if parts.len() != 2 {
-        return None;
-    }
-    let behind: u32 = parts[0].parse().ok()?;
-    let ahead: u32 = parts[1].parse().ok()?;
+fn compute_tracking_gix(repo: &gix::Repository) -> Option<Tracking> {
+    use gix::bstr::ByteSlice;
+
+    let head = repo.head().ok()?;
+    let full_name = head.referent_name()?;
+    let full_name_str = full_name.as_bstr().to_str().ok()?;
+    let branch_short = full_name_str.strip_prefix("refs/heads/")?;
+
+    let config = repo.config_snapshot();
+    let remote_key = format!("branch.{branch_short}.remote");
+    let merge_key = format!("branch.{branch_short}.merge");
+
+    let remote: String = config
+        .string(remote_key.as_str())?
+        .to_str()
+        .ok()?
+        .to_owned();
+    let merge: String = config.string(merge_key.as_str())?.to_str().ok()?.to_owned();
+    let upstream_branch = merge.strip_prefix("refs/heads/").unwrap_or(&merge);
+    let upstream_ref = format!("refs/remotes/{remote}/{upstream_branch}");
+
+    let local_id = head.id()?.detach();
+    let upstream_id = repo
+        .find_reference(upstream_ref.as_str())
+        .ok()?
+        .peel_to_id()
+        .ok()?
+        .detach();
+
+    // Commits reachable from local but not upstream = ahead.
+    let ahead: u32 = repo
+        .rev_walk(std::iter::once(local_id))
+        .with_hidden(std::iter::once(upstream_id))
+        .all()
+        .ok()?
+        .filter_map(Result::ok)
+        .count()
+        .try_into()
+        .unwrap_or(u32::MAX);
+
+    // Commits reachable from upstream but not local = behind.
+    let behind: u32 = repo
+        .rev_walk(std::iter::once(upstream_id))
+        .with_hidden(std::iter::once(local_id))
+        .all()
+        .ok()?
+        .filter_map(Result::ok)
+        .count()
+        .try_into()
+        .unwrap_or(u32::MAX);
+
     Some(Tracking { ahead, behind })
 }
 
-fn compute_diff_stat_shell(cwd: &std::path::Path) -> Option<DiffStat> {
-    use std::process::Command;
-    let out = Command::new("git")
-        .current_dir(cwd)
-        .env("LANG", "C")
-        .args(["diff", "--shortstat", "HEAD"])
-        .output()
-        .ok()?;
-    if !out.status.success() {
-        return None;
-    }
-    let s = String::from_utf8_lossy(&out.stdout);
+/// Compute insertions/deletions from HEAD to current workdir (staged + unstaged).
+/// Equivalent to `git diff --shortstat HEAD` without a subprocess.
+fn compute_diff_stat_gix(repo: &gix::Repository) -> Option<DiffStat> {
+    let work_dir = repo.workdir()?.to_owned();
     let mut stat = DiffStat::default();
-    for part in s.split(',') {
-        let part = part.trim();
-        if let Some(n) = part
-            .strip_suffix(" insertions(+)")
-            .or_else(|| part.strip_suffix(" insertion(+)"))
-        {
-            stat.insertions = n.trim().parse().unwrap_or(0);
-        } else if let Some(n) = part
-            .strip_suffix(" deletions(-)")
-            .or_else(|| part.strip_suffix(" deletion(-)"))
-        {
-            stat.deletions = n.trim().parse().unwrap_or(0);
+
+    let iter = repo
+        .status(gix::progress::Discard)
+        .ok()?
+        .into_iter(None::<gix::bstr::BString>)
+        .ok()?;
+
+    for item in iter.flatten() {
+        match item {
+            // Staged change: HEAD tree blob → index blob.
+            gix::status::Item::TreeIndex(ref change) => {
+                use gix::diff::index::Change;
+                let (old_id, new_id) = match change {
+                    Change::Addition { id, .. } => (None, Some(id.as_ref())),
+                    Change::Deletion { id, .. } => (Some(id.as_ref()), None),
+                    Change::Modification {
+                        previous_id, id, ..
+                    } => (Some(previous_id.as_ref()), Some(id.as_ref())),
+                    Change::Rewrite { .. } => continue,
+                };
+                let old = old_id
+                    .and_then(|oid| repo.find_blob(oid).ok())
+                    .map(|b| b.data.clone());
+                let new = new_id
+                    .and_then(|oid| repo.find_blob(oid).ok())
+                    .map(|b| b.data.clone());
+                accumulate_diff(&mut stat, old.as_deref(), new.as_deref());
+            }
+            // Unstaged change: index blob → disk content.
+            gix::status::Item::IndexWorktree(gix::status::index_worktree::Item::Modification {
+                ref entry,
+                ref rela_path,
+                ..
+            }) => {
+                let old = repo.find_blob(entry.id).ok().map(|b| b.data.clone());
+                let new = {
+                    use gix::bstr::ByteSlice;
+                    rela_path
+                        .to_path()
+                        .ok()
+                        .and_then(|p| std::fs::read(work_dir.join(p)).ok())
+                };
+                accumulate_diff(&mut stat, old.as_deref(), new.as_deref());
+            }
+            gix::status::Item::IndexWorktree(_) => {}
         }
     }
+
     Some(stat)
+}
+
+fn accumulate_diff(stat: &mut DiffStat, old: Option<&[u8]>, new: Option<&[u8]>) {
+    match (old, new) {
+        (None, Some(n)) => stat.insertions += lines_in(n),
+        (Some(o), None) => stat.deletions += lines_in(o),
+        (Some(o), Some(n)) => {
+            let (ins, del) = blob_line_diff(o, n);
+            stat.insertions += ins;
+            stat.deletions += del;
+        }
+        (None, None) => {}
+    }
+}
+
+fn lines_in(data: &[u8]) -> u32 {
+    if data.is_empty() {
+        return 0;
+    }
+    let newlines: u32 = data
+        .iter()
+        .copied()
+        .filter(|&b| b == b'\n')
+        .count()
+        .try_into()
+        .unwrap_or(u32::MAX);
+    newlines + u32::from(!data.ends_with(b"\n"))
+}
+
+fn blob_line_diff(old: &[u8], new: &[u8]) -> (u32, u32) {
+    use gix::diff::blob::{Algorithm, diff, intern::InternedInput, sink::Counter};
+    let input = InternedInput::new(old, new);
+    let counter = diff(Algorithm::Histogram, &input, Counter::default());
+    (counter.insertions, counter.removals)
 }
 
 fn compute_status(repo: &gix::Repository) -> Option<GitStatusCounts> {

@@ -179,8 +179,15 @@ pub fn lookup_or_fetch_with_base(
             pr
         }
         Err(()) => {
-            // Сеть упала — отдаём stale если есть, иначе None.
-            cache.entries.get(&key).and_then(|e| e.pr.clone())
+            // Сеть упала — отдаём stale, но обновляем fetched_at чтобы избежать perpetual retry.
+            if let Some(entry) = cache.entries.get_mut(&key) {
+                entry.fetched_at = now;
+                let pr = entry.pr.clone();
+                write_cache(&cache);
+                pr
+            } else {
+                None
+            }
         }
     }
 }
