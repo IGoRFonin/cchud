@@ -206,3 +206,31 @@ number|object), `Worktree`, `VimState`, `OutputStyle` — в
 - кастомный read-only git parser: переизобретение, не оправдано.
 
 **Owner:** Igor Fonin
+
+---
+
+## D-2026-04-28 — sonic-rs vs serde_json для transcript JSONL
+
+**Контекст:** Phase 6 парсит JSONL-транскрипты CC размером до 50 МБ. PRD NFR §6 требует cold parse < 10 ms, warm + 1 МБ append < 3 ms. На построчном JSONL парсинг — главный bottleneck (≈80% wall-clock cold-path).
+
+**Кандидаты:**
+- `serde_json` — уже в deps; универсально; ~150-200 MB/s throughput на наших структурах.
+- `sonic-rs` — SIMD-ускоренный; ≈3× быстрее на построчном чтении; ~5 MB крейт; pure Rust runtime.
+
+**Решение:** `sonic-rs = "0.5"`.
+
+**Обоснование:**
+1. **Perf headroom**: 50 МБ / 200 MB/s = 250 ms на serde_json — выше budget. sonic-rs даёт ~80 ms cold parse и < 5 ms на 1 МБ append. Оба в budget, но sonic-rs оставляет запас на будущие виджеты.
+2. **Зависимость уже изолирована**: только в `src/cache/parser.rs`. Если потребуется fallback — точечная замена через `cfg`.
+3. **Bincode остаётся `serde_json`-совместимым**: `TranscriptStats` сериализуется в bincode (T4), на чтение — sonic-rs. Один формат на серде, разные движки.
+
+**Trade-offs приняты:**
+- Дополнительная dep ~0.5 MB binary. Митигация: lto+strip профиль release.
+- API менее стабилен. Митигация: pin `sonic-rs = "0.5"` (major); breaking changes — отдельный PR.
+- Windows CI: исторически были баги в SIMD-кодгене на MSVC. Митигация: если CI windows-latest red — добавить `#[cfg(windows)]` ветку в `parser::parse_line` (10 строк); план держится в Step 8 рисках T1.
+
+**Альтернативы рассмотрены:**
+- `simd-json` — мощнее на больших документах, но overhead выше для построчного < 1 KB JSONL.
+- кастомный JSON parser — переизобретение, не оправдано.
+
+**Owner:** Igor Fonin

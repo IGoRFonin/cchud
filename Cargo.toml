@@ -40,8 +40,17 @@ gix = { version = "=0.81.0", default-features = false, features = ["max-performa
 ureq = { version = "2", default-features = false, features = ["json", "tls", "gzip"] }
 bincode = "1"
 
-# Lazy для виджетов (добавятся в фазе 6)
-# sonic-rs, ratatui, crossterm — позже
+# Phase 6 — JSONL-кэш + transcript-виджеты.
+# sonic-rs: ~3× быстрее serde_json на построчном JSONL (бенч в DECISIONS D-2026-04-28).
+# Pin major: 0.5 — API стабильно начиная с этого выпуска.
+sonic-rs = "0.5"
+# SipHash24 для cache-key (~5 KB binary footprint, no extra deps).
+siphasher = "1"
+# ISO-8601 без std-fmt и serde — экономия binary size; используется только парсером.
+time = { version = "0.3", default-features = false, features = ["parsing", "macros"] }
+
+# Lazy для виджетов (добавятся в фазе 7)
+# ratatui, crossterm — позже
 
 [dev-dependencies]
 insta = { version = "1", features = ["json", "glob"] }
