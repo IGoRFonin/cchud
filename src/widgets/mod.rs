@@ -49,15 +49,24 @@ pub struct RenderContext<'a> {
     /// Phase 5: lazy git discover. None если cwd не git-репо.
     #[allow(dead_code)]
     git: std::cell::OnceCell<Option<crate::git::GitInfo>>,
+    /// Phase 6: lazy transcript-кэш. None если payload без `transcript_path`
+    /// или транскрипт недоступен.
+    #[allow(dead_code)]
+    transcript: std::cell::OnceCell<Option<crate::cache::TranscriptStats>>,
+    /// Phase 6: текущее время в Unix-ms. Дефолт = `unix_now_ms()`.
+    /// Тесты могут перезаписать через field-init синтаксис.
+    pub now_ms: u64,
 }
 
 impl<'a> RenderContext<'a> {
     #[must_use]
-    pub const fn new(payload: &'a StatusPayload, settings: &'a Settings) -> Self {
+    pub fn new(payload: &'a StatusPayload, settings: &'a Settings) -> Self {
         Self {
             payload,
             settings,
             git: std::cell::OnceCell::new(),
+            transcript: std::cell::OnceCell::new(),
+            now_ms: crate::util::now::unix_now_ms(),
         }
     }
 
@@ -71,6 +80,26 @@ impl<'a> RenderContext<'a> {
                 crate::git::GitInfo::discover(std::path::Path::new(cwd))
             })
             .as_ref()
+    }
+
+    /// Lazy: парсит JSONL-транскрипт через `cache::load_or_build_incremental`
+    /// максимум один раз за render. None если `payload.transcript_path`
+    /// пусто, файл не читается или JSONL битый.
+    #[allow(dead_code)]
+    pub fn transcript(&self) -> Option<&crate::cache::TranscriptStats> {
+        self.transcript
+            .get_or_init(|| {
+                let path = self.payload.transcript_path.as_deref()?;
+                crate::cache::load_or_build_incremental(std::path::Path::new(path))
+            })
+            .as_ref()
+    }
+
+    /// Test-only: pre-populate transcript cell с фиксированной `TranscriptStats`.
+    /// Используется в unit-тестах T6/T7/T8 чтобы не зависеть от файлового IO.
+    #[cfg(test)]
+    pub fn set_transcript_for_tests(&self, stats: Option<crate::cache::TranscriptStats>) {
+        let _ = self.transcript.set(stats);
     }
 }
 
@@ -122,6 +151,68 @@ mod default_style_tests {
             Style::none(),
             "SessionClock has no upstream style"
         );
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod transcript_ctx_tests {
+    use super::*;
+    use crate::config::default_line;
+    use crate::types::payload::{ModelInfo, StatusPayload, Workspace};
+
+    fn payload_no_transcript() -> StatusPayload {
+        StatusPayload {
+            session_id: "test".into(),
+            model: ModelInfo {
+                id: "m".into(),
+                display_name: "M".into(),
+            },
+            workspace: Workspace {
+                current_dir: "/tmp".into(),
+                project_dir: None,
+                added_dirs: None,
+            },
+            transcript_path: None,
+            cwd: None,
+            version: None,
+            fast_mode: None,
+            exceeds_200k_tokens: None,
+            output_style: None,
+            cost: None,
+            context_window: None,
+            worktree: None,
+            vim: None,
+            rate_limits: None,
+            effort: None,
+            thinking: None,
+        }
+    }
+
+    #[test]
+    fn transcript_returns_none_when_path_missing() {
+        let p = payload_no_transcript();
+        let s = default_line();
+        let ctx = RenderContext::new(&p, &s);
+        assert!(ctx.transcript().is_none());
+    }
+
+    #[test]
+    fn transcript_returns_none_for_invalid_path() {
+        let mut p = payload_no_transcript();
+        p.transcript_path = Some("/nonexistent/__cchud_test_does_not_exist.jsonl".into());
+        let s = default_line();
+        let ctx = RenderContext::new(&p, &s);
+        assert!(ctx.transcript().is_none());
+    }
+
+    #[test]
+    fn now_ms_can_be_overridden_for_tests() {
+        let p = payload_no_transcript();
+        let s = default_line();
+        let mut ctx = RenderContext::new(&p, &s);
+        ctx.now_ms = 1_234_567_890;
+        assert_eq!(ctx.now_ms, 1_234_567_890);
     }
 }
 

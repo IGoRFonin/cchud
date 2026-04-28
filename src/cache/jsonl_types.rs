@@ -34,12 +34,13 @@ pub struct TranscriptEntry {
 pub struct MessagePayload {
     pub usage: Option<Usage>,
     /// Не парсим в Phase 6 — Phase 7 (Skills widget) пройдётся по content.
-    /// `serde_json::Value` — heap, но мы не вытаскиваем его за пределы парсера.
     #[serde(default)]
+    #[allow(dead_code)]
     pub content: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Default, Clone, Copy, Deserialize, Serialize)]
+#[allow(clippy::struct_field_names)]
 pub struct Usage {
     pub input_tokens: Option<u64>,
     pub output_tokens: Option<u64>,
@@ -94,7 +95,7 @@ pub struct CacheMeta {
     pub last_parsed_offset: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheFile {
     pub meta: CacheMeta,
     pub stats: TranscriptStats,
@@ -160,8 +161,7 @@ mod tests {
         };
         let bytes = bincode::serialize(&original).unwrap();
         let back: CacheFile = bincode::deserialize(&bytes).unwrap();
-        assert_eq!(back.meta, original.meta);
-        assert_eq!(back.stats, original.stats);
+        assert_eq!(back, original);
     }
 
     #[test]
