@@ -2,7 +2,7 @@
 
 > Fast Rust statusline for Claude Code CLI — drop-in port of [ccstatusline](https://github.com/sirmalloc/ccstatusline) targeting < 5 ms cold-start and < 5 MB RSS.
 
-**Status:** 0.3.0 — 46 of 60 upstream widgets supported. Plain and Powerline renderers, 20 git-widgets via gix. See [`plan/README.md`](plan/README.md) for roadmap.
+**Status:** 0.4.0 — 54 of 60 upstream widgets supported. Plain and Powerline renderers, 20 git-widgets via gix, 8 transcript-widgets via JSONL cache. See [`plan/README.md`](plan/README.md) for roadmap.
 
 ## What
 
@@ -21,9 +21,9 @@ Claude Code invokes the statusline up to 3 times per second. For 4 parallel sess
 
 ## Status
 
-46 widgets working end-to-end in Claude Code. Plain renderer (` | ` separator) and Powerline renderer (segmented, 5 built-in themes). 20 git-widgets via `gix 0.81` (pure Rust, no libgit2). Full `ccstatusline` widget set lands across Phases 6–7.
+54 widgets working end-to-end in Claude Code. Plain renderer (` | ` separator) and Powerline renderer (segmented, 5 built-in themes). 20 git-widgets via `gix 0.81` (pure Rust, no libgit2). 8 transcript-widgets via incremental JSONL cache (`sonic-rs` hot path). Remaining 6 widgets land in Phase 7.
 
-## Supported widgets (46 / 60)
+## Supported widgets (54 / 60)
 
 | Source | Widgets |
 |---|---|
@@ -32,6 +32,7 @@ Claude Code invokes the statusline up to 3 times per second. For 4 parallel sess
 | Subprocess | `custom-command` (argv-style, configurable timeout, default 200ms) |
 | Git (gix) | `git-branch`, `git-sha`, `git-root-dir`, `git-status`, `git-changes`, `git-staged`, `git-unstaged`, `git-untracked`, `git-conflicts`, `git-insertions`, `git-deletions`, `git-ahead-behind`, `git-origin-owner`, `git-origin-repo`, `git-origin-owner-repo`, `git-upstream-owner`, `git-upstream-repo`, `git-upstream-owner-repo`, `git-is-fork` |
 | HTTP | `git-pr` (GitHub API, disk-cached, offline-tolerant) |
+| Transcript (JSONL cache) | `tokens-cached`, `tokens-total`, `input-speed`, `output-speed`, `total-speed`, `block-timer`, `session-duration`, `thinking-effort` |
 
 See [`docs/widgets.md`](docs/widgets.md) for the full 60-widget roadmap.
 
@@ -101,6 +102,25 @@ Built-in themes: `default`, `dracula`, `solarized-dark`, `nord`, `gruvbox-dark`.
 
 > **Note:** Powerline separators require a [Nerd Font](https://www.nerdfonts.com/) or a terminal that ships its own powerline glyphs (e.g. Ghostty, Warp). Without one, you will see `?` boxes instead of arrows.
 
+### Transcript widgets quickstart
+
+```json
+{
+  "version": 1,
+  "lines": [{
+    "widgets": [
+      {"type": "model"},
+      {"type": "git-branch"},
+      {"type": "tokens-total"},
+      {"type": "block-timer"},
+      {"type": "thinking-effort"}
+    ]
+  }]
+}
+```
+
+Transcript widgets read the Claude Code JSONL transcript file and cache parsed stats in `~/.cache/cchud/transcript-<hash>.bincode` (incremental tail-merge, < 2 ms warm hit). No configuration required — cchud auto-discovers the transcript path from the payload.
+
 ### CustomCommand security
 
 `custom-command` spawns the configured binary argv-style (no shell). It **inherits the parent process env**, so any `API_KEY` / secret in your shell is visible to the subprocess. Phase 7 will add opt-in env-allowlist + sandboxing.
@@ -113,10 +133,11 @@ Hyperfine p95 on Apple M4 Pro (cold-start, release binary):
 |---|---:|
 | 22-widget plain (Phase 3) | < 5 ms |
 | 21-widget git+PR cache-hit (Phase 5) | < 8 ms |
+| 8-widget transcript cold-parse 50 MB (Phase 6) | ~70 ms |
 
 ## Dependencies
 
-Runtime: `gix = "=0.81.0"` (pure Rust git, no libgit2), `ureq 2` + `rustls-tls` (git-pr HTTP), `bincode 1` (PR disk cache).
+Runtime: `gix = "=0.81.0"` (pure Rust git, no libgit2), `ureq 2` + `rustls-tls` (git-pr HTTP), `bincode 1` (PR disk cache), `sonic-rs 0.5` (JSONL transcript parse), `siphasher 1` (cache-key), `time 0.3` (ISO-8601 → ms).
 
 ## Documents
 

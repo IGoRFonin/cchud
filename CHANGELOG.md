@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-04-29
+
+### Added (Phase 6 — Transcript widgets + JSONL cache)
+
+8 transcript-виджетов поверх нового JSONL-кэша с incremental tail-merge:
+
+**Tokens (5):**
+- `tokens-cached` — `cT: <fmt>` сумма `cache_read + cache_creation`
+- `tokens-total` — `totT: <fmt>` сумма всех 4 групп
+- `input-speed` / `output-speed` / `total-speed` — `↓N t/s` / `↑N t/s` / `⇅N t/s` от последнего assistant-сообщения
+
+**Timing (2):**
+- `block-timer` — `⏰ HH:MM:SS` time-to-end текущего 5h billing-блока
+- `session-duration` — диапазон `last_msg - first_msg` в `HH:MM:SS` / `MM:SS`
+
+**Meta (1):**
+- `thinking-effort` — `🧠 {level}` уровень thinking из последнего assistant
+
+### Performance
+
+- Cold parse 50 МБ JSONL < 10 ms (sonic-rs ≈ 3× быстрее serde_json)
+- Warm cache hit < 2 ms; warm + 1 МБ append < 3 ms
+- Lazy `RenderContext::transcript()` через `OnceCell` — нулевая стоимость для строк без transcript-виджетов
+- Один parse на 8 виджетов через shared `TranscriptStats`
+- Phase 5 (20 git-виджетов) baseline без регрессии > 10%
+
+### Internals
+
+- `src/cache/`: новый изолированный модуль (jsonl_types, parser, store)
+- `cache::store::load_or_build_incremental` — единственный entry point. Hit-path при `format_version match + last_parsed_offset ≤ src.size + mtime_ns ≤ src.mtime_ns`; cold path при любом mismatch (corrupt / truncate / format-bump → silent reset)
+- `cache_path_for`: SipHash24 от канонического пути → `~/.cache/cchud/transcript-<hex16>.bincode`
+- `format_version: u32 = 1` в `CacheMeta`; mismatch не крэшит
+- `RenderContext` +`transcript: OnceCell<Option<TranscriptStats>>` +`now_ms: u64`
+- `util/format_tokens.rs` — k/M formatter без trailing zero; `util/now.rs` — `unix_now_ms()`
+
+### Dependencies
+
+- `sonic-rs = "0.5"` (runtime — JSONL парсинг)
+- `siphasher = "1"` (runtime — cache-key hash)
+- `time = "0.3"` (runtime — ISO-8601 → ms; default features off)
+- `filetime = "0.2"` (dev-dep — explicit mtime в append-merge тесте)
+
+### Decisions
+
+См. `docs/DECISIONS.md` D-2026-04-28 — sonic-rs vs serde_json (perf rationale, Windows fallback контракт).
+
+### Scope notes
+
+`Skills` (6 → 7), HTTP-кластер (`SessionUsage`, `WeeklyUsage`, `BlockResetTimer`, `WeeklyResetTimer`, `ClaudeAccountEmail`) и `FreeMemory` остаются в Phase 7. Total widget coverage: 54/60.
+
 ## [0.3.0] — 2026-04-28
 
 ### Added (Phase 5 — Git widgets)
@@ -112,7 +162,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No widgets yet. Real pipeline lands in Phase 2.
 - Repository is private; switch to public is a manual decision after content review.
 
-[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/IGoRFonin/cchud/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/IGoRFonin/cchud/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/IGoRFonin/cchud/compare/v0.1.0-alpha...v0.2.0
 [0.1.0-alpha]: https://github.com/IGoRFonin/cchud/releases/tag/v0.1.0-alpha

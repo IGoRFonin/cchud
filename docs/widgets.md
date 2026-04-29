@@ -30,7 +30,7 @@
 | `vim-mode` | 3 | payload | low | DONE | context.data.vim.mode |
 | `tokens-input` | 3 | payload | low | DONE | current_usage.input_tokens |
 | `tokens-output` | 3 | payload | low | DONE | current_usage.output_tokens |
-| `thinking-effort` | 3 | payload | mid | TODO | читает transcript файл |
+| `thinking-effort` | 6 | transcript | mid | DONE | 🧠 {level} из последнего assistant |
 | `worktree` | 3 | payload | low | DONE | data.worktree объект |
 | `worktree-mode` | 3 | payload | low | DONE | data.worktree != null |
 | `worktree-name` | 3 | payload | low | DONE | data.worktree.name |
@@ -62,14 +62,14 @@
 | `git-upstream-owner-repo` | 5 | git | mid | DONE | hand-parser |
 | `git-is-fork` | 5 | git | mid | DONE | origin ≠ upstream owner |
 | `git-pr` | 5 | http | high | DONE | GitHub API, disk-cached, offline soft-fail |
-| `tokens-cached` | 6 | transcript | mid | TODO | tokenMetrics из JSONL |
-| `tokens-total` | 6 | transcript | mid | TODO | tokenMetrics |
-| `input-speed` | 6 | transcript | mid | TODO | speedMetrics.input |
-| `output-speed` | 6 | transcript | mid | TODO | speedMetrics.output |
-| `total-speed` | 6 | transcript | mid | TODO | speedMetrics.total |
-| `block-timer` | 6 | transcript | mid | TODO | blockMetrics из jsonl-cache |
-| `session-duration` | 6 | transcript | mid | TODO | sessionDuration string |
-| `skills` | 6 | transcript | high | TODO | skillsMetrics из transcript |
+| `tokens-cached` | 6 | transcript | mid | DONE | cT: <fmt> сумма cache_read + cache_creation |
+| `tokens-total` | 6 | transcript | mid | DONE | totT: <fmt> сумма всех 4 групп |
+| `input-speed` | 6 | transcript | mid | DONE | ↓N t/s от последнего assistant |
+| `output-speed` | 6 | transcript | mid | DONE | ↑N t/s от последнего assistant |
+| `total-speed` | 6 | transcript | mid | DONE | ⇅N t/s от последнего assistant |
+| `block-timer` | 6 | transcript | mid | DONE | ⏰ HH:MM:SS time-to-end billing-блока |
+| `session-duration` | 6 | transcript | mid | DONE | диапазон last_msg - first_msg |
+| `skills` | 7 | transcript | high | TODO | skillsMetrics из transcript |
 | `claude-account-email` | 7 | env | mid | TODO | читает ~/.claude.json |
 | `free-memory` | 7 | env | mid | TODO | os.freemem() + macOS sysctl |
 | `session-usage` | 7 | http | high | TODO | usageData HTTP API |
@@ -82,16 +82,16 @@
 | Фаза | Виджеты | Кумулятивно |
 |---|---|---|
 | 2 | 2 (model, separator) | 2 |
-| 3 | 24 (payload + env/static) | 26 |
-| 4 | 0 (рендер-слой, не виджеты) | 26 |
-| 5 | 20 (git + git-pr) | 46 |
-| 6 | 8 (transcript) | 54 |
-| 7 | 6 (env/http) | 60 |
+| 3 | 23 (payload + env/static) | 25 |
+| 4 | 0 (рендер-слой, не виджеты) | 25 |
+| 5 | 20 (git + git-pr) | 45 |
+| 6 | 8 (transcript + thinking-effort; skills → 7) | 53 |
+| 7 | 7 (env/http + skills) | 60 |
 
 ## Замечания
 
 - **`separator`** — специальный тип, обрабатывается в `ccstatusline.ts` напрямую, не через Widget interface. В cchud — аналогично, встроенная логика рендера.
 - **`git-pr`** — единственный git-виджет с HTTP; помечен high, может быть отложен в фазу 7.
-- **`thinking-effort`** — хотя источник payload, он дополнительно читает transcript файл (mid сложность).
+- **`thinking-effort`** — реализован в Phase 6 (читает JSONL transcript, не payload); перемещён в Phase 6 при фактической реализации.
 - **`block-timer`** — использует `context.blockMetrics`, которые вычисляются из transcript через jsonl-cache (фаза 6).
 - **Счёт upstream:** index.ts содержит 59 `export` строк → 59 классов виджетов. С встроенным `separator` = **60** типов. PRD §2 говорит «60+» — соответствует.

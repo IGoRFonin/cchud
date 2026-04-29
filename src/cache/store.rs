@@ -18,7 +18,7 @@
 
 use std::fs::{self, File};
 use std::hash::Hasher;
-use std::io::{BufReader, BufWriter};
+use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
@@ -40,6 +40,8 @@ pub fn load_or_build_incremental(transcript_path: &Path) -> Option<TranscriptSta
 
     if let Some(cached) = read_cache(&cache_path) {
         let m = &cached.meta;
+        // mtime: cached ≤ current — file went forward in time (or unchanged). >
+        // would mean file was restored to an older version → full rebuild needed.
         let incremental_ok = m.format_version == FORMAT_VERSION
             && m.last_parsed_offset <= src_size
             && m.source_mtime_ns <= src_mtime_ns;
@@ -49,18 +51,21 @@ pub fn load_or_build_incremental(transcript_path: &Path) -> Option<TranscriptSta
                 parse_from_offset(transcript_path, m.last_parsed_offset)
             {
                 let merged = merge_stats(cached.stats, tail);
-                let _ = write_cache_best_effort(
-                    &cache_path,
-                    &CacheFile {
-                        meta: CacheMeta {
-                            format_version: FORMAT_VERSION,
-                            source_size: src_size,
-                            source_mtime_ns: src_mtime_ns,
-                            last_parsed_offset: new_offset,
+                // Skip write when file is truly unchanged (same offset + mtime).
+                if new_offset != m.last_parsed_offset || src_mtime_ns != m.source_mtime_ns {
+                    let _ = write_cache_best_effort(
+                        &cache_path,
+                        &CacheFile {
+                            meta: CacheMeta {
+                                format_version: FORMAT_VERSION,
+                                source_size: src_size,
+                                source_mtime_ns: src_mtime_ns,
+                                last_parsed_offset: new_offset,
+                            },
+                            stats: merged.clone(),
                         },
-                        stats: merged.clone(),
-                    },
-                );
+                    );
+                }
                 return Some(merged);
             }
         }
@@ -113,6 +118,7 @@ fn write_cache_best_effort(path: &Path, file: &CacheFile) -> std::io::Result<()>
         let mut writer = BufWriter::new(f);
         bincode::serialize_into(&mut writer, file)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        writer.flush()?;
     }
     fs::rename(&tmp, path)
 }
@@ -128,13 +134,6 @@ mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
     use super::*;
     use crate::cache::fixture::TranscriptBuilder;
-
-    fn force_cache_into_tempdir() -> tempfile::TempDir {
-        // Этот helper не подменяет dirs::cache_dir(), но через `cache_path_for`
-        // уникальный hash на каждый транскрипт-tempdir обеспечивает изоляцию.
-        // Тесты T4 чистят cache_path_for(transcript_path) явно.
-        tempfile::tempdir().unwrap()
-    }
 
     fn cleanup_cache(transcript: &Path) {
         let _ = fs::remove_file(cache_path_for(transcript));
@@ -171,7 +170,6 @@ mod tests {
 
     #[test]
     fn first_run_parses_full_and_writes_cache() {
-        let _td = force_cache_into_tempdir();
         let mut b = TranscriptBuilder::new();
         b.add_user();
         b.add_assistant(100, 7, 3, 0, 0, None);

@@ -87,8 +87,8 @@
 - [x] Фаза 3 — MVP
 - [x] Фаза 4 — Powerline
 - [x] Фаза 5 — Git widgets
-- [~] Фаза 6 — Transcript (next)
-- [ ] Фаза 7 — Остальные виджеты
+- [x] Фаза 6 — Transcript
+- [~] Фаза 7 — Остальные виджеты (next)
 - [ ] Фаза 8 — TUI
 - [ ] Фаза 9 — Distribution
 - [ ] Фаза 10 — Future
