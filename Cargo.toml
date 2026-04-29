@@ -49,6 +49,9 @@ siphasher = "1"
 # ISO-8601 без std-fmt и serde — экономия binary size; используется только парсером.
 time = { version = "0.3", default-features = false, features = ["parsing", "macros"] }
 
+# Phase 7 — FreeMemory widget (no system-side process scan, just memory).
+sysinfo = { version = "0.32", default-features = false, features = ["system"] }
+
 # Lazy для виджетов (добавятся в фазе 7)
 # ratatui, crossterm — позже
 

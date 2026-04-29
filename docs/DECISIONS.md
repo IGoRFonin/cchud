@@ -234,3 +234,26 @@ number|object), `Worktree`, `VimState`, `OutputStyle` — в
 - кастомный JSON parser — переизобретение, не оправдано.
 
 **Owner:** Igor Fonin
+
+**Дополнение (2026-04-28):** `MessagePayload.content` типизировано как `Option<serde_json::Value>`.
+sonic-rs остался в `Cargo.toml` как deps, но парсинг полей ведётся через `serde_json::from_str`,
+поэтому `content` нативно получает `serde_json::Value`. Phase 7 (Skills widget) будет работать
+с `serde_json::Value` напрямую — дополнительных конвертаций не требуется.
+
+---
+
+## D-2026-04-29 — Phase 7 ключевые решения
+
+**Контекст:** Реализация Phase 7 (релиз 0.5.0): 7 виджетов + per-widget overrides + 9 global theme settings + multi-line.
+
+**Решения:**
+1. **Источник для usage-кластера — payload-only** (`rate_limits.{five_hour, seven_day}`). Без HTTP/auth/keychain. CC ≥ 2.1.x шлёт `rate_limits` напрямую (подтверждено в `benches/samples/payload-cchud-sonnet-xlarge.json`).
+2. **Per-widget overrides — `WidgetItem` wrapper.** `Vec<WidgetItem>` вместо `Vec<WidgetConfig>` в `Line`. Один flatten на конфиг.
+3. **Multi-line — caller-loop в `main.rs`.** `Renderer::render_line(segs, &mut state)` остаётся single-line.
+4. **`auto_align` — sentinel `WidgetConfig::AlignRight`.** 61-й вариант enum, не считается в "60 widgets".
+5. **`compact_threshold < term_width` форсит `minimalist_mode`.**
+6. **Skills tracking — `TranscriptStats.skill_names: Vec<String>`** (sorted/unique). `FORMAT_VERSION 1 → 2` (silent reset).
+7. **`sysinfo = "0.32"`** для `FreeMemory`. `default-features = false`, `features = ["system"]`. `refresh_memory()` точечно (~50 µs macOS).
+8. **`OnceLock<Option<ClaudeJson>>`** для `claude_account_email()`. Файл ≤ 10 KB; читается один раз за процесс.
+
+**Связанные документы:** `docs/superpowers/specs/2026-04-29-phase-7-other-widgets-design.md`, `plan/phase-7-other-widgets.md` (outline).

@@ -11,6 +11,8 @@
 
 pub mod context;
 pub mod custom_command;
+pub mod env;       // Phase 7 — env cluster
+pub mod usage;     // Phase 7 — usage cluster
 pub mod git_diff;
 pub mod git_head;
 pub mod git_pr;

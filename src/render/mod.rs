@@ -149,6 +149,7 @@ const fn to_anstyle_color(c: Color) -> anstyle::Color {
     }
 }
 
+pub mod flex;  // Phase 7
 pub mod hyperlink;
 pub mod plain;
 pub mod powerline;
