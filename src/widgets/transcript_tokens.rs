@@ -90,36 +90,9 @@ mod tests {
     use super::*;
     use crate::cache::TranscriptStats;
     use crate::config::default_line;
-    use crate::types::payload::{ModelInfo, StatusPayload, Workspace};
+    use crate::types::payload::StatusPayload;
     use crate::widgets::RenderContext;
-
-    fn payload_no_transcript() -> StatusPayload {
-        StatusPayload {
-            session_id: "test".into(),
-            model: ModelInfo {
-                id: "m".into(),
-                display_name: "M".into(),
-            },
-            workspace: Workspace {
-                current_dir: "/tmp".into(),
-                project_dir: None,
-                added_dirs: None,
-            },
-            transcript_path: None,
-            cwd: None,
-            version: None,
-            fast_mode: None,
-            exceeds_200k_tokens: None,
-            output_style: None,
-            cost: None,
-            context_window: None,
-            worktree: None,
-            vim: None,
-            rate_limits: None,
-            effort: None,
-            thinking: None,
-        }
-    }
+    use crate::widgets::test_helpers::payload_no_transcript;
 
     fn ctx_with_stats<'a>(
         p: &'a StatusPayload,

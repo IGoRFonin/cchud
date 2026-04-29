@@ -110,6 +110,8 @@ pub enum WidgetConfig {
     // Phase 6 — Task 7 (transcript timing cluster):
     BlockTimer,
     SessionDuration,
+    // Phase 6 — Task 8 (transcript meta cluster):
+    ThinkingEffort,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -391,6 +393,13 @@ mod tests {
         let json = r#"[{ "type": "git-pr" }]"#;
         let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
         assert!(matches!(widgets[0], WidgetConfig::GitPr));
+    }
+
+    #[test]
+    fn parses_phase6_thinking_widget() {
+        let json = r#"[{ "type": "thinking-effort" }]"#;
+        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0], WidgetConfig::ThinkingEffort));
     }
 
     #[test]

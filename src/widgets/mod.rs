@@ -20,10 +20,14 @@ pub mod git_tracking;
 pub mod model;
 pub mod session;
 pub mod static_text;
+pub mod transcript_meta;
 pub mod transcript_timing;
 pub mod transcript_tokens;
 pub mod trivial;
 pub mod worktree;
+
+#[cfg(test)]
+pub(crate) mod test_helpers;
 
 use crate::types::{
     config::{Settings, WidgetConfig},
@@ -162,35 +166,7 @@ mod default_style_tests {
 mod transcript_ctx_tests {
     use super::*;
     use crate::config::default_line;
-    use crate::types::payload::{ModelInfo, StatusPayload, Workspace};
-
-    fn payload_no_transcript() -> StatusPayload {
-        StatusPayload {
-            session_id: "test".into(),
-            model: ModelInfo {
-                id: "m".into(),
-                display_name: "M".into(),
-            },
-            workspace: Workspace {
-                current_dir: "/tmp".into(),
-                project_dir: None,
-                added_dirs: None,
-            },
-            transcript_path: None,
-            cwd: None,
-            version: None,
-            fast_mode: None,
-            exceeds_200k_tokens: None,
-            output_style: None,
-            cost: None,
-            context_window: None,
-            worktree: None,
-            vim: None,
-            rate_limits: None,
-            effort: None,
-            thinking: None,
-        }
-    }
+    use crate::widgets::test_helpers::payload_no_transcript;
 
     #[test]
     fn transcript_returns_none_when_path_missing() {
@@ -300,5 +276,7 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         // Phase 6 — Task 7 (transcript timing cluster):
         WidgetConfig::BlockTimer => Box::new(transcript_timing::BlockTimer),
         WidgetConfig::SessionDuration => Box::new(transcript_timing::SessionDuration),
+        // Phase 6 — Task 8 (transcript meta cluster):
+        WidgetConfig::ThinkingEffort => Box::new(transcript_meta::ThinkingEffort),
     }
 }
