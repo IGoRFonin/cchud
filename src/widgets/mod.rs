@@ -32,7 +32,7 @@ pub mod worktree;
 pub(crate) mod test_helpers;
 
 use crate::types::{
-    config::{Settings, WidgetConfig},
+    config::{Settings, WidgetConfig, WidgetStyleOverride},
     payload::StatusPayload,
 };
 
@@ -113,11 +113,16 @@ impl<'a> RenderContext<'a> {
 }
 
 #[must_use]
-pub fn build_widgets(settings: &Settings) -> Vec<Box<dyn Widget>> {
+pub fn build_widgets(settings: &Settings) -> Vec<(Box<dyn Widget>, WidgetStyleOverride)> {
     settings
         .lines
         .first()
-        .map(|line| line.widgets.iter().map(build_one).collect())
+        .map(|line| {
+            line.widgets
+                .iter()
+                .map(|item| (build_one(&item.kind), item.style.clone()))
+                .collect()
+        })
         .unwrap_or_default()
 }
 

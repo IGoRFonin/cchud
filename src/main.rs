@@ -66,10 +66,10 @@ fn render_pipeline() -> ExitCode {
     };
     let settings = config::load();
     let ctx = RenderContext::new(&payload, &settings);
-    let widgets = build_widgets(&settings);
-    let segments: Vec<Segment> = widgets
+    let widget_items = build_widgets(&settings);
+    let segments: Vec<Segment> = widget_items
         .iter()
-        .filter_map(|w| {
+        .filter_map(|(w, _override)| {
             w.render(&ctx).map(|text| Segment {
                 text,
                 style: w.default_style(),

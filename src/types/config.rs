@@ -20,7 +20,25 @@ pub struct Settings {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Line {
     #[serde(default)]
-    pub widgets: Vec<WidgetConfig>,
+    pub widgets: Vec<WidgetItem>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WidgetItem {
+    #[serde(flatten)]
+    pub kind: WidgetConfig,
+    #[serde(flatten, default)]
+    pub style: WidgetStyleOverride,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct WidgetStyleOverride {
+    #[serde(default)]
+    pub color: Option<String>,
+    #[serde(default)]
+    pub background_color: Option<String>,
+    #[serde(default)]
+    pub bold: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -216,7 +234,7 @@ mod tests {
         assert_eq!(s.version, 1);
         assert_eq!(s.lines.len(), 1);
         assert_eq!(s.lines[0].widgets.len(), 1);
-        assert!(matches!(s.lines[0].widgets[0], WidgetConfig::Model { .. }));
+        assert!(matches!(s.lines[0].widgets[0].kind, WidgetConfig::Model { .. }));
     }
 
     #[test]
@@ -242,8 +260,11 @@ mod tests {
         let original = Settings {
             version: 1,
             lines: vec![Line {
-                widgets: vec![WidgetConfig::Model {
-                    params: ModelParams::default(),
+                widgets: vec![WidgetItem {
+                    kind: WidgetConfig::Model {
+                        params: ModelParams::default(),
+                    },
+                    style: WidgetStyleOverride::default(),
                 }],
             }],
             theme: ThemeConfig::default(),
@@ -253,7 +274,7 @@ mod tests {
         assert_eq!(back.version, 1);
         assert_eq!(back.lines.len(), 1);
         assert!(matches!(
-            back.lines[0].widgets[0],
+            back.lines[0].widgets[0].kind,
             WidgetConfig::Model { .. }
         ));
     }
@@ -273,20 +294,20 @@ mod tests {
         }"#;
         let s: Settings = serde_json::from_str(json).unwrap();
         assert_eq!(s.lines[0].widgets.len(), 7);
-        assert!(matches!(s.lines[0].widgets[0], WidgetConfig::Version));
+        assert!(matches!(s.lines[0].widgets[0].kind, WidgetConfig::Version));
         assert!(matches!(
-            s.lines[0].widgets[1],
+            s.lines[0].widgets[1].kind,
             WidgetConfig::ClaudeSessionId
         ));
-        match &s.lines[0].widgets[2] {
+        match &s.lines[0].widgets[2].kind {
             WidgetConfig::ContextBar { params } => assert_eq!(params.width, 20),
             other => panic!("expected ContextBar, got {other:?}"),
         }
-        match &s.lines[0].widgets[3] {
+        match &s.lines[0].widgets[3].kind {
             WidgetConfig::CustomText { params } => assert_eq!(params.text, "hello"),
             other => panic!("expected CustomText, got {other:?}"),
         }
-        match &s.lines[0].widgets[6] {
+        match &s.lines[0].widgets[6].kind {
             WidgetConfig::CustomCommand { params } => {
                 assert_eq!(params.command, "echo");
                 assert_eq!(params.args, vec!["hi".to_string()]);
@@ -300,7 +321,7 @@ mod tests {
     fn context_bar_default_width_is_ten() {
         let json = r#"{"lines":[{"widgets":[{"type":"context-bar"}]}]}"#;
         let s: Settings = serde_json::from_str(json).unwrap();
-        match &s.lines[0].widgets[0] {
+        match &s.lines[0].widgets[0].kind {
             WidgetConfig::ContextBar { params } => assert_eq!(params.width, 10),
             other => panic!("expected ContextBar, got {other:?}"),
         }
@@ -338,10 +359,10 @@ mod tests {
             { "type": "git-sha" },
             { "type": "git-root-dir" }
         ]"#;
-        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
-        assert!(matches!(widgets[0], WidgetConfig::GitBranch));
-        assert!(matches!(widgets[1], WidgetConfig::GitSha));
-        assert!(matches!(widgets[2], WidgetConfig::GitRootDir));
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0].kind, WidgetConfig::GitBranch));
+        assert!(matches!(widgets[1].kind, WidgetConfig::GitSha));
+        assert!(matches!(widgets[2].kind, WidgetConfig::GitRootDir));
     }
 
     #[test]
@@ -364,17 +385,17 @@ mod tests {
             { "type": "git-untracked" },
             { "type": "git-conflicts" }
         ]"#;
-        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
         assert_eq!(widgets.len(), 6);
-        assert!(matches!(widgets[0], WidgetConfig::GitStatus));
-        assert!(matches!(widgets[5], WidgetConfig::GitConflicts));
+        assert!(matches!(widgets[0].kind, WidgetConfig::GitStatus));
+        assert!(matches!(widgets[5].kind, WidgetConfig::GitConflicts));
     }
 
     #[test]
     fn parses_phase5_tracking_widget() {
         let json = r#"[{ "type": "git-ahead-behind" }]"#;
-        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
-        assert!(matches!(widgets[0], WidgetConfig::GitAheadBehind));
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0].kind, WidgetConfig::GitAheadBehind));
     }
 
     #[test]
@@ -383,23 +404,23 @@ mod tests {
             { "type": "git-insertions" },
             { "type": "git-deletions" }
         ]"#;
-        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
-        assert!(matches!(widgets[0], WidgetConfig::GitInsertions));
-        assert!(matches!(widgets[1], WidgetConfig::GitDeletions));
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0].kind, WidgetConfig::GitInsertions));
+        assert!(matches!(widgets[1].kind, WidgetConfig::GitDeletions));
     }
 
     #[test]
     fn parses_phase5_pr_widget() {
         let json = r#"[{ "type": "git-pr" }]"#;
-        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
-        assert!(matches!(widgets[0], WidgetConfig::GitPr));
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0].kind, WidgetConfig::GitPr));
     }
 
     #[test]
     fn parses_phase6_thinking_widget() {
         let json = r#"[{ "type": "thinking-effort" }]"#;
-        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
-        assert!(matches!(widgets[0], WidgetConfig::ThinkingEffort));
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0].kind, WidgetConfig::ThinkingEffort));
     }
 
     #[test]
@@ -408,10 +429,10 @@ mod tests {
             { "type": "block-timer" },
             { "type": "session-duration" }
         ]"#;
-        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
         assert_eq!(widgets.len(), 2);
-        assert!(matches!(widgets[0], WidgetConfig::BlockTimer));
-        assert!(matches!(widgets[1], WidgetConfig::SessionDuration));
+        assert!(matches!(widgets[0].kind, WidgetConfig::BlockTimer));
+        assert!(matches!(widgets[1].kind, WidgetConfig::SessionDuration));
     }
 
     #[test]
@@ -423,10 +444,10 @@ mod tests {
             { "type": "output-speed" },
             { "type": "total-speed" }
         ]"#;
-        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
         assert_eq!(widgets.len(), 5);
-        assert!(matches!(widgets[0], WidgetConfig::TokensCached));
-        assert!(matches!(widgets[4], WidgetConfig::TotalSpeed));
+        assert!(matches!(widgets[0].kind, WidgetConfig::TokensCached));
+        assert!(matches!(widgets[4].kind, WidgetConfig::TotalSpeed));
     }
 
     #[test]
@@ -440,8 +461,36 @@ mod tests {
             { "type": "git-upstream-owner-repo" },
             { "type": "git-is-fork" }
         ]"#;
-        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
         assert_eq!(widgets.len(), 7);
-        assert!(matches!(widgets[6], WidgetConfig::GitIsFork));
+        assert!(matches!(widgets[6].kind, WidgetConfig::GitIsFork));
+    }
+
+    #[test]
+    fn widget_item_parses_with_style_overrides() {
+        let json = r##"{
+            "lines": [{"widgets": [
+                {"type": "model", "color": "#fafafa", "bold": true},
+                {"type": "git-branch", "background_color": "#00ff00"}
+            ]}]
+        }"##;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        let w0 = &s.lines[0].widgets[0];
+        assert!(matches!(w0.kind, WidgetConfig::Model { .. }));
+        assert_eq!(w0.style.color.as_deref(), Some("#fafafa"));
+        assert_eq!(w0.style.bold, Some(true));
+        let w1 = &s.lines[0].widgets[1];
+        assert_eq!(w1.style.background_color.as_deref(), Some("#00ff00"));
+        assert!(w1.style.bold.is_none());
+    }
+
+    #[test]
+    fn widget_item_without_style_keeps_kind() {
+        let json = r#"{"lines": [{"widgets": [{"type": "version"}]}]}"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        let w = &s.lines[0].widgets[0];
+        assert!(matches!(w.kind, WidgetConfig::Version));
+        assert!(w.style.color.is_none());
+        assert!(w.style.bold.is_none());
     }
 }

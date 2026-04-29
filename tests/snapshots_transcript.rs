@@ -7,7 +7,7 @@
 #![cfg(test)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use cchud::types::config::{Line, Settings, WidgetConfig};
+use cchud::types::config::{Line, Settings, WidgetConfig, WidgetItem, WidgetStyleOverride};
 use cchud::types::payload::{ModelInfo, StatusPayload, Workspace};
 use cchud::widgets::{RenderContext, build_widgets};
 use std::path::Path;
@@ -25,7 +25,10 @@ fn settings_8w() -> Settings {
                 WidgetConfig::BlockTimer,
                 WidgetConfig::SessionDuration,
                 WidgetConfig::ThinkingEffort,
-            ],
+            ]
+            .into_iter()
+            .map(|kind| WidgetItem { kind, style: WidgetStyleOverride::default() })
+            .collect(),
         }],
         theme: Default::default(),
     }
@@ -68,7 +71,7 @@ fn render_for(path: &Path) -> String {
     let widgets = build_widgets(&settings);
     let parts: Vec<String> = widgets
         .iter()
-        .map(|w| w.render(&ctx).unwrap_or_else(|| "<none>".into()))
+        .map(|(w, _)| w.render(&ctx).unwrap_or_else(|| "<none>".into()))
         .collect();
     parts.join(" | ")
 }

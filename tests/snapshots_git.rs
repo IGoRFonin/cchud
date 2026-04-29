@@ -75,7 +75,7 @@ fn render_all(payload: &StatusPayload, settings: &Settings) -> Vec<String> {
     let widgets = build_widgets(settings);
     widgets
         .iter()
-        .map(|w| {
+        .map(|(w, _)| {
             let id = w.id();
             let val = w.render(&ctx).unwrap_or_default();
             // Normalize volatile values so snapshots are stable across runs.

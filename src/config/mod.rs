@@ -12,7 +12,7 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-use crate::types::config::{Line, ModelParams, Settings, ThemeConfig, WidgetConfig};
+use crate::types::config::{Line, ModelParams, Settings, ThemeConfig, WidgetConfig, WidgetItem, WidgetStyleOverride};
 
 #[must_use]
 pub fn load() -> Settings {
@@ -61,8 +61,11 @@ pub fn default_line() -> Settings {
     Settings {
         version: 1,
         lines: vec![Line {
-            widgets: vec![WidgetConfig::Model {
-                params: ModelParams::default(),
+            widgets: vec![WidgetItem {
+                kind: WidgetConfig::Model {
+                    params: ModelParams::default(),
+                },
+                style: WidgetStyleOverride::default(),
             }],
         }],
         theme: ThemeConfig::default(),
@@ -96,7 +99,7 @@ mod tests {
         let s = default_line();
         assert_eq!(s.lines.len(), 1);
         assert_eq!(s.lines[0].widgets.len(), 1);
-        assert!(matches!(s.lines[0].widgets[0], WidgetConfig::Model { .. }));
+        assert!(matches!(s.lines[0].widgets[0].kind, WidgetConfig::Model { .. }));
     }
 
     #[test]
@@ -116,7 +119,7 @@ mod tests {
 
         assert!(path.exists(), "settings.json should be created");
         assert_eq!(s.lines.len(), 1);
-        assert!(matches!(s.lines[0].widgets[0], WidgetConfig::Model { .. }));
+        assert!(matches!(s.lines[0].widgets[0].kind, WidgetConfig::Model { .. }));
         let written = fs::read_to_string(&path).unwrap();
         let reparsed: Settings = serde_json::from_str(&written).unwrap();
         assert_eq!(reparsed.version, 1);
@@ -135,7 +138,7 @@ mod tests {
 
         assert_eq!(s.version, 1);
         assert_eq!(s.lines.len(), 1);
-        assert!(matches!(s.lines[0].widgets[0], WidgetConfig::Model { .. }));
+        assert!(matches!(s.lines[0].widgets[0].kind, WidgetConfig::Model { .. }));
     }
 
     #[test]
@@ -149,6 +152,6 @@ mod tests {
         let s = load();
 
         assert_eq!(s.lines.len(), 1);
-        assert!(matches!(s.lines[0].widgets[0], WidgetConfig::Model { .. }));
+        assert!(matches!(s.lines[0].widgets[0].kind, WidgetConfig::Model { .. }));
     }
 }
