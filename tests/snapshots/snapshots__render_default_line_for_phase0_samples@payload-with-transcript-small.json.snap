@@ -1,0 +1,7 @@
+---
+source: tests/snapshots.rs
+assertion_line: 62
+expression: stdout
+input_file: benches/samples/payload-with-transcript-small.json
+---
+Sonnet 4.6

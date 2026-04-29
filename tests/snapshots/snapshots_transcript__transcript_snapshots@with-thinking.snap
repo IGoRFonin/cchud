@@ -1,0 +1,5 @@
+---
+source: tests/snapshots_transcript.rs
+expression: rendered
+---
+cT: 2.1k | totT: 2.5k | ↓82 t/s | ↑5 t/s | ⇅87 t/s | ⏰ 01:00:00 | 01:15 | 🧠 max

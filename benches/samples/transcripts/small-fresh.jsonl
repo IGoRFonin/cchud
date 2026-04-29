@@ -1,0 +1,6 @@
+{"type":"user","timestamp":"2026-01-01T00:00:00Z"}
+{"type":"assistant","timestamp":"2026-01-01T00:00:05Z","message":{"usage":{"input_tokens":150,"output_tokens":80,"cache_read_input_tokens":2000,"cache_creation_input_tokens":50}}}
+{"type":"user","timestamp":"2026-01-01T00:01:00Z"}
+{"type":"assistant","timestamp":"2026-01-01T00:01:08Z","message":{"usage":{"input_tokens":100,"output_tokens":120,"cache_read_input_tokens":2100,"cache_creation_input_tokens":40}}}
+{"type":"user","timestamp":"2026-01-01T00:02:00Z"}
+{"type":"assistant","timestamp":"2026-01-01T00:02:12Z","message":{"usage":{"input_tokens":200,"output_tokens":150,"cache_read_input_tokens":2300,"cache_creation_input_tokens":60}}}

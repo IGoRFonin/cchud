@@ -1,0 +1,14 @@
+{
+  "lines": [{
+    "widgets": [
+      {"type": "tokens-cached"},
+      {"type": "tokens-total"},
+      {"type": "input-speed"},
+      {"type": "output-speed"},
+      {"type": "total-speed"},
+      {"type": "block-timer"},
+      {"type": "session-duration"},
+      {"type": "thinking-effort"}
+    ]
+  }]
+}
