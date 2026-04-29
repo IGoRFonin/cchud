@@ -20,6 +20,7 @@ pub mod git_tracking;
 pub mod model;
 pub mod session;
 pub mod static_text;
+pub mod transcript_timing;
 pub mod transcript_tokens;
 pub mod trivial;
 pub mod worktree;
@@ -296,5 +297,8 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::InputSpeed => Box::new(transcript_tokens::InputSpeed),
         WidgetConfig::OutputSpeed => Box::new(transcript_tokens::OutputSpeed),
         WidgetConfig::TotalSpeed => Box::new(transcript_tokens::TotalSpeed),
+        // Phase 6 — Task 7 (transcript timing cluster):
+        WidgetConfig::BlockTimer => Box::new(transcript_timing::BlockTimer),
+        WidgetConfig::SessionDuration => Box::new(transcript_timing::SessionDuration),
     }
 }

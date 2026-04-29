@@ -21,5 +21,7 @@ mod store;
 #[cfg(test)]
 pub mod fixture;
 
+#[cfg(test)]
+pub use jsonl_types::BillingBlock;
 pub use jsonl_types::{MessageStats, TranscriptStats};
 pub use store::load_or_build_incremental;

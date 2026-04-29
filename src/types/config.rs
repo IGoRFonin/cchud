@@ -107,6 +107,9 @@ pub enum WidgetConfig {
     InputSpeed,
     OutputSpeed,
     TotalSpeed,
+    // Phase 6 — Task 7 (transcript timing cluster):
+    BlockTimer,
+    SessionDuration,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -388,6 +391,18 @@ mod tests {
         let json = r#"[{ "type": "git-pr" }]"#;
         let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
         assert!(matches!(widgets[0], WidgetConfig::GitPr));
+    }
+
+    #[test]
+    fn parses_phase6_timing_widgets() {
+        let json = r#"[
+            { "type": "block-timer" },
+            { "type": "session-duration" }
+        ]"#;
+        let widgets: Vec<WidgetConfig> = serde_json::from_str(json).unwrap();
+        assert_eq!(widgets.len(), 2);
+        assert!(matches!(widgets[0], WidgetConfig::BlockTimer));
+        assert!(matches!(widgets[1], WidgetConfig::SessionDuration));
     }
 
     #[test]
