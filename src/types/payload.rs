@@ -47,9 +47,10 @@ pub struct StatusPayload {
     #[serde(default)]
     pub vim: Option<VimState>,
 
-    // Остаются Value — типизация позже:
+    // Phase 7 — typed (replaces Option<Value> from Phase 0):
     #[serde(default)]
-    pub rate_limits: Option<serde_json::Value>,
+    pub rate_limits: Option<RateLimits>,
+    // Остаются Value — типизация позже:
     #[serde(default)]
     pub effort: Option<serde_json::Value>,
     #[serde(default)]
@@ -145,6 +146,23 @@ pub struct VimState {
 pub struct OutputStyle {
     #[serde(default)]
     pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RateLimits {
+    #[serde(default)]
+    pub five_hour: Option<RateBucket>,
+    #[serde(default)]
+    pub seven_day: Option<RateBucket>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct RateBucket {
+    #[serde(default)]
+    pub used_percentage: Option<f64>,
+    /// Unix seconds, UTC.
+    #[serde(default)]
+    pub resets_at: Option<i64>,
 }
 
 #[cfg(test)]
@@ -264,6 +282,40 @@ mod tests {
         assert_eq!(wt.name.as_deref(), Some("wt-feature"));
         assert_eq!(wt.branch.as_deref(), Some("feature/x"));
         assert_eq!(wt.original_branch.as_deref(), Some("main"));
+    }
+
+    #[test]
+    fn parses_rate_limits_typed() {
+        let p: StatusPayload = serde_json::from_str(SAMPLE).unwrap();
+        let rl = p.rate_limits.expect("rate_limits present in sample");
+        let five = rl.five_hour.expect("five_hour bucket present");
+        assert!(five.used_percentage.is_some(), "used_percentage parsed");
+        assert!(five.resets_at.is_some(), "resets_at parsed (Unix seconds)");
+    }
+
+    #[test]
+    fn rate_limits_absent_yields_none() {
+        let json = r#"{
+            "session_id": "x",
+            "model": {"id": "m", "display_name": "M"},
+            "workspace": {"current_dir": "/tmp"}
+        }"#;
+        let p: StatusPayload = serde_json::from_str(json).unwrap();
+        assert!(p.rate_limits.is_none());
+    }
+
+    #[test]
+    fn rate_limits_missing_buckets_yields_none_buckets() {
+        let json = r#"{
+            "session_id": "x",
+            "model": {"id": "m", "display_name": "M"},
+            "workspace": {"current_dir": "/tmp"},
+            "rate_limits": {}
+        }"#;
+        let p: StatusPayload = serde_json::from_str(json).unwrap();
+        let rl = p.rate_limits.unwrap();
+        assert!(rl.five_hour.is_none());
+        assert!(rl.seven_day.is_none());
     }
 
     #[test]
