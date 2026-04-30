@@ -156,6 +156,53 @@ pub mod plain;
 pub mod powerline;
 pub mod themes;
 
+#[derive(Debug, Default, Clone)]
+pub struct RenderState {
+    pub global_theme_index: usize,
+    pub global_separator_index: usize,
+}
+
+impl RenderState {
+    pub fn reset(&mut self) {
+        self.global_theme_index = 0;
+        self.global_separator_index = 0;
+    }
+}
+
+/// Композирует финальный `Style` для одного виджета.
+/// Порядок: widget default → theme.widget_styles[id] → per-widget override → theme globals.
+#[must_use]
+pub fn apply_widget_style(
+    widget_default: Style,
+    theme_widget_style: Option<Style>,
+    per_widget_override: &crate::types::config::WidgetStyleOverride,
+    theme_globals: &crate::types::config::ThemeConfig,
+) -> Style {
+    let mut style = theme_widget_style.unwrap_or(widget_default);
+
+    if let Some(c) = color_parse::parse_color(per_widget_override.color.as_deref()) {
+        style.fg = Some(c);
+    }
+    if let Some(c) = color_parse::parse_color(per_widget_override.background_color.as_deref()) {
+        style.bg = Some(c);
+    }
+    if let Some(b) = per_widget_override.bold {
+        style.bold = b;
+    }
+
+    if theme_globals.global_bold {
+        style.bold = true;
+    }
+    if let Some(c) = color_parse::parse_color(theme_globals.override_foreground_color.as_deref()) {
+        style.fg = Some(c);
+    }
+    if let Some(c) = color_parse::parse_color(theme_globals.override_background_color.as_deref()) {
+        style.bg = Some(c);
+    }
+
+    style
+}
+
 use crate::types::config::Settings;
 
 #[derive(Debug)]
@@ -216,6 +263,67 @@ impl Renderer {
             Self::Plain(p) => p.render(segments),
             Self::Powerline(p) => p.render(segments),
         }
+    }
+}
+
+#[cfg(test)]
+mod apply_style_tests {
+    use super::*;
+    use crate::types::config::{ThemeConfig, WidgetStyleOverride};
+
+    fn theme() -> ThemeConfig {
+        ThemeConfig::default()
+    }
+
+    #[test]
+    fn returns_widget_default_when_no_overrides() {
+        let dflt = Style::none().bold();
+        let theme = theme();
+        let ovr = WidgetStyleOverride::default();
+        let s = apply_widget_style(dflt, None, &ovr, &theme);
+        assert!(s.bold);
+        assert!(s.fg.is_none());
+    }
+
+    #[test]
+    fn theme_widget_style_overrides_default() {
+        let dflt = Style::none().bold();
+        let theme_style = Style::none().fg(Color::Rgb(255, 0, 0));
+        let theme = theme();
+        let ovr = WidgetStyleOverride::default();
+        let s = apply_widget_style(dflt, Some(theme_style), &ovr, &theme);
+        assert_eq!(s.fg, Some(Color::Rgb(255, 0, 0)));
+        assert!(!s.bold, "theme style replaced widget default entirely");
+    }
+
+    #[test]
+    fn per_widget_override_changes_color_and_bold() {
+        let mut ovr = WidgetStyleOverride::default();
+        ovr.color = Some("#fafafa".into());
+        ovr.bold = Some(true);
+        let s = apply_widget_style(Style::none(), None, &ovr, &theme());
+        assert_eq!(s.fg, Some(Color::Rgb(0xfa, 0xfa, 0xfa)));
+        assert!(s.bold);
+    }
+
+    #[test]
+    fn global_bold_force_enables_after_override() {
+        let mut theme = theme();
+        theme.global_bold = true;
+        let mut ovr = WidgetStyleOverride::default();
+        ovr.bold = Some(false);
+        let s = apply_widget_style(Style::none(), None, &ovr, &theme);
+        assert!(s.bold, "global_bold force-enables after per-widget override");
+    }
+
+    #[test]
+    fn override_foreground_color_wins_over_per_widget() {
+        let mut theme = theme();
+        theme.override_foreground_color = Some("#aabbcc".into());
+        let mut ovr = WidgetStyleOverride::default();
+        ovr.color = Some("#000000".into());
+        let s = apply_widget_style(Style::none(), None, &ovr, &theme);
+        assert_eq!(s.fg, Some(Color::Rgb(0xaa, 0xbb, 0xcc)));
     }
 }
 

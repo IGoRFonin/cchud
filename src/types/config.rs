@@ -130,6 +130,22 @@ pub enum WidgetConfig {
     SessionDuration,
     // Phase 6 — Task 8 (transcript meta cluster):
     ThinkingEffort,
+
+    // Phase 7 — usage cluster (payload.rate_limits):
+    SessionUsage,
+    WeeklyUsage,
+    BlockResetTimer,
+    WeeklyResetTimer,
+
+    // Phase 7 — env cluster:
+    ClaudeAccountEmail,
+    FreeMemory,
+
+    // Phase 7 — transcript meta:
+    Skills,
+
+    // Phase 7 — sentinel for auto_align (не считается в "60 widgets"):
+    AlignRight,
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
@@ -174,26 +190,82 @@ const fn default_context_bar_width() -> u32 {
     10
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeConfig {
     #[serde(default)]
     pub kind: ThemeKind,
-    /// Built-in theme name. Ignored when `kind != Powerline` or `custom` is set.
     #[serde(default)]
     pub theme_name: Option<String>,
-    /// Full custom theme (overrides built-ins). Powerline only.
     #[serde(default)]
     pub custom: Option<crate::render::themes::PowerlineTheme>,
-    /// Override separator glyphs (Powerline). First element = primary separator.
     #[serde(default)]
     pub separators: Vec<String>,
     #[serde(default)]
     pub start_caps: Vec<String>,
     #[serde(default)]
     pub end_caps: Vec<String>,
-    /// `None` means auto-detect at runtime.
     #[serde(default)]
     pub color_level: Option<crate::render::ColorLevel>,
+
+    // Phase 7 — global theme settings (7.0b):
+    #[serde(default)]
+    pub global_bold: bool,
+    #[serde(default)]
+    pub inherit_separator_colors: bool,
+    #[serde(default)]
+    pub override_background_color: Option<String>,
+    #[serde(default)]
+    pub override_foreground_color: Option<String>,
+    #[serde(default)]
+    pub minimalist_mode: bool,
+    #[serde(default)]
+    pub flex_mode: FlexMode,
+    #[serde(default = "default_compact_threshold")]
+    pub compact_threshold: u32,
+    #[serde(default)]
+    pub auto_align: bool,
+    #[serde(default)]
+    pub continue_theme_across_lines: bool,
+}
+
+impl Default for ThemeConfig {
+    fn default() -> Self {
+        Self {
+            kind: ThemeKind::default(),
+            theme_name: None,
+            custom: None,
+            separators: Vec::new(),
+            start_caps: Vec::new(),
+            end_caps: Vec::new(),
+            color_level: None,
+            global_bold: false,
+            inherit_separator_colors: false,
+            override_background_color: None,
+            override_foreground_color: None,
+            minimalist_mode: false,
+            flex_mode: FlexMode::Full,
+            compact_threshold: 60,
+            auto_align: false,
+            continue_theme_across_lines: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub enum FlexMode {
+    #[default]
+    #[serde(rename = "full")]
+    Full,
+    #[serde(rename = "full-minus-20")]
+    FullMinus20,
+    #[serde(rename = "full-minus-40")]
+    FullMinus40,
+    #[serde(rename = "disabled")]
+    Disabled,
+}
+
+const fn default_compact_threshold() -> u32 {
+    60
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -421,6 +493,61 @@ mod tests {
         let json = r#"[{ "type": "thinking-effort" }]"#;
         let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
         assert!(matches!(widgets[0].kind, WidgetConfig::ThinkingEffort));
+    }
+
+    #[test]
+    fn flex_mode_default_is_full() {
+        let s = Settings::default();
+        assert_eq!(s.theme.flex_mode, FlexMode::Full);
+        assert!(!s.theme.global_bold);
+        assert_eq!(s.theme.compact_threshold, 60);
+        assert!(!s.theme.auto_align);
+        assert!(!s.theme.continue_theme_across_lines);
+    }
+
+    #[test]
+    fn theme_globals_parse_from_json() {
+        let json = r##"{
+            "theme": {
+                "global_bold": true,
+                "inherit_separator_colors": true,
+                "override_background_color": "#aabbcc",
+                "minimalist_mode": true,
+                "flex_mode": "full-minus-40",
+                "compact_threshold": 80,
+                "auto_align": true,
+                "continue_theme_across_lines": true
+            }
+        }"##;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        assert!(s.theme.global_bold);
+        assert!(s.theme.inherit_separator_colors);
+        assert_eq!(s.theme.override_background_color.as_deref(), Some("#aabbcc"));
+        assert!(s.theme.minimalist_mode);
+        assert_eq!(s.theme.flex_mode, FlexMode::FullMinus40);
+        assert_eq!(s.theme.compact_threshold, 80);
+        assert!(s.theme.auto_align);
+        assert!(s.theme.continue_theme_across_lines);
+    }
+
+    #[test]
+    fn align_right_widget_parses() {
+        let json = r#"{"lines": [{"widgets": [{"type": "align-right"}]}]}"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        assert!(matches!(s.lines[0].widgets[0].kind, WidgetConfig::AlignRight));
+    }
+
+    #[test]
+    fn phase7_widget_variants_parse() {
+        let json = r#"[
+            {"type": "session-usage"}, {"type": "weekly-usage"},
+            {"type": "block-reset-timer"}, {"type": "weekly-reset-timer"},
+            {"type": "claude-account-email"}, {"type": "free-memory"},
+            {"type": "skills"}
+        ]"#;
+        let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
+        assert!(matches!(widgets[0].kind, WidgetConfig::SessionUsage));
+        assert!(matches!(widgets[6].kind, WidgetConfig::Skills));
     }
 
     #[test]

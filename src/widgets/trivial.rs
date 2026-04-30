@@ -90,6 +90,19 @@ impl Widget for VimMode {
     }
 }
 
+/// Phase 7 setup stub. T8/T9/T10/T11 заменят на реальные виджеты.
+#[allow(dead_code)]
+pub struct Stub;
+
+impl super::Widget for Stub {
+    fn id(&self) -> &'static str {
+        "stub"
+    }
+    fn render(&self, _: &super::RenderContext<'_>) -> Option<String> {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]

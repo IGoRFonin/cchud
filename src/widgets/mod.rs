@@ -29,7 +29,7 @@ pub mod trivial;
 pub mod worktree;
 
 #[cfg(test)]
-pub(crate) mod test_helpers;
+pub mod test_helpers;
 
 use crate::types::{
     config::{Settings, WidgetConfig, WidgetStyleOverride},
@@ -285,5 +285,17 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::SessionDuration => Box::new(transcript_timing::SessionDuration),
         // Phase 6 — Task 8 (transcript meta cluster):
         WidgetConfig::ThinkingEffort => Box::new(transcript_meta::ThinkingEffort),
+
+        // Phase 7 — temp stubs (T8/T9/T10 заменят):
+        WidgetConfig::SessionUsage
+        | WidgetConfig::WeeklyUsage
+        | WidgetConfig::BlockResetTimer
+        | WidgetConfig::WeeklyResetTimer
+        | WidgetConfig::ClaudeAccountEmail
+        | WidgetConfig::FreeMemory
+        | WidgetConfig::Skills => Box::new(trivial::Stub),
+
+        // Phase 7 — auto_align sentinel (T11 даст специальную обработку):
+        WidgetConfig::AlignRight => Box::new(trivial::Stub),
     }
 }
