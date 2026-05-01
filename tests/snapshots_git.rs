@@ -75,6 +75,7 @@ fn render_all(payload: &StatusPayload, settings: &Settings) -> Vec<String> {
     let widgets = build_widgets(settings);
     widgets
         .iter()
+        .flatten()
         .map(|(w, _)| {
             let id = w.id();
             let val = w.render(&ctx).unwrap_or_default();

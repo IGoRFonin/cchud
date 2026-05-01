@@ -27,7 +27,10 @@ fn settings_8w() -> Settings {
                 WidgetConfig::ThinkingEffort,
             ]
             .into_iter()
-            .map(|kind| WidgetItem { kind, style: WidgetStyleOverride::default() })
+            .map(|kind| WidgetItem {
+                kind,
+                style: WidgetStyleOverride::default(),
+            })
             .collect(),
         }],
         theme: Default::default(),
@@ -71,6 +74,7 @@ fn render_for(path: &Path) -> String {
     let widgets = build_widgets(&settings);
     let parts: Vec<String> = widgets
         .iter()
+        .flatten()
         .map(|(w, _)| w.render(&ctx).unwrap_or_else(|| "<none>".into()))
         .collect();
     parts.join(" | ")

@@ -113,17 +113,45 @@ impl<'a> RenderContext<'a> {
 }
 
 #[must_use]
-pub fn build_widgets(settings: &Settings) -> Vec<(Box<dyn Widget>, WidgetStyleOverride)> {
+pub fn build_widgets(settings: &Settings) -> Vec<Vec<(Box<dyn Widget>, WidgetStyleOverride)>> {
     settings
         .lines
-        .first()
+        .iter()
         .map(|line| {
             line.widgets
                 .iter()
                 .map(|item| (build_one(&item.kind), item.style.clone()))
                 .collect()
         })
-        .unwrap_or_default()
+        .collect()
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod build_widgets_tests {
+    use super::*;
+    use crate::types::config::Settings;
+
+    #[test]
+    fn build_widgets_returns_one_inner_vec_per_line() {
+        let json = r#"{
+            "lines": [
+                {"widgets": [{"type": "model"}]},
+                {"widgets": [{"type": "git-branch"}, {"type": "git-status"}]}
+            ]
+        }"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        let lines = build_widgets(&s);
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0].len(), 1);
+        assert_eq!(lines[1].len(), 2);
+    }
+
+    #[test]
+    fn build_widgets_empty_settings_yields_empty_vec() {
+        let lines = build_widgets(&Settings::default());
+        assert!(lines.is_empty());
+    }
 }
 
 #[cfg(test)]

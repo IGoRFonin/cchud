@@ -66,28 +66,43 @@ fn render_pipeline() -> ExitCode {
     };
     let settings = config::load();
     let ctx = RenderContext::new(&payload, &settings);
-    let widget_items = build_widgets(&settings);
-    let segments: Vec<Segment> = widget_items
-        .iter()
-        .filter_map(|(w, ovr)| {
-            let text = w.render(&ctx)?;
-            let is_align = w.id() == "align-right";
-            let style = crate::render::apply_widget_style(
-                w.default_style(),
-                None,
-                ovr,
-                &settings.theme,
-            );
-            Some(Segment {
-                text,
-                style,
-                hyperlink: w.hyperlink(&ctx),
-                align_marker: is_align,
-            })
-        })
-        .collect();
+    let lines = build_widgets(&settings);
     let renderer = Renderer::from_settings(&settings);
     let mut state = crate::render::RenderState::default();
-    println!("{}", renderer.render_line(&segments, &mut state, &settings.theme));
+    let term_width = crate::util::terminal_width();
+    let budget = crate::render::flex::flex_budget(settings.theme.flex_mode, term_width);
+
+    let mut output = String::new();
+    for (i, line_widgets) in lines.iter().enumerate() {
+        if i > 0 {
+            output.push('\n');
+        }
+        let segments: Vec<Segment> = line_widgets
+            .iter()
+            .filter_map(|(w, ovr)| {
+                let text = w.render(&ctx)?;
+                let is_align = w.id() == "align-right";
+                let style = crate::render::apply_widget_style(
+                    w.default_style(),
+                    None,
+                    ovr,
+                    &settings.theme,
+                );
+                Some(Segment {
+                    text,
+                    style,
+                    hyperlink: w.hyperlink(&ctx),
+                    align_marker: is_align,
+                })
+            })
+            .collect();
+        let line_str = renderer.render_line(&segments, &mut state, &settings.theme);
+        let truncated = crate::render::flex::truncate_to_budget(&line_str, budget);
+        output.push_str(&truncated);
+        if !settings.theme.continue_theme_across_lines {
+            state.reset();
+        }
+    }
+    println!("{output}");
     ExitCode::SUCCESS
 }
