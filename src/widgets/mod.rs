@@ -299,7 +299,17 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         // Phase 7 — transcript meta:
         WidgetConfig::Skills => Box::new(transcript_meta::Skills),
 
-        // Phase 7 — temp stubs (T11 заменит):
-        WidgetConfig::AlignRight => Box::new(trivial::Stub),
+        // Phase 7 — AlignRight sentinel (T11):
+        WidgetConfig::AlignRight => Box::new(AlignRightSentinel),
+    }
+}
+
+struct AlignRightSentinel;
+impl Widget for AlignRightSentinel {
+    fn id(&self) -> &'static str {
+        "align-right"
+    }
+    fn render(&self, _: &RenderContext<'_>) -> Option<String> {
+        Some(String::new())
     }
 }

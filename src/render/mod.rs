@@ -25,8 +25,8 @@ pub enum ColorLevel {
     TrueColor,
 }
 
-pub mod color_sanitize;
 pub mod color_parse;
+pub mod color_sanitize;
 
 impl ColorLevel {
     /// Auto-detect via `supports-color` on stdout. Returns `None` on non-TTY.
@@ -150,12 +150,13 @@ const fn to_anstyle_color(c: Color) -> anstyle::Color {
     }
 }
 
-pub mod flex;  // Phase 7
+pub mod flex; // Phase 7
 pub mod hyperlink;
 pub mod plain;
 pub mod powerline;
 pub mod themes;
 
+#[allow(dead_code)]
 #[derive(Debug, Default, Clone)]
 pub struct RenderState {
     pub global_theme_index: usize,
@@ -163,6 +164,7 @@ pub struct RenderState {
 }
 
 impl RenderState {
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.global_theme_index = 0;
         self.global_separator_index = 0;
@@ -170,7 +172,8 @@ impl RenderState {
 }
 
 /// Композирует финальный `Style` для одного виджета.
-/// Порядок: widget default → theme.widget_styles[id] → per-widget override → theme globals.
+/// Порядок: widget default → `theme.widget_styles`[id] → per-widget override → theme globals.
+#[allow(dead_code)]
 #[must_use]
 pub fn apply_widget_style(
     widget_default: Style,
@@ -258,10 +261,15 @@ impl Renderer {
     }
 
     #[must_use]
-    pub fn render(&self, segments: &[Segment]) -> String {
+    pub fn render_line(
+        &self,
+        segments: &[Segment],
+        state: &mut RenderState,
+        theme: &crate::types::config::ThemeConfig,
+    ) -> String {
         match self {
-            Self::Plain(p) => p.render(segments),
-            Self::Powerline(p) => p.render(segments),
+            Self::Plain(p) => p.render_line(segments, state, theme),
+            Self::Powerline(p) => p.render_line(segments, state, theme),
         }
     }
 }
@@ -313,7 +321,10 @@ mod apply_style_tests {
         let mut ovr = WidgetStyleOverride::default();
         ovr.bold = Some(false);
         let s = apply_widget_style(Style::none(), None, &ovr, &theme);
-        assert!(s.bold, "global_bold force-enables after per-widget override");
+        assert!(
+            s.bold,
+            "global_bold force-enables after per-widget override"
+        );
     }
 
     #[test]
@@ -341,13 +352,16 @@ mod renderer_tests {
 
     #[test]
     fn renderer_dispatches_render_to_plain() {
+        use crate::types::config::ThemeConfig;
         let r = Renderer::Plain(plain::Plain {
             separator: ", ".into(),
             level: ColorLevel::None,
             hyperlinks: false,
         });
+        let mut state = RenderState::default();
+        let theme = ThemeConfig::default();
         assert_eq!(
-            r.render(&[Segment::plain("a"), Segment::plain("b")]),
+            r.render_line(&[Segment::plain("a"), Segment::plain("b")], &mut state, &theme),
             "a, b"
         );
     }
@@ -377,6 +391,8 @@ pub struct Segment {
     pub text: String,
     pub style: Style,
     pub hyperlink: Option<String>,
+    /// Phase 7: marker для `auto_align` — сегмент действует как разделитель left/right.
+    pub align_marker: bool,
 }
 
 impl Segment {
@@ -387,6 +403,7 @@ impl Segment {
             text: text.into(),
             style: Style::none(),
             hyperlink: None,
+            align_marker: false,
         }
     }
 
@@ -397,6 +414,7 @@ impl Segment {
             text: text.into(),
             style,
             hyperlink: None,
+            align_marker: false,
         }
     }
 }

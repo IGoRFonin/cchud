@@ -69,15 +69,25 @@ fn render_pipeline() -> ExitCode {
     let widget_items = build_widgets(&settings);
     let segments: Vec<Segment> = widget_items
         .iter()
-        .filter_map(|(w, _override)| {
-            w.render(&ctx).map(|text| Segment {
+        .filter_map(|(w, ovr)| {
+            let text = w.render(&ctx)?;
+            let is_align = w.id() == "align-right";
+            let style = crate::render::apply_widget_style(
+                w.default_style(),
+                None,
+                ovr,
+                &settings.theme,
+            );
+            Some(Segment {
                 text,
-                style: w.default_style(),
+                style,
                 hyperlink: w.hyperlink(&ctx),
+                align_marker: is_align,
             })
         })
         .collect();
     let renderer = Renderer::from_settings(&settings);
-    println!("{}", renderer.render(&segments));
+    let mut state = crate::render::RenderState::default();
+    println!("{}", renderer.render_line(&segments, &mut state, &settings.theme));
     ExitCode::SUCCESS
 }
