@@ -11,8 +11,7 @@
 
 pub mod context;
 pub mod custom_command;
-pub mod env;       // Phase 7 — env cluster
-pub mod usage;     // Phase 7 — usage cluster
+pub mod env; // Phase 7 — env cluster
 pub mod git_diff;
 pub mod git_head;
 pub mod git_pr;
@@ -26,6 +25,7 @@ pub mod transcript_meta;
 pub mod transcript_timing;
 pub mod transcript_tokens;
 pub mod trivial;
+pub mod usage; // Phase 7 — usage cluster
 pub mod worktree;
 
 #[cfg(test)]
@@ -286,16 +286,16 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         // Phase 6 — Task 8 (transcript meta cluster):
         WidgetConfig::ThinkingEffort => Box::new(transcript_meta::ThinkingEffort),
 
-        // Phase 7 — temp stubs (T8/T9/T10 заменят):
-        WidgetConfig::SessionUsage
-        | WidgetConfig::WeeklyUsage
-        | WidgetConfig::BlockResetTimer
-        | WidgetConfig::WeeklyResetTimer
-        | WidgetConfig::ClaudeAccountEmail
-        | WidgetConfig::FreeMemory
-        | WidgetConfig::Skills => Box::new(trivial::Stub),
+        // Phase 7 — usage cluster:
+        WidgetConfig::SessionUsage => Box::new(usage::SessionUsage),
+        WidgetConfig::WeeklyUsage => Box::new(usage::WeeklyUsage),
+        WidgetConfig::BlockResetTimer => Box::new(usage::BlockResetTimer),
+        WidgetConfig::WeeklyResetTimer => Box::new(usage::WeeklyResetTimer),
 
-        // Phase 7 — auto_align sentinel (T11 даст специальную обработку):
-        WidgetConfig::AlignRight => Box::new(trivial::Stub),
+        // Phase 7 — temp stubs (T9/T10/T11 заменят):
+        WidgetConfig::ClaudeAccountEmail
+        | WidgetConfig::FreeMemory
+        | WidgetConfig::Skills
+        | WidgetConfig::AlignRight => Box::new(trivial::Stub),
     }
 }
