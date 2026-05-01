@@ -257,3 +257,24 @@ sonic-rs остался в `Cargo.toml` как deps, но парсинг пол�
 8. **`OnceLock<Option<ClaudeJson>>`** для `claude_account_email()`. Файл ≤ 10 KB; читается один раз за процесс.
 
 **Связанные документы:** `docs/superpowers/specs/2026-04-29-phase-7-other-widgets-design.md`, `plan/phase-7-other-widgets.md` (outline).
+
+---
+
+## D-2026-05-01 — Phase 8 ключевые решения
+
+**Контекст:** Реализация Phase 8 (релиз 0.9.0): `cchud configure` (interactive TUI) + `cchud import` (CLI миграция с ccstatusline).
+
+**Решения:**
+
+1. **Pure ratatui + crossterm.** Без `ratatui-interact`, без `tui-input`, без `ansi-to-tui`. Собственный `widgets_ui::input.rs` (~50 LOC) и `style_map::to_span` после refactor `compose_line` устраняют необходимость в этих хелперах.
+2. **Feature flag `default = ["tui"]`.** `cargo install cchud --no-default-features` собирает минимальный бинарь (~8 MB). `commands::{configure, import}` + весь `tui/` под `#[cfg(feature = "tui")]`. Без feature `cchud configure`/`cchud import` печатают error + exit 2.
+3. **`ratatui = "=0.30.0"`, `crossterm = "=0.29.0"`.** Pin patch — minor breaking changes защищены. crossterm 0.30.0 не существует; ratatui 0.30.0 использует crossterm 0.29.x. Rust MSRV поднят до 1.86 (ratatui 0.30.0 требует 1.86+).
+4. **`compose_line` refactor.** Pure-функция в `Renderer` возвращает `Vec<StyledSegment>` (после flex/separator/auto-align/apply_widget_style). `Renderer::render_line = compose_line + emit_ansi`. TUI live preview = `compose_line + style_map::to_span`. Single source of truth — drift между TUI preview и реальным рендером невозможен.
+5. **`PartialEq` на Settings chain.** Derived на `Settings`/`Line`/`WidgetItem`/`WidgetConfig`/`WidgetStyleOverride`/`ThemeConfig`/`ModelParams`/`CustomTextParams`/`CustomSymbolParams`/`LinkParams`/`CustomCommandParams`/`ContextBarParams`/`PowerlineTheme`. `App.dirty()` = `editable != initial`. Никаких runtime-изменений.
+6. **Save target — `~/.config/cchud/settings.json`.** Тот же путь, что `config::load()`. Backup `<path>.bak.<unix-ts-ms>`. Atomic write `<path>.tmp` → `rename`.
+7. **`cchud import` best-effort + warn.** Unknown widget type → пропуск + stderr warn. Если ноль валидных widgets — exit 1. `~/.claude/settings.json` → автодетект секции `ccstatusline`; `--from <path>` — explicit.
+8. **Reducer pure (no IO).** `handle_key(&mut App, KeyEvent) -> ReducerEffect`. Save/Quit/Discard поднимаются как `ReducerEffect`, обрабатываются в event loop. ≥15 unit-тестов без `TestBackend`.
+9. **`tempfile::NamedTempFile` для sample transcript.** Owned `App` через `Option<NamedTempFile>` (RAII) — fixture-файл живёт ровно столько, сколько TUI.
+10. **Sample payload — захардкоженный inline.** `tui::sample::payload() -> (StatusPayload, NamedTempFile)`. Никаких runtime-аллокаций.
+
+**Связанные документы:** `docs/superpowers/specs/2026-05-01-phase-8-tui-design.md`, `plan/phase-8-tui.md` (outline).

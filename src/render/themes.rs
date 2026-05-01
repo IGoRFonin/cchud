@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{Color, Style};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PowerlineTheme {
     pub name: String,
     pub terminal_bg: Color,

@@ -1,7 +1,6 @@
 ---
 source: tests/snapshots_phase7.rs
-assertion_line: 98
 expression: "render_with_fixture(\"tests/configs/multi-line-themed.json\")"
 ---
  Sonnet 4.6  $0.72  totT: 13.8M  25% 
- main  ~25 ?35  ↑15  💾 0b 
+ main  ~10 ?51  💾 0b 

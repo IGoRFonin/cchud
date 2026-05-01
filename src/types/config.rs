@@ -7,7 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Settings {
     #[serde(default = "default_version")]
     pub version: u32,
@@ -17,13 +17,13 @@ pub struct Settings {
     pub theme: ThemeConfig,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Line {
     #[serde(default)]
     pub widgets: Vec<WidgetItem>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WidgetItem {
     #[serde(flatten)]
     pub kind: WidgetConfig,
@@ -31,7 +31,7 @@ pub struct WidgetItem {
     pub style: WidgetStyleOverride,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WidgetStyleOverride {
     #[serde(default)]
     pub color: Option<String>,
@@ -41,7 +41,7 @@ pub struct WidgetStyleOverride {
     pub bold: Option<bool>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum WidgetConfig {
     // Phase 2:
@@ -149,27 +149,27 @@ pub enum WidgetConfig {
 }
 
 /// Per-widget parameters. Phase 7 adds custom format strings, etc.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ModelParams {}
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CustomTextParams {
     pub text: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CustomSymbolParams {
     pub symbol: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LinkParams {
     pub url: String,
     #[serde(default)]
     pub label: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CustomCommandParams {
     pub command: String,
     #[serde(default)]
@@ -181,7 +181,7 @@ const fn default_command_timeout_ms() -> u64 {
     200
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ContextBarParams {
     #[serde(default = "default_context_bar_width")]
     pub width: u32,
@@ -191,7 +191,7 @@ const fn default_context_bar_width() -> u32 {
 }
 
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ThemeConfig {
     #[serde(default)]
     pub kind: ThemeKind,

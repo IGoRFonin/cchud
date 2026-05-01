@@ -3,3 +3,8 @@
 #[allow(dead_code)] // API для T9/T10 — пока не подключена к render-pipeline
 pub mod env_loader; // Phase 7
 pub mod install;
+
+#[cfg(feature = "tui")]
+pub mod configure;
+#[cfg(feature = "tui")]
+pub mod import;

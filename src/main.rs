@@ -15,6 +15,9 @@ mod types;
 mod util;
 mod widgets;
 
+#[cfg(feature = "tui")]
+mod tui;
+
 use std::process::ExitCode;
 
 use crate::render::{Renderer, Segment};
