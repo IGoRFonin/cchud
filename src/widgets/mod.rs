@@ -292,10 +292,11 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::BlockResetTimer => Box::new(usage::BlockResetTimer),
         WidgetConfig::WeeklyResetTimer => Box::new(usage::WeeklyResetTimer),
 
-        // Phase 7 — temp stubs (T9/T10/T11 заменят):
-        WidgetConfig::ClaudeAccountEmail
-        | WidgetConfig::FreeMemory
-        | WidgetConfig::Skills
-        | WidgetConfig::AlignRight => Box::new(trivial::Stub),
+        // Phase 7 — env cluster:
+        WidgetConfig::ClaudeAccountEmail => Box::new(env::ClaudeAccountEmail),
+        WidgetConfig::FreeMemory => Box::new(env::FreeMemory),
+
+        // Phase 7 — temp stubs (T10/T11 заменят):
+        WidgetConfig::Skills | WidgetConfig::AlignRight => Box::new(trivial::Stub),
     }
 }
