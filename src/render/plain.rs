@@ -19,42 +19,90 @@ pub struct Plain {
 
 impl Plain {
     #[must_use]
-    pub fn render_line(
+    pub fn compose_inner(
         &self,
         segments: &[Segment],
         _state: &mut RenderState,
         theme: &ThemeConfig,
-    ) -> String {
+    ) -> Vec<super::StyledSegment> {
         let term_width = crate::util::terminal_width();
         let force_minimalist = theme.minimalist_mode
             || (theme.compact_threshold > 0 && term_width < theme.compact_threshold as usize);
         if force_minimalist {
-            return render_minimalist(segments);
+            return compose_minimalist(segments);
         }
 
-        let mut parts: Vec<String> = Vec::with_capacity(segments.len());
-        for seg in segments {
-            if seg.text.is_empty() || seg.align_marker {
-                continue;
+        let visible: Vec<&Segment> = segments
+            .iter()
+            .filter(|s| !s.text.is_empty() && !s.align_marker)
+            .collect();
+
+        let mut out = Vec::with_capacity(visible.len() * 2);
+        for (i, seg) in visible.iter().enumerate() {
+            if i > 0 {
+                out.push(super::StyledSegment::plain(self.separator.clone()));
             }
-            let styled = seg.style.render(&seg.text, self.level);
-            let with_link = match &seg.hyperlink {
-                Some(url) => link(&styled, url, self.hyperlinks),
-                None => styled,
-            };
-            parts.push(with_link);
+            out.push(super::StyledSegment {
+                text: seg.text.clone(),
+                style: seg.style,
+                hyperlink: seg.hyperlink.clone(),
+            });
         }
-        parts.join(&self.separator)
+        out
+    }
+
+    #[must_use]
+    pub fn render_line(
+        &self,
+        segments: &[Segment],
+        state: &mut RenderState,
+        theme: &ThemeConfig,
+    ) -> String {
+        let composed = self.compose_inner(segments, state, theme);
+        emit_plain(&composed, self.level, self.hyperlinks)
     }
 }
 
-pub(super) fn render_minimalist(segments: &[Segment]) -> String {
-    segments
+fn emit_plain(
+    composed: &[super::StyledSegment],
+    level: super::ColorLevel,
+    hyperlinks: bool,
+) -> String {
+    composed
+        .iter()
+        .map(|s| {
+            let painted = s.style.render(&s.text, level);
+            match &s.hyperlink {
+                Some(url) => link(&painted, url, hyperlinks),
+                None => painted,
+            }
+        })
+        .collect::<String>()
+}
+
+pub(super) fn compose_minimalist(segments: &[Segment]) -> Vec<super::StyledSegment> {
+    let visible: Vec<&Segment> = segments
         .iter()
         .filter(|s| !s.text.is_empty() && !s.align_marker)
-        .map(|s| strip_emoji_prefix(&s.text))
-        .collect::<Vec<_>>()
-        .join(" | ")
+        .collect();
+    if visible.is_empty() {
+        return Vec::new();
+    }
+    let mut out = Vec::with_capacity(visible.len() * 2);
+    for (i, seg) in visible.iter().enumerate() {
+        if i > 0 {
+            out.push(super::StyledSegment::plain(" | "));
+        }
+        out.push(super::StyledSegment::plain(strip_emoji_prefix(&seg.text)));
+    }
+    out
+}
+
+pub(super) fn render_minimalist(segments: &[Segment]) -> String {
+    compose_minimalist(segments)
+        .iter()
+        .map(|s| s.text.clone())
+        .collect::<String>()
 }
 
 fn strip_emoji_prefix(s: &str) -> String {

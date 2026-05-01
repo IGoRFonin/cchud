@@ -260,6 +260,46 @@ impl Renderer {
         }
     }
 
+    /// Pure (без IO). Composes raw segments в финальную последовательность
+    /// `StyledSegment`'ов через Plain или Powerline ветку.
+    ///
+    /// TUI live preview вызывает этот метод и затем мапит каждый `StyledSegment`
+    /// на `ratatui::text::Span` через `tui::style_map::to_span`.
+    #[must_use]
+    pub fn compose_line(
+        &self,
+        segments: &[Segment],
+        state: &mut RenderState,
+        theme: &crate::types::config::ThemeConfig,
+    ) -> Vec<StyledSegment> {
+        match self {
+            Self::Plain(p) => p.compose_inner(segments, state, theme),
+            Self::Powerline(p) => p.compose_inner(segments, state, theme),
+        }
+    }
+
+    /// ANSI emit над composed segments. Каждый `StyledSegment` уже содержит
+    /// финальный `Style` — остаётся `Style::render` + опционально OSC 8 wrap.
+    #[must_use]
+    pub fn emit_ansi(&self, composed: &[StyledSegment]) -> String {
+        let (level, hyperlinks) = match self {
+            Self::Plain(p) => (p.level, p.hyperlinks),
+            Self::Powerline(p) => (p.level, p.hyperlinks),
+        };
+        composed
+            .iter()
+            .map(|s| {
+                let painted = s.style.render(&s.text, level);
+                match &s.hyperlink {
+                    Some(url) => hyperlink::link(&painted, url, hyperlinks),
+                    None => painted,
+                }
+            })
+            .collect::<String>()
+    }
+
+    /// Backward-compatible API. Hot path дёргает этот метод.
+    /// Поведение байт-эквивалентно Phase 7.
     #[must_use]
     pub fn render_line(
         &self,
@@ -267,9 +307,47 @@ impl Renderer {
         state: &mut RenderState,
         theme: &crate::types::config::ThemeConfig,
     ) -> String {
-        match self {
-            Self::Plain(p) => p.render_line(segments, state, theme),
-            Self::Powerline(p) => p.render_line(segments, state, theme),
+        let composed = self.compose_line(segments, state, theme);
+        self.emit_ansi(&composed)
+    }
+
+    /// TUI-only constructor. Forces `ColorLevel::TrueColor` + `hyperlinks = false`.
+    #[cfg(feature = "tui")]
+    #[must_use]
+    pub fn for_preview(settings: &Settings) -> Self {
+        use crate::types::config::ThemeKind;
+
+        match settings.theme.kind {
+            ThemeKind::Plain => Self::Plain(plain::Plain {
+                separator: " | ".into(),
+                level: ColorLevel::TrueColor,
+                hyperlinks: false,
+            }),
+            ThemeKind::Powerline => {
+                let theme: themes::PowerlineTheme = settings
+                    .theme
+                    .custom
+                    .clone()
+                    .or_else(|| {
+                        settings
+                            .theme
+                            .theme_name
+                            .as_deref()
+                            .and_then(themes::lookup)
+                            .map(Into::into)
+                    })
+                    .unwrap_or_else(|| (&themes::DEFAULT).into());
+                let mut p = powerline::Powerline::new(theme, ColorLevel::TrueColor, false);
+                if let Some(sep) = settings
+                    .theme
+                    .separators
+                    .first()
+                    .and_then(|s| s.chars().next())
+                {
+                    p.separator_left = sep;
+                }
+                Self::Powerline(p)
+            }
         }
     }
 }
@@ -386,6 +464,33 @@ mod renderer_tests {
         match r {
             Renderer::Powerline(p) => assert_eq!(p.theme.name, "default"),
             other => panic!("expected powerline, got {other:?}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct StyledSegment {
+    pub text: String,
+    pub style: Style,
+    pub hyperlink: Option<String>,
+}
+
+impl StyledSegment {
+    #[must_use]
+    pub fn plain(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            style: Style::none(),
+            hyperlink: None,
+        }
+    }
+
+    #[must_use]
+    pub fn styled(text: impl Into<String>, style: Style) -> Self {
+        Self {
+            text: text.into(),
+            style,
+            hyperlink: None,
         }
     }
 }
@@ -533,5 +638,65 @@ mod tests {
     #[test]
     fn color_distinguishes_rgb_and_ansi() {
         assert_ne!(Color::Rgb(255, 0, 0), Color::Ansi256(196));
+    }
+}
+
+#[cfg(test)]
+mod compose_line_tests {
+    use super::*;
+    use crate::types::config::{Settings, ThemeConfig};
+
+    #[test]
+    fn plain_compose_returns_separator_segments_between_widgets() {
+        let s = Settings::default();
+        let r = Renderer::from_settings(&s);
+        let segs = [Segment::plain("a"), Segment::plain("b")];
+        let mut state = RenderState::default();
+        let composed = r.compose_line(&segs, &mut state, &ThemeConfig::default());
+        assert_eq!(composed.len(), 3);
+        assert_eq!(composed[0].text, "a");
+        assert_eq!(composed[1].text, " | ");
+        assert_eq!(composed[2].text, "b");
+    }
+
+    #[test]
+    fn render_line_equals_emit_of_compose() {
+        let s = Settings::default();
+        let r = Renderer::from_settings(&s);
+        let segs = [Segment::plain("x"), Segment::plain("y")];
+        let mut s1 = RenderState::default();
+        let mut s2 = RenderState::default();
+        let line = r.render_line(&segs, &mut s1, &ThemeConfig::default());
+        let composed = r.compose_line(&segs, &mut s2, &ThemeConfig::default());
+        let emit = r.emit_ansi(&composed);
+        assert_eq!(line, emit, "render_line must equal emit_ansi(compose_line(_))");
+    }
+
+    #[test]
+    fn powerline_compose_emits_chevrons_with_terminal_bg_finalizer() {
+        let json = r#"{"theme": {"kind": "powerline", "theme_name": "dracula"}}"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        let r = Renderer::from_settings(&s);
+        let segs = [Segment::plain("hi")];
+        let mut state = RenderState::default();
+        let composed = r.compose_line(&segs, &mut state, &s.theme);
+        // Powerline: chevron + body + final-chevron → 3 segments.
+        assert_eq!(composed.len(), 3);
+        // Last segment — финальный transition в terminal_bg.
+        assert!(composed[2].style.bg.is_some());
+    }
+
+    #[cfg(feature = "tui")]
+    #[test]
+    fn for_preview_forces_truecolor_and_disables_hyperlinks() {
+        let s = Settings::default();
+        let r = Renderer::for_preview(&s);
+        match r {
+            Renderer::Plain(p) => {
+                assert_eq!(p.level, ColorLevel::TrueColor);
+                assert!(!p.hyperlinks);
+            }
+            Renderer::Powerline(_) => panic!("default should be Plain"),
+        }
     }
 }

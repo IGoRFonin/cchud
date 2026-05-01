@@ -49,39 +49,50 @@ impl Powerline {
         state: &mut RenderState,
         theme: &ThemeConfig,
     ) -> String {
-        let term_width = crate::util::terminal_width();
-        let force_minimalist = theme.minimalist_mode
-            || (theme.compact_threshold > 0 && term_width < theme.compact_threshold as usize);
-        if force_minimalist {
-            return super::plain::render_minimalist(segments);
-        }
-
-        if theme.auto_align {
-            if let Some(idx) = segments.iter().position(|s| s.align_marker) {
-                let left = self.render_inner(&segments[..idx], state, theme);
-                let right = self.render_inner(&segments[idx + 1..], state, theme);
-                return pad_to_width(&left, &right, term_width);
-            }
-        }
-
-        self.render_inner(segments, state, theme)
+        let composed = self.compose_inner(segments, state, theme);
+        emit_powerline(&composed, self.level, self.hyperlinks)
     }
 
-    fn render_inner(
+    #[must_use]
+    pub fn compose_inner(
         &self,
         segments: &[Segment],
         state: &mut RenderState,
         theme: &ThemeConfig,
-    ) -> String {
+    ) -> Vec<super::StyledSegment> {
+        let term_width = crate::util::terminal_width();
+        let force_minimalist = theme.minimalist_mode
+            || (theme.compact_threshold > 0 && term_width < theme.compact_threshold as usize);
+        if force_minimalist {
+            return super::plain::compose_minimalist(segments);
+        }
+
+        if theme.auto_align {
+            if let Some(idx) = segments.iter().position(|s| s.align_marker) {
+                let left = self.compose_segments(&segments[..idx], state, theme);
+                let right = self.compose_segments(&segments[idx + 1..], state, theme);
+                return pad_with_segment(left, right, term_width);
+            }
+        }
+
+        self.compose_segments(segments, state, theme)
+    }
+
+    fn compose_segments(
+        &self,
+        segments: &[Segment],
+        state: &mut RenderState,
+        theme: &ThemeConfig,
+    ) -> Vec<super::StyledSegment> {
         let visible: Vec<&Segment> = segments
             .iter()
             .filter(|s| !s.text.is_empty() && !s.align_marker)
             .collect();
         if visible.is_empty() {
-            return String::new();
+            return Vec::new();
         }
 
-        let mut out = String::new();
+        let mut out = Vec::with_capacity(visible.len() * 2 + 1);
         let mut prev_bg = self.theme.terminal_bg;
 
         for seg in &visible {
@@ -94,28 +105,32 @@ impl Powerline {
             } else {
                 Style::none().fg(prev_bg).bg(bg)
             };
-            out.push_str(&sep_style.render(&self.separator_left.to_string(), self.level));
+            out.push(super::StyledSegment {
+                text: self.separator_left.to_string(),
+                style: sep_style,
+                hyperlink: None,
+            });
 
-            let body_text = format!(" {} ", seg.text);
             let body_style = Style {
                 fg: Some(fg),
                 bg: Some(bg),
                 ..seg.style
             };
-            let styled_body = body_style.render(&body_text, self.level);
-            let body_with_link = match &seg.hyperlink {
-                Some(url) => link(&styled_body, url, self.hyperlinks),
-                None => styled_body,
-            };
-            out.push_str(&body_with_link);
+            out.push(super::StyledSegment {
+                text: format!(" {} ", seg.text),
+                style: body_style,
+                hyperlink: seg.hyperlink.clone(),
+            });
 
             prev_bg = bg;
             state.global_theme_index = state.global_theme_index.saturating_add(1);
         }
 
-        let final_sep = Style::none().fg(prev_bg).bg(self.theme.terminal_bg);
-        out.push_str(&final_sep.render(&self.separator_left.to_string(), self.level));
-
+        out.push(super::StyledSegment {
+            text: self.separator_left.to_string(),
+            style: Style::none().fg(prev_bg).bg(self.theme.terminal_bg),
+            hyperlink: None,
+        });
         out
     }
 
@@ -138,11 +153,42 @@ impl Powerline {
     }
 }
 
-fn pad_to_width(left: &str, right: &str, width: usize) -> String {
-    let lw = crate::util::ansi::visible_width(left);
-    let rw = crate::util::ansi::visible_width(right);
+fn emit_powerline(
+    composed: &[super::StyledSegment],
+    level: super::ColorLevel,
+    hyperlinks: bool,
+) -> String {
+    composed
+        .iter()
+        .map(|s| {
+            let painted = s.style.render(&s.text, level);
+            match &s.hyperlink {
+                Some(url) => link(&painted, url, hyperlinks),
+                None => painted,
+            }
+        })
+        .collect::<String>()
+}
+
+fn pad_with_segment(
+    mut left: Vec<super::StyledSegment>,
+    mut right: Vec<super::StyledSegment>,
+    width: usize,
+) -> Vec<super::StyledSegment> {
+    let lw: usize = left
+        .iter()
+        .map(|s| crate::util::ansi::visible_width(&s.text))
+        .sum();
+    let rw: usize = right
+        .iter()
+        .map(|s| crate::util::ansi::visible_width(&s.text))
+        .sum();
     let pad = width.saturating_sub(lw + rw);
-    format!("{left}{}{right}", " ".repeat(pad))
+    if pad > 0 {
+        left.push(super::StyledSegment::plain(" ".repeat(pad)));
+    }
+    left.append(&mut right);
+    left
 }
 
 #[cfg(test)]
