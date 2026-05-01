@@ -23,41 +23,29 @@ impl Widget for ThinkingEffort {
     }
 }
 
+pub struct Skills;
+
+impl Widget for Skills {
+    fn id(&self) -> &'static str {
+        "skills"
+    }
+    fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
+        let stats = ctx.transcript()?;
+        if stats.skill_names.is_empty() {
+            return None;
+        }
+        Some(format!("🎯 {}", stats.skill_names.len()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
     use super::*;
     use crate::cache::TranscriptStats;
     use crate::config::default_line;
-    use crate::types::payload::{ModelInfo, StatusPayload, Workspace};
-
-    fn payload_no_transcript() -> StatusPayload {
-        StatusPayload {
-            session_id: "test".into(),
-            model: ModelInfo {
-                id: "m".into(),
-                display_name: "M".into(),
-            },
-            workspace: Workspace {
-                current_dir: "/tmp".into(),
-                project_dir: None,
-                added_dirs: None,
-            },
-            transcript_path: None,
-            cwd: None,
-            version: None,
-            fast_mode: None,
-            exceeds_200k_tokens: None,
-            output_style: None,
-            cost: None,
-            context_window: None,
-            worktree: None,
-            vim: None,
-            rate_limits: None,
-            effort: None,
-            thinking: None,
-        }
-    }
+    use crate::types::payload::StatusPayload;
+    use crate::widgets::test_helpers::payload_no_transcript;
 
     fn ctx_with<'a>(
         p: &'a StatusPayload,
@@ -119,5 +107,39 @@ mod tests {
         };
         let ctx = ctx_with(&p, &s, stats);
         assert!(ThinkingEffort.render(&ctx).is_none());
+    }
+
+    #[test]
+    fn skills_returns_count_with_emoji() {
+        let p = payload_no_transcript();
+        let s = crate::config::default_line();
+        let ctx = RenderContext::new(&p, &s);
+        let stats = TranscriptStats {
+            skill_names: vec![
+                "brainstorming".into(),
+                "executing-plans".into(),
+                "tdd".into(),
+            ],
+            ..TranscriptStats::default()
+        };
+        ctx.set_transcript_for_tests(Some(stats));
+        assert_eq!(Skills.render(&ctx), Some("🎯 3".into()));
+    }
+
+    #[test]
+    fn skills_returns_none_when_empty() {
+        let p = payload_no_transcript();
+        let s = crate::config::default_line();
+        let ctx = RenderContext::new(&p, &s);
+        ctx.set_transcript_for_tests(Some(TranscriptStats::default()));
+        assert!(Skills.render(&ctx).is_none());
+    }
+
+    #[test]
+    fn skills_returns_none_without_transcript() {
+        let p = payload_no_transcript();
+        let s = crate::config::default_line();
+        let ctx = RenderContext::new(&p, &s);
+        assert!(Skills.render(&ctx).is_none());
     }
 }
