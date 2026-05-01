@@ -1,6 +1,5 @@
 //! JSONL transcript parser — Phase 6 Task 3.
 //!
-//! - `parse_transcript(path)` — full parse от offset 0.
 //! - `parse_from_offset(path, start)` — incremental tail парс; возвращает
 //!   `(stats, new_offset)`.
 //! - `merge_stats(prev, tail)` — ассоциативное слияние двух статов; tail
@@ -13,7 +12,6 @@
 //! Никаких unwrap/expect — все error-path → пропуск строки или None.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
-#![allow(dead_code)]
 
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
@@ -25,12 +23,6 @@ use crate::cache::jsonl_types::{
 };
 
 const FIVE_HOURS_MS: u64 = 5 * 3600 * 1000;
-
-/// Полный парс от начала файла.
-#[must_use]
-pub fn parse_transcript(path: &Path) -> Option<TranscriptStats> {
-    parse_from_offset(path, 0).map(|(stats, _)| stats)
-}
 
 /// Incremental парс от `start`. Возвращает `(stats_for_tail, new_offset)`
 /// — где `new_offset` — позиция после последней успешно прочитанной строки.
@@ -90,6 +82,11 @@ pub fn merge_stats(prev: TranscriptStats, tail: TranscriptStats) -> TranscriptSt
         .clone()
         .or(prev.last_thinking_effort);
 
+    let mut skill_names = prev.skill_names;
+    skill_names.extend(tail.skill_names);
+    skill_names.sort_unstable();
+    skill_names.dedup();
+
     TranscriptStats {
         session_started_at_ms,
         session_last_at_ms,
@@ -105,14 +102,17 @@ pub fn merge_stats(prev: TranscriptStats, tail: TranscriptStats) -> TranscriptSt
         last_assistant,
         blocks,
         last_thinking_effort,
+        skill_names,
     }
 }
 
-/// ISO-8601 → Unix ms. Поддержка:
+/// ISO-8601 → Unix ms. Поддержка любого UTC-offset (не только Z/+00:00):
 /// - `2026-04-28T10:30:00Z`
 /// - `2026-04-28T10:30:00.123Z`
 /// - `2026-04-28T10:30:00+00:00`
 /// - `2026-04-28T10:30:00.123+00:00`
+/// - `2026-04-28T10:30:00+05:30`
+/// - `2026-04-28T10:30:00-07:00`
 #[must_use]
 pub fn parse_iso_to_ms(s: &str) -> Option<u64> {
     use time::OffsetDateTime;
@@ -139,6 +139,7 @@ struct ParseState {
     last_user_ts: Option<u64>,
     current_block: Option<BillingBlock>,
     stats: TranscriptStats,
+    skill_set: std::collections::BTreeSet<String>,
 }
 
 impl ParseState {
@@ -146,6 +147,7 @@ impl ParseState {
         if let Some(b) = self.current_block.take() {
             self.stats.blocks.push(b);
         }
+        self.stats.skill_names = self.skill_set.into_iter().collect();
         self.stats
     }
 }
@@ -176,6 +178,24 @@ fn apply_assistant(state: &mut ParseState, entry: TranscriptEntry, ts: Option<u6
 
     let Some(ts) = ts else { return };
     update_session_bounds(&mut state.stats, ts);
+
+    if let Some(content) = entry
+        .message
+        .as_ref()
+        .and_then(|m| m.content.as_ref())
+        .and_then(serde_json::Value::as_array)
+    {
+        for block in content {
+            if block.get("type").and_then(serde_json::Value::as_str) != Some("tool_use") {
+                continue;
+            }
+            if let Some(name) = block.get("name").and_then(serde_json::Value::as_str) {
+                if let Some(skill) = name.strip_prefix("skill_") {
+                    state.skill_set.insert(skill.to_string());
+                }
+            }
+        }
+    }
 
     if let Some(MessagePayload { usage: Some(u), .. }) = entry.message {
         accumulate_usage(state, u, ts);
@@ -253,6 +273,10 @@ mod tests {
     use super::*;
     use crate::cache::fixture::TranscriptBuilder;
 
+    fn parse_transcript(path: &std::path::Path) -> Option<TranscriptStats> {
+        parse_from_offset(path, 0).map(|(stats, _)| stats)
+    }
+
     #[test]
     fn parse_iso_z_no_millis() {
         let ms = parse_iso_to_ms("2026-01-01T00:00:00Z").unwrap();
@@ -275,6 +299,24 @@ mod tests {
     fn parse_iso_offset_with_millis() {
         let ms = parse_iso_to_ms("2026-01-01T00:00:00.250+00:00").unwrap();
         assert_eq!(ms, 1_767_225_600_250);
+    }
+
+    #[test]
+    fn parse_iso_format_without_colon_in_offset() {
+        // time::Iso8601::DEFAULT принимает +0000 (без двоеточия) — формат поддерживается.
+        let ms = parse_iso_to_ms("2026-01-01T00:00:00+0000").unwrap();
+        assert_eq!(ms, 1_767_225_600_000);
+        let ms2 = parse_iso_to_ms("2026-01-01T00:00:00.500+0000").unwrap();
+        assert_eq!(ms2, 1_767_225_600_500);
+    }
+
+    #[test]
+    fn parse_iso_non_zero_offset() {
+        // +05:30 → UTC 2026-01-01T00:00:00Z
+        assert_eq!(
+            parse_iso_to_ms("2026-01-01T05:30:00+05:30").unwrap(),
+            1_767_225_600_000
+        );
     }
 
     #[test]
@@ -381,19 +423,21 @@ mod tests {
 
     #[test]
     fn merge_stats_associative() {
+        // a и b в одном 5h-окне, c — через 5h (другое окно).
         let mut a = TranscriptBuilder::new();
         a.add_user();
-        a.add_assistant(100, 10, 10, 0, 0, None);
+        a.add_assistant(100, 10, 10, 4, 2, None);
         let stats_a = parse_transcript(a.path()).unwrap();
 
         let mut b = TranscriptBuilder::new();
         b.add_user();
-        b.add_assistant(100, 20, 20, 0, 0, None);
+        b.add_assistant(100, 20, 20, 6, 3, None);
         let stats_b = parse_transcript(b.path()).unwrap();
 
         let mut c = TranscriptBuilder::new();
         c.add_user();
-        c.add_assistant(100, 30, 30, 0, 0, None);
+        c.advance(5 * 3600 * 1000); // перешагнуть в следующее 5h-окно
+        c.add_assistant(100, 30, 30, 8, 5, None);
         let stats_c = parse_transcript(c.path()).unwrap();
 
         let left = merge_stats(
@@ -403,7 +447,20 @@ mod tests {
         let right = merge_stats(stats_a, merge_stats(stats_b, stats_c));
         assert_eq!(left.tokens_in_total, right.tokens_in_total);
         assert_eq!(left.tokens_out_total, right.tokens_out_total);
+        assert_eq!(left.tokens_cache_read_total, right.tokens_cache_read_total);
+        assert_eq!(
+            left.tokens_cache_creation_total,
+            right.tokens_cache_creation_total
+        );
         assert_eq!(left.messages, right.messages);
+        // Значения: 10+20+30, 10+20+30, 4+6+8, 2+3+5
+        assert_eq!(left.tokens_in_total, 60);
+        assert_eq!(left.tokens_out_total, 60);
+        assert_eq!(left.tokens_cache_read_total, 18);
+        assert_eq!(left.tokens_cache_creation_total, 10);
+        // c в другом 5h-окне → 2 блока с обеих сторон.
+        assert_eq!(left.blocks.len(), 2);
+        assert_eq!(right.blocks.len(), 2);
     }
 
     #[test]
@@ -483,6 +540,59 @@ mod tests {
         // user — пропущен; в tail только assistant.
         assert_eq!(tail.messages, 1);
         assert_eq!(tail.tokens_in_total, 7);
+    }
+
+    #[test]
+    fn parse_assistant_with_content_array_counts_tokens() {
+        // Real CC transcripts include "content":[...] in assistant messages.
+        // Verifies sonic_rs deserialization doesn't choke on the content array,
+        // which would silently drop the line and zero out token counts.
+        let b = TranscriptBuilder::new();
+        b.raw(concat!(
+            r#"{"type":"assistant","timestamp":"2026-01-01T00:00:01Z","message":"#,
+            r#"{"usage":{"input_tokens":42,"output_tokens":17},"#,
+            r#""content":[{"type":"text","text":"hello world"},{"type":"tool_use","id":"tu_1","name":"Bash","input":{"command":"ls"}}]}}"#
+        ));
+        let stats = parse_transcript(b.path()).unwrap();
+        assert_eq!(stats.tokens_in_total, 42);
+        assert_eq!(stats.tokens_out_total, 17);
+    }
+
+    #[test]
+    fn parses_assistant_skill_invocations_into_skill_names() {
+        let mut b = TranscriptBuilder::new();
+        b.add_assistant_with_tool_uses(
+            "2026-04-29T10:00:00Z",
+            &[
+                ("skill_brainstorming", "{}"),
+                ("read_file", "{}"),
+                ("skill_executing-plans", "{}"),
+            ],
+        );
+        b.add_assistant_with_tool_uses(
+            "2026-04-29T10:01:00Z",
+            &[("skill_brainstorming", "{}")],
+        );
+        let stats = parse_transcript(b.path()).unwrap();
+        assert_eq!(stats.skill_names.len(), 2, "dedup'd: {:?}", stats.skill_names);
+        assert!(stats.skill_names.contains(&"brainstorming".to_string()));
+        assert!(stats.skill_names.contains(&"executing-plans".to_string()));
+        let mut sorted = stats.skill_names.clone();
+        sorted.sort();
+        assert_eq!(stats.skill_names, sorted);
+    }
+
+    #[test]
+    fn merge_stats_unions_skill_names_sorted_dedup() {
+        let mut a = TranscriptStats::default();
+        a.skill_names = vec!["alpha".into(), "gamma".into()];
+        let mut b = TranscriptStats::default();
+        b.skill_names = vec!["beta".into(), "alpha".into()];
+        let merged = merge_stats(a, b);
+        assert_eq!(
+            merged.skill_names,
+            vec!["alpha".to_string(), "beta".into(), "gamma".into()]
+        );
     }
 
     #[test]

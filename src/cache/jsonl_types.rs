@@ -17,7 +17,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Текущая версия on-disk схемы. T4 при mismatch делает full rebuild.
-pub const FORMAT_VERSION: u32 = 1;
+pub const FORMAT_VERSION: u32 = 2;
 
 // ───────────────────── Wire types (read JSONL) ─────────────────────
 
@@ -69,6 +69,7 @@ pub struct TranscriptStats {
     pub last_assistant: Option<MessageStats>,
     pub blocks: Vec<BillingBlock>,
     pub last_thinking_effort: Option<String>,
+    pub skill_names: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -90,6 +91,7 @@ pub struct BillingBlock {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheMeta {
     pub format_version: u32,
+    /// Stored for diagnostic purposes; not used in cache invalidation logic.
     pub source_size: u64,
     pub source_mtime_ns: u128,
     pub last_parsed_offset: u64,
@@ -107,8 +109,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn format_version_constant_is_one() {
-        assert_eq!(FORMAT_VERSION, 1);
+    fn format_version_constant_is_two() {
+        assert_eq!(FORMAT_VERSION, 2);
+    }
+
+    #[test]
+    fn transcript_stats_default_has_empty_skill_names() {
+        let s = TranscriptStats::default();
+        assert!(s.skill_names.is_empty());
+    }
+
+    #[test]
+    fn bincode_roundtrip_includes_skill_names() {
+        let original = TranscriptStats {
+            skill_names: vec!["brainstorming".into(), "executing-plans".into()],
+            ..TranscriptStats::default()
+        };
+        let bytes = bincode::serialize(&original).unwrap();
+        let back: TranscriptStats = bincode::deserialize(&bytes).unwrap();
+        assert_eq!(back.skill_names, original.skill_names);
     }
 
     #[test]
@@ -142,6 +161,7 @@ mod tests {
                 ends_at_ms: 18_000_000,
             }],
             last_thinking_effort: Some("high".into()),
+            skill_names: vec!["tdd".into()],
         };
         let bytes = bincode::serialize(&original).unwrap();
         let back: TranscriptStats = bincode::deserialize(&bytes).unwrap();

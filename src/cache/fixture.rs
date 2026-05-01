@@ -14,6 +14,7 @@ use tempfile::TempDir;
 
 /// Lightweight transcript-фикстура.
 pub struct TranscriptBuilder {
+    #[allow(dead_code)]
     pub dir: TempDir,
     pub path: PathBuf,
     next_user_ts_ms: u64,
@@ -76,6 +77,32 @@ impl TranscriptBuilder {
         self
     }
 
+    /// Добавляет assistant-entry с tool_use блоками. Каждый блок: (tool_name, input_json_str).
+    pub fn add_assistant_with_tool_uses(
+        &mut self,
+        ts: &str,
+        tool_uses: &[(&str, &str)],
+    ) -> &mut Self {
+        let content: Vec<serde_json::Value> = tool_uses
+            .iter()
+            .map(|(name, input_json)| {
+                serde_json::json!({
+                    "type": "tool_use",
+                    "name": name,
+                    "input": serde_json::from_str::<serde_json::Value>(input_json)
+                        .unwrap_or(serde_json::Value::Null),
+                })
+            })
+            .collect();
+        let entry = serde_json::json!({
+            "type": "assistant",
+            "timestamp": ts,
+            "message": { "content": content }
+        });
+        self.raw(&entry.to_string());
+        self
+    }
+
     /// Перепрыгнуть таймером — useful для block-boundary тестов.
     pub fn advance(&mut self, ms: u64) -> &mut Self {
         self.next_user_ts_ms += ms;
@@ -95,19 +122,20 @@ impl TranscriptBuilder {
 }
 
 fn unix_ms_to_iso(ms: u64) -> String {
-    // Naive ISO-8601 без зависимости от time crate (она будет в parser).
-    // Формат: 2026-MM-DDTHH:MM:SS.sssZ
-    let secs = ms / 1000;
+    use time::OffsetDateTime;
+    let dt = OffsetDateTime::from_unix_timestamp_nanos(i128::from(ms) * 1_000_000)
+        .expect("ts within OffsetDateTime range");
     let sub_ms = ms % 1000;
-    // Берём за основу 2026-01-01 эпоху и считаем относительно неё (тесты
-    // не проверяют точный календарь, только консистентность).
-    let base = 1_767_225_600u64; // 2026-01-01T00:00:00Z
-    let delta = secs.saturating_sub(base);
-    let h = (delta / 3600) % 24;
-    let m = (delta / 60) % 60;
-    let s = delta % 60;
-    let day = 1 + (delta / 86400);
-    format!("2026-01-{day:02}T{h:02}:{m:02}:{s:02}.{sub_ms:03}Z")
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
+        dt.year(),
+        u8::from(dt.month()),
+        dt.day(),
+        dt.hour(),
+        dt.minute(),
+        dt.second(),
+        sub_ms,
+    )
 }
 
 #[cfg(test)]
