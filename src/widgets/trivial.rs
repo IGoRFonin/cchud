@@ -90,8 +90,7 @@ impl Widget for VimMode {
     }
 }
 
-/// Phase 7 setup stub. T8/T9/T10/T11 заменят на реальные виджеты.
-#[allow(dead_code)]
+/// Phase 7 setup stub. T11 заменит на реальный виджет.
 pub struct Stub;
 
 impl super::Widget for Stub {
