@@ -6,7 +6,7 @@
       {"type": "tokens-total"}, {"type": "context-percentage"}, {"type": "skills"}
     ]},
     {"widgets": [
-      {"type": "git-branch"}, {"type": "git-sha"},
+      {"type": "git-branch"}, {"type": "git-status"},
       {"type": "git-ahead-behind"}, {"type": "git-pr"}, {"type": "free-memory"}
     ]}
   ],

@@ -3,13 +3,16 @@
 #![cfg(test)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use cchud::render::{self, RenderState, Renderer, Segment};
+use cchud::render::{self, ColorLevel, RenderState, Renderer, Segment};
 use cchud::types::{config::Settings, payload::StatusPayload};
 use cchud::widgets::{RenderContext, build_widgets};
 
-fn render_with_fixture(config_path: &str) -> String {
+fn render_inner(config_path: &str, color_level: Option<ColorLevel>) -> String {
     let cfg_str = std::fs::read_to_string(config_path).unwrap();
-    let settings: Settings = serde_json::from_str(&cfg_str).unwrap();
+    let mut settings: Settings = serde_json::from_str(&cfg_str).unwrap();
+    if let Some(lvl) = color_level {
+        settings.theme.color_level = Some(lvl);
+    }
     let payload_str =
         std::fs::read_to_string("benches/samples/payload-cchud-sonnet-xlarge.json").unwrap();
     let payload: StatusPayload = serde_json::from_str(&payload_str).unwrap();
@@ -51,11 +54,26 @@ fn render_with_fixture(config_path: &str) -> String {
     output
 }
 
+fn render_with_fixture(config_path: &str) -> String {
+    render_inner(config_path, None)
+}
+
+/// Форсирует TrueColor через settings.theme.color_level.
+/// Использовать для конфигов, которые тестируют цвет (per-widget overrides, theme globals).
+fn render_with_fixture_colored(config_path: &str) -> String {
+    render_inner(config_path, Some(ColorLevel::TrueColor))
+}
+
 #[test]
 fn usage_cluster() {
     insta::assert_snapshot!(render_with_fixture("tests/configs/usage-cluster.json"));
 }
 
+// NOTE: этот тест проверяет только `free-memory`, так как `claude-account-email`
+// требует живой ~/.claude.json (OnceLock, недоступен из integration test),
+// а `skills` требует заполненный transcript (set_transcript_for_tests — #[cfg(test)]
+// в lib, не экспортируется в integration binary). Регрессии email/skills покрыты
+// юнит-тестами в src/widgets/env.rs и src/widgets/transcript_meta.rs.
 #[test]
 fn env_cluster() {
     insta::assert_snapshot!(render_with_fixture("tests/configs/env-cluster.json"));
@@ -63,14 +81,16 @@ fn env_cluster() {
 
 #[test]
 fn per_widget_override() {
-    insta::assert_snapshot!(render_with_fixture(
+    insta::assert_snapshot!(render_with_fixture_colored(
         "tests/configs/per-widget-override.json"
     ));
 }
 
 #[test]
 fn theme_globals() {
-    insta::assert_snapshot!(render_with_fixture("tests/configs/theme-globals.json"));
+    insta::assert_snapshot!(render_with_fixture_colored(
+        "tests/configs/theme-globals.json"
+    ));
 }
 
 #[test]
