@@ -22,6 +22,9 @@ pub use event::run_event_loop;
 
 /// Public entry — вызывается из `commands::configure::run`.
 /// Возвращает `Ok(true)` если user сохранил, `Ok(false)` если discard или quit без save.
+///
+/// # Errors
+/// Returns `Err` if the terminal backend fails to initialize or an I/O error occurs.
 pub fn run_configure(
     settings: crate::types::config::Settings,
     sample: crate::types::payload::StatusPayload,
