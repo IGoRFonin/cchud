@@ -82,9 +82,6 @@ mod tests {
     use tempfile::tempdir;
 
     fn set_config(path: &std::path::Path) -> impl Drop {
-        // SAFETY: tests using CCHUD_CONFIG must not run in parallel;
-        // serial_test handles sequencing via #[serial].
-        unsafe { std::env::set_var("CCHUD_CONFIG", path) };
         struct Unset;
         impl Drop for Unset {
             fn drop(&mut self) {
@@ -92,6 +89,9 @@ mod tests {
                 unsafe { std::env::remove_var("CCHUD_CONFIG") };
             }
         }
+        // SAFETY: tests using CCHUD_CONFIG must not run in parallel;
+        // serial_test handles sequencing via #[serial].
+        unsafe { std::env::set_var("CCHUD_CONFIG", path) };
         Unset
     }
 

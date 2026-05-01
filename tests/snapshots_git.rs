@@ -1,7 +1,7 @@
 //! Phase 5 git scenario snapshot tests.
 //!
 //! Покрывает 5 канонических git-состояний: clean, dirty, conflicts,
-//! fork, detached HEAD. Каждое — через GitFixture + 20-widget config.
+//! fork, detached HEAD. Каждое — через `GitFixture` + 20-widget config.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 

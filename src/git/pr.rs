@@ -227,10 +227,10 @@ mod tests {
         let bytes = bincode::serialize(&bad).unwrap();
         // Имитируем чтение через парс + version-check.
         let cache: PrCache = bincode::deserialize(&bytes).unwrap();
-        let cache = if cache.version != CACHE_VERSION {
-            PrCache::fresh()
-        } else {
+        let cache = if cache.version == CACHE_VERSION {
             cache
+        } else {
+            PrCache::fresh()
         };
         assert_eq!(cache.version, CACHE_VERSION);
         assert!(cache.entries.is_empty());
@@ -252,6 +252,7 @@ mod tests {
             .create();
 
         let pr = fetch_pr(&server.url(), "foo", "bar", "main", None);
+        drop(server);
         assert_eq!(pr, Ok(Some(PrInfo { number: 42 })));
     }
 
@@ -265,6 +266,7 @@ mod tests {
             .with_status(404)
             .create();
         let pr = fetch_pr(&server.url(), "foo", "bar", "main", None);
+        drop(server);
         assert_eq!(pr, Err(()));
     }
 
@@ -279,11 +281,13 @@ mod tests {
             .with_body("[]")
             .create();
         let pr = fetch_pr(&server.url(), "foo", "bar", "main", None);
+        drop(server);
         assert_eq!(pr, Ok(None));
     }
 
     #[test]
     #[serial]
+    #[allow(clippy::significant_drop_tightening)]
     fn fetch_includes_authorization_header_when_token_set() {
         let mut server = mockito::Server::new();
         let m = server
@@ -334,6 +338,7 @@ mod tests {
         // Server has no mocks — any hit would return 501 and fail fetch_pr.
         let server = mockito::Server::new();
         let pr = lookup_or_fetch_with_base(&server.url(), "foo", "bar", "main");
+        drop(server);
         assert_eq!(pr, Some(PrInfo { number: 99 }));
 
         // SAFETY: serial test — no concurrent env mutation.

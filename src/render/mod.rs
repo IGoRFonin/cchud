@@ -165,7 +165,7 @@ pub struct RenderState {
 
 impl RenderState {
     #[allow(dead_code)]
-    pub fn reset(&mut self) {
+    pub const fn reset(&mut self) {
         self.global_theme_index = 0;
         self.global_separator_index = 0;
     }
@@ -384,9 +384,7 @@ mod apply_style_tests {
 
     #[test]
     fn per_widget_override_changes_color_and_bold() {
-        let mut ovr = WidgetStyleOverride::default();
-        ovr.color = Some("#fafafa".into());
-        ovr.bold = Some(true);
+        let ovr = WidgetStyleOverride { color: Some("#fafafa".into()), bold: Some(true), ..Default::default() };
         let s = apply_widget_style(Style::none(), None, &ovr, &theme());
         assert_eq!(s.fg, Some(Color::Rgb(0xfa, 0xfa, 0xfa)));
         assert!(s.bold);
@@ -396,8 +394,7 @@ mod apply_style_tests {
     fn global_bold_force_enables_after_override() {
         let mut theme = theme();
         theme.global_bold = true;
-        let mut ovr = WidgetStyleOverride::default();
-        ovr.bold = Some(false);
+        let ovr = WidgetStyleOverride { bold: Some(false), ..Default::default() };
         let s = apply_widget_style(Style::none(), None, &ovr, &theme);
         assert!(
             s.bold,
@@ -409,14 +406,14 @@ mod apply_style_tests {
     fn override_foreground_color_wins_over_per_widget() {
         let mut theme = theme();
         theme.override_foreground_color = Some("#aabbcc".into());
-        let mut ovr = WidgetStyleOverride::default();
-        ovr.color = Some("#000000".into());
+        let ovr = WidgetStyleOverride { color: Some("#000000".into()), ..Default::default() };
         let s = apply_widget_style(Style::none(), None, &ovr, &theme);
         assert_eq!(s.fg, Some(Color::Rgb(0xaa, 0xbb, 0xcc)));
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod renderer_tests {
     use super::*;
     use crate::types::config::Settings;
@@ -463,7 +460,7 @@ mod renderer_tests {
         let r = Renderer::from_settings(&s);
         match r {
             Renderer::Powerline(p) => assert_eq!(p.theme.name, "default"),
-            other => panic!("expected powerline, got {other:?}"),
+            other @ Renderer::Plain(_) => panic!("expected powerline, got {other:?}"),
         }
     }
 }
@@ -642,6 +639,7 @@ mod tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod compose_line_tests {
     use super::*;
     use crate::types::config::{Settings, ThemeConfig};

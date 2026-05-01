@@ -4,8 +4,14 @@
 //! парсера, store, виджетов. Каждый `.add_user`/`.add_assistant` пишет
 //! одну JSONL-строку с типичной CC-формой записи.
 
-#![cfg(test)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::must_use_candidate,
+    clippy::missing_panics_doc,
+    clippy::new_without_default,
+    clippy::doc_markdown
+)]
 
 use std::fs::OpenOptions;
 use std::io::Write;

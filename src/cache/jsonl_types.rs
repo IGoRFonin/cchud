@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn usage_fields_all_optional() {
-        let json = r#"{}"#;
+        let json = r"{}";
         let u: Usage = serde_json::from_str(json).unwrap();
         assert!(u.input_tokens.is_none());
         assert!(u.output_tokens.is_none());

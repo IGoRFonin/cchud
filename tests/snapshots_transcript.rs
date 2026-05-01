@@ -7,7 +7,7 @@
 #![cfg(test)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use cchud::types::config::{Line, Settings, WidgetConfig, WidgetItem, WidgetStyleOverride};
+use cchud::types::config::{Line, Settings, ThemeConfig, WidgetConfig, WidgetItem, WidgetStyleOverride};
 use cchud::types::payload::{ModelInfo, StatusPayload, Workspace};
 use cchud::widgets::{RenderContext, build_widgets};
 use std::path::Path;
@@ -33,7 +33,7 @@ fn settings_8w() -> Settings {
             })
             .collect(),
         }],
-        theme: Default::default(),
+        theme: ThemeConfig::default(),
     }
 }
 
@@ -85,11 +85,11 @@ fn transcript_snapshots() {
     let fixtures_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("benches/samples/transcripts");
     let mut paths: Vec<_> = std::fs::read_dir(&fixtures_dir)
         .expect("fixtures dir exists")
-        .filter_map(|e| e.ok())
+        .filter_map(std::result::Result::ok)
         .filter(|e| {
             let p = e.path();
             let name = p.file_name().and_then(|s| s.to_str()).unwrap_or("");
-            p.extension().map_or(false, |ext| ext == "jsonl") && !name.starts_with("large-")
+            p.extension().is_some_and(|ext| ext == "jsonl") && !name.starts_with("large-")
         })
         .map(|e| e.path())
         .collect();

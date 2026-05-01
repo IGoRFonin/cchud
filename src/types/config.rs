@@ -49,6 +49,7 @@ pub enum WidgetConfig {
         #[serde(flatten, default)]
         params: ModelParams,
     },
+    Separator,
 
     // Phase 3 — без параметров:
     Version,
@@ -315,7 +316,7 @@ mod tests {
 
     #[test]
     fn defaults_fill_missing_fields() {
-        let json = r#"{}"#;
+        let json = r"{}";
         let s: Settings = serde_json::from_str(json).unwrap();
         assert_eq!(s.version, 1);
         assert!(s.lines.is_empty());

@@ -153,6 +153,7 @@ impl Powerline {
     }
 }
 
+#[allow(dead_code)] // remove in T13
 fn emit_powerline(
     composed: &[super::StyledSegment],
     level: super::ColorLevel,
@@ -296,8 +297,8 @@ mod tests {
         let out = p.render_line(&segs, &mut state, &t);
         // Plain renderer produces pipe-separated text without ANSI.
         assert!(!out.contains('\x1b'), "minimalist must be plain: {out:?}");
-        assert!(out.contains("a"), "missing 'a': {out:?}");
-        assert!(out.contains("b"), "missing 'b': {out:?}");
+        assert!(out.contains('a'), "missing 'a': {out:?}");
+        assert!(out.contains('b'), "missing 'b': {out:?}");
     }
 
     #[test]
@@ -309,7 +310,7 @@ mod tests {
         let mut state = RenderState::default();
         let mut t = default_theme_config();
         // Threshold above current term width → minimalist activates.
-        t.compact_threshold = (term_w + 100) as u32;
+        t.compact_threshold = u32::try_from(term_w + 100).unwrap_or(u32::MAX);
         let p = Powerline::new(theme(), ColorLevel::TrueColor, false);
         let segs = [Segment::plain("x")];
         let out = p.render_line(&segs, &mut state, &t);
@@ -325,7 +326,7 @@ mod tests {
         let mut state = RenderState::default();
         let mut t = default_theme_config();
         // Threshold below current term width → normal powerline render.
-        t.compact_threshold = if term_w > 0 { 1 } else { 0 };
+        t.compact_threshold = u32::from(term_w > 0);
         let p = Powerline::new(theme(), ColorLevel::TrueColor, false);
         let segs = [Segment::plain("y")];
         let out = p.render_line(&segs, &mut state, &t);

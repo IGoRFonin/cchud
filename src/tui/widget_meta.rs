@@ -1,6 +1,6 @@
 //! Static widget palette registry — Phase 8 Task 5.
 //!
-//! 59 виджетов из `WidgetConfig` (без `AlignRight` — sentinel, не показывается в палитре).
+//! 60 виджетов из `WidgetConfig` (без `AlignRight` — sentinel, не показывается в палитре).
 //! Категории отвечают «бакету» в UI (Model / Static / Trivial / Session / Context / ...).
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
@@ -49,7 +49,7 @@ pub struct WidgetMeta {
     pub factory: fn() -> WidgetConfig,
 }
 
-/// 59 widgets — match `WidgetConfig` enum minus `AlignRight`. Order реализует
+/// 60 widgets — match `WidgetConfig` enum minus `AlignRight`. Order реализует
 /// natural grouping: каждая категория contiguous → palette по группам.
 #[allow(clippy::too_many_lines)]
 pub static ALL_KINDS: &[WidgetMeta] = &[
@@ -60,7 +60,13 @@ pub static ALL_KINDS: &[WidgetMeta] = &[
         category: WidgetCategory::Model,
         factory: || WidgetConfig::Model { params: ModelParams {} },
     },
-    // Static (4)
+    // Static (5)
+    WidgetMeta {
+        display: "Separator",
+        kebab_type: "separator",
+        category: WidgetCategory::Static,
+        factory: || WidgetConfig::Separator,
+    },
     WidgetMeta {
         display: "Custom Text",
         kebab_type: "custom-text",
@@ -434,8 +440,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn all_kinds_has_59_entries() {
-        assert_eq!(ALL_KINDS.len(), 59, "palette registry must have 59 widgets");
+    fn all_kinds_has_60_entries() {
+        assert_eq!(ALL_KINDS.len(), 60, "palette registry must have 60 widgets");
     }
 
     #[test]
@@ -445,14 +451,14 @@ mod tests {
         for m in ALL_KINDS {
             assert!(seen.insert(m.kebab_type), "duplicate kebab_type: {}", m.kebab_type);
         }
-        assert_eq!(seen.len(), 59);
+        assert_eq!(seen.len(), 60);
     }
 
     #[test]
     fn factory_produces_kind_that_serializes_to_kebab_type() {
+        use crate::types::config::{WidgetItem, WidgetStyleOverride};
         for m in ALL_KINDS {
             let cfg = (m.factory)();
-            use crate::types::config::{WidgetItem, WidgetStyleOverride};
             let item = WidgetItem { kind: cfg, style: WidgetStyleOverride::default() };
             let json = serde_json::to_value(&item).unwrap();
             let actual = json.get("type").and_then(|v| v.as_str()).unwrap();
@@ -477,8 +483,7 @@ mod tests {
         for cat in [Model, Static, Trivial, Session, Context, Worktree, Git, Transcript, Usage, Env] {
             assert!(
                 ALL_KINDS.iter().any(|m| m.category == cat),
-                "category {:?} has no entries",
-                cat
+                "category {cat:?} has no entries"
             );
         }
     }

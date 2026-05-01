@@ -48,8 +48,8 @@ pub fn set_claude_json_for_tests(json: Option<ClaudeJson>) {
 }
 
 #[cfg(test)]
-fn extract_email(json: &Option<ClaudeJson>) -> Option<&str> {
-    json.as_ref()?
+fn extract_email(json: Option<&ClaudeJson>) -> Option<&str> {
+    json?
         .oauth_account
         .as_ref()?
         .email_address
@@ -66,7 +66,7 @@ mod tests {
         let json = ClaudeJson {
             oauth_account: None,
         };
-        assert_eq!(extract_email(&Some(json)), None);
+        assert_eq!(extract_email(Some(&json)), None);
     }
 
     #[test]
@@ -76,7 +76,7 @@ mod tests {
                 email_address: Some("igor@example.com".into()),
             }),
         };
-        assert_eq!(extract_email(&Some(json)), Some("igor@example.com"));
+        assert_eq!(extract_email(Some(&json)), Some("igor@example.com"));
     }
 
     #[test]
@@ -86,7 +86,7 @@ mod tests {
                 email_address: None,
             }),
         };
-        assert_eq!(extract_email(&Some(json)), None);
+        assert_eq!(extract_email(Some(&json)), None);
     }
 
     #[test]

@@ -65,6 +65,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn formats_gigabytes_with_drop_trailing_zero() {
         assert_eq!(format(2 * 1_073_741_824), "2G");
         assert_eq!(format((7.5 * 1_073_741_824.0) as u64), "7.5G");

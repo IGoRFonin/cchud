@@ -120,6 +120,7 @@ mod tests {
     #[test]
     fn block_reset_timer_renders_short_format() {
         let now_ms = 1_700_000_000_000_u64;
+        #[allow(clippy::cast_possible_wrap)]
         let resets_at_unix_s = (now_ms / 1000) as i64 + 4 * 3600 + 32 * 60;
         let p = payload_with_buckets(1.0, resets_at_unix_s, 6.0, 0);
         let s = crate::config::default_line();
@@ -131,6 +132,7 @@ mod tests {
     #[test]
     fn weekly_reset_timer_renders_long_format() {
         let now_ms = 1_700_000_000_000_u64;
+        #[allow(clippy::cast_possible_wrap)]
         let resets_at = (now_ms / 1000) as i64 + 5 * 86400 + 14 * 3600;
         let p = payload_with_buckets(1.0, 0, 6.0, resets_at);
         let s = crate::config::default_line();
@@ -142,6 +144,7 @@ mod tests {
     #[test]
     fn reset_timer_in_past_returns_under_1m() {
         let now_ms = 1_700_000_000_000_u64;
+        #[allow(clippy::cast_possible_wrap)]
         let resets_at = (now_ms / 1000) as i64 - 100;
         let p = payload_with_buckets(1.0, resets_at, 6.0, 0);
         let s = crate::config::default_line();

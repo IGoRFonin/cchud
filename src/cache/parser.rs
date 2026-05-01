@@ -260,7 +260,7 @@ fn advance_block(state: &mut ParseState, ts: u64) {
     }
 }
 
-fn update_session_bounds(stats: &mut TranscriptStats, ts: u64) {
+const fn update_session_bounds(stats: &mut TranscriptStats, ts: u64) {
     if stats.session_started_at_ms.is_none() {
         stats.session_started_at_ms = Some(ts);
     }
@@ -586,10 +586,8 @@ mod tests {
 
     #[test]
     fn merge_stats_unions_skill_names_sorted_dedup() {
-        let mut a = TranscriptStats::default();
-        a.skill_names = vec!["alpha".into(), "gamma".into()];
-        let mut b = TranscriptStats::default();
-        b.skill_names = vec!["beta".into(), "alpha".into()];
+        let a = TranscriptStats { skill_names: vec!["alpha".into(), "gamma".into()], ..Default::default() };
+        let b = TranscriptStats { skill_names: vec!["beta".into(), "alpha".into()], ..Default::default() };
         let merged = merge_stats(a, b);
         assert_eq!(
             merged.skill_names,

@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn session_cost_renders_two_decimals() {
         let p = payload_with_cost(Some(crate::types::payload::CostInfo {
-            total_cost_usd: Some(0.7181426),
+            total_cost_usd: Some(0.718_142_6),
             total_duration_ms: Some(0),
             total_api_duration_ms: None,
             total_lines_added: None,

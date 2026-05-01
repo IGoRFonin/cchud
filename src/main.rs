@@ -5,6 +5,8 @@
 //! Config loading lands in Task 6; install command in Task 7.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
+// TUI (mod tui) is not yet wired to main() — T12 connects it. Suppress binary dead_code until then.
+#![allow(dead_code, unused_imports)]
 
 mod cache;
 mod commands;
@@ -36,6 +38,8 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         Some("install") => commands::install::run(&args[1..]),
+        Some("configure") => configure_command(&args[1..]),
+        Some("import") => import_command(&args[1..]),
         Some(other) if other.starts_with("--") => {
             eprintln!("cchud: unknown flag: {other}");
             eprintln!("       run 'cchud --help' for usage");
@@ -55,8 +59,32 @@ fn print_help() {
     println!("  cchud                  read JSON payload from stdin, render statusline");
     println!("  cchud install          wire cchud into ~/.claude/settings.json");
     println!("  cchud install --force  overwrite existing statusLine");
+    println!("  cchud configure        open the interactive TUI configurator");
+    println!("  cchud import [args]    migrate ccstatusline config; see --help");
     println!("  cchud --version        print version");
     println!("  cchud --help           print this help");
+}
+
+#[cfg(feature = "tui")]
+fn configure_command(args: &[String]) -> ExitCode {
+    commands::configure::run(args)
+}
+
+#[cfg(not(feature = "tui"))]
+fn configure_command(_args: &[String]) -> ExitCode {
+    eprintln!("cchud configure: requires the 'tui' feature; rebuild with default features");
+    ExitCode::from(2)
+}
+
+#[cfg(feature = "tui")]
+fn import_command(args: &[String]) -> ExitCode {
+    commands::import::run(args)
+}
+
+#[cfg(not(feature = "tui"))]
+fn import_command(_args: &[String]) -> ExitCode {
+    eprintln!("cchud import: requires the 'tui' feature; rebuild with default features");
+    ExitCode::from(2)
 }
 
 fn render_pipeline() -> ExitCode {

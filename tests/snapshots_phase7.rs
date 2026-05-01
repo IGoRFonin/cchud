@@ -58,7 +58,7 @@ fn render_with_fixture(config_path: &str) -> String {
     render_inner(config_path, None)
 }
 
-/// Форсирует TrueColor через settings.theme.color_level.
+/// Форсирует `TrueColor` через `settings.theme.color_level`.
 /// Использовать для конфигов, которые тестируют цвет (per-widget overrides, theme globals).
 fn render_with_fixture_colored(config_path: &str) -> String {
     render_inner(config_path, Some(ColorLevel::TrueColor))
