@@ -30,7 +30,7 @@ pub fn truncate_to_budget(rendered: &str, budget: Option<usize>) -> String {
     }
     let target = budget.saturating_sub(1);
     let truncated = truncate_visible(rendered, target);
-    format!("{truncated}…")
+    format!("{truncated}\x1b[0m…")
 }
 
 /// Truncate to `target` visible columns, preserving ANSI escape sequences as-is.
@@ -51,10 +51,9 @@ fn truncate_visible(s: &str, target: usize) -> String {
         if in_escape {
             out.push_str(g);
             // ANSI CSI ends on a letter in 0x40..=0x7e; OSC ends on BEL or ST.
-            if g
-                .chars()
+            if g.chars()
                 .next()
-                .is_some_and(|c| c.is_ascii_alphabetic() || c == 'm' || c == '\\')
+                .is_some_and(|c| c.is_ascii_alphabetic() || c == '\\')
             {
                 in_escape = false;
             }
@@ -102,11 +101,39 @@ mod tests {
     #[test]
     fn truncate_long_with_ellipsis() {
         let out = truncate_to_budget("hello world", Some(7));
-        assert_eq!(out, "hello …");
+        assert_eq!(out, "hello \x1b[0m…");
     }
 
     #[test]
     fn truncate_none_budget_returns_unchanged() {
         assert_eq!(truncate_to_budget("any string", None), "any string");
+    }
+
+    #[test]
+    fn budget_full_minus_20_subtracts() {
+        assert_eq!(flex_budget(FlexMode::FullMinus20, 100), Some(80));
+    }
+
+    #[test]
+    fn budget_full_minus_20_saturates_narrow() {
+        assert_eq!(flex_budget(FlexMode::FullMinus20, 10), None);
+    }
+
+    #[test]
+    fn truncate_ansi_adds_reset_on_truncation() {
+        // Open a color sequence before the cut point; it must be closed with \x1b[0m.
+        let colored = "\x1b[31mhello world\x1b[0m";
+        let out = truncate_to_budget(colored, Some(7));
+        assert!(
+            out.ends_with("\x1b[0m…"),
+            "expected reset+ellipsis suffix: {out:?}"
+        );
+    }
+
+    #[test]
+    fn truncate_no_truncation_no_extra_reset() {
+        let colored = "\x1b[31mhi\x1b[0m";
+        let out = truncate_to_budget(colored, Some(80));
+        assert_eq!(out, colored);
     }
 }

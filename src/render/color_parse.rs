@@ -1,6 +1,7 @@
 //! Phase 7: parse hex/ANSI-256 colors from per-widget overrides + theme globals.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
+#![allow(dead_code)]
 
 use super::Color;
 
@@ -53,7 +54,10 @@ mod tests {
 
     #[test]
     fn hex_parses() {
-        assert_eq!(parse_color(Some("#fafafa")), Some(Color::Rgb(0xfa, 0xfa, 0xfa)));
+        assert_eq!(
+            parse_color(Some("#fafafa")),
+            Some(Color::Rgb(0xfa, 0xfa, 0xfa))
+        );
         assert_eq!(parse_color(Some("#000000")), Some(Color::Rgb(0, 0, 0)));
     }
 

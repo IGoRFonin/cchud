@@ -1,6 +1,7 @@
 //! Duration formatters — short ("4h32m") and long ("5d 14h") variants.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
+#![allow(dead_code)]
 
 const MIN: i64 = 60;
 const HOUR: i64 = 60 * MIN;
@@ -23,12 +24,15 @@ pub fn format_short(seconds: i64) -> String {
     format!("{}d {}h", s / DAY, (s % DAY) / HOUR)
 }
 
-/// Long form: `Nm`, `NhMm`, `Nd Mh`, `Nw Md`.
+/// Long form: `< 1m`, `Nm`, `NhMm`, `Nd Mh`, `Nw Md`. Negative → `< 1m`.
 #[must_use]
 pub fn format_long(seconds: i64) -> String {
     let s = seconds.max(0);
+    if s < MIN {
+        return "< 1m".to_string();
+    }
     if s < HOUR {
-        return format!("{}m", (s / MIN).max(0));
+        return format!("{}m", s / MIN);
     }
     if s < DAY {
         return format!("{}h{}m", s / HOUR, (s % HOUR) / MIN);
@@ -93,5 +97,16 @@ mod tests {
     fn long_weeks_and_days() {
         assert_eq!(format_long(8 * 86400), "1w 1d");
         assert_eq!(format_long(14 * 86400 + 3 * 86400), "2w 3d");
+    }
+
+    #[test]
+    fn long_under_1_minute() {
+        assert_eq!(format_long(0), "< 1m");
+        assert_eq!(format_long(45), "< 1m");
+    }
+
+    #[test]
+    fn long_negative_clamped_to_under_1m() {
+        assert_eq!(format_long(-100), "< 1m");
     }
 }

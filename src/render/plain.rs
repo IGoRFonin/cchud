@@ -91,7 +91,10 @@ mod tests {
     fn empty_input_yields_empty_string() {
         let mut state = RenderState::default();
         let t = theme();
-        assert_eq!(p(ColorLevel::None, false).render_line(&[], &mut state, &t), "");
+        assert_eq!(
+            p(ColorLevel::None, false).render_line(&[], &mut state, &t),
+            ""
+        );
     }
 
     #[test]
@@ -99,22 +102,34 @@ mod tests {
         let mut state = RenderState::default();
         let t = theme();
         let segs = [Segment::plain("a"), Segment::plain(""), Segment::plain("b")];
-        assert_eq!(p(ColorLevel::None, false).render_line(&segs, &mut state, &t), "a | b");
+        assert_eq!(
+            p(ColorLevel::None, false).render_line(&segs, &mut state, &t),
+            "a | b"
+        );
     }
 
     #[test]
     fn level_none_strips_color() {
         let mut state = RenderState::default();
         let t = theme();
-        let segs = [Segment::styled("x", Style::none().fg(Color::Rgb(255, 0, 0)))];
-        assert_eq!(p(ColorLevel::None, false).render_line(&segs, &mut state, &t), "x");
+        let segs = [Segment::styled(
+            "x",
+            Style::none().fg(Color::Rgb(255, 0, 0)),
+        )];
+        assert_eq!(
+            p(ColorLevel::None, false).render_line(&segs, &mut state, &t),
+            "x"
+        );
     }
 
     #[test]
     fn truecolor_emits_ansi() {
         let mut state = RenderState::default();
         let t = theme();
-        let segs = [Segment::styled("x", Style::none().fg(Color::Rgb(255, 0, 0)))];
+        let segs = [Segment::styled(
+            "x",
+            Style::none().fg(Color::Rgb(255, 0, 0)),
+        )];
         let out = p(ColorLevel::TrueColor, false).render_line(&segs, &mut state, &t);
         assert!(out.contains("\x1b["), "expected ANSI in {out:?}");
     }
@@ -136,7 +151,10 @@ mod tests {
         let t = theme();
         let mut s = Segment::plain("anchor");
         s.hyperlink = Some("https://x.com".into());
-        assert_eq!(p(ColorLevel::None, false).render_line(&[s], &mut state, &t), "anchor");
+        assert_eq!(
+            p(ColorLevel::None, false).render_line(&[s], &mut state, &t),
+            "anchor"
+        );
     }
 
     #[test]

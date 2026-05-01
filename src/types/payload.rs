@@ -1,11 +1,11 @@
-//! Full `StatusPayload` envelope — Phase 3 типизация.
+//! Full `StatusPayload` envelope — типизация всех полей.
 //!
 //! Phase 2 walking skeleton хранил `cost`, `context_window`, `output_style`
 //! как `Option<serde_json::Value>` — Phase 3 типизирует эти три поля
 //! (14 виджетов их читают). `vim` и `worktree` — новые поля envelope
 //! (отсутствуют во всех Phase 0 семплах; добавляются под synthetic
-//! fixture-файлы). `rate_limits`, `effort`, `thinking` остаются Value
-//! до Phase 6/7.
+//! fixture-файлы). Phase 6 типизировал `effort` и `thinking`; Phase 7 —
+//! `rate_limits` (`RateLimits` / `RateBucket`).
 //!
 //! `CurrentUsage` — untagged enum: upstream zod допускает форму
 //! `current_usage?: number | { ... } | null`. В Phase 0 семплах — только
@@ -289,8 +289,11 @@ mod tests {
         let p: StatusPayload = serde_json::from_str(SAMPLE).unwrap();
         let rl = p.rate_limits.expect("rate_limits present in sample");
         let five = rl.five_hour.expect("five_hour bucket present");
-        assert!(five.used_percentage.is_some(), "used_percentage parsed");
-        assert!(five.resets_at.is_some(), "resets_at parsed (Unix seconds)");
+        assert_eq!(five.used_percentage, Some(1.0));
+        assert_eq!(five.resets_at, Some(1_777_198_800));
+        let seven = rl.seven_day.expect("seven_day bucket present");
+        assert_eq!(seven.used_percentage, Some(6.0));
+        assert_eq!(seven.resets_at, Some(1_777_485_600));
     }
 
     #[test]

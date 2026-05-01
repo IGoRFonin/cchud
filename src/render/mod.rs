@@ -361,7 +361,11 @@ mod renderer_tests {
         let mut state = RenderState::default();
         let theme = ThemeConfig::default();
         assert_eq!(
-            r.render_line(&[Segment::plain("a"), Segment::plain("b")], &mut state, &theme),
+            r.render_line(
+                &[Segment::plain("a"), Segment::plain("b")],
+                &mut state,
+                &theme
+            ),
             "a, b"
         );
     }

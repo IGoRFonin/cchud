@@ -239,4 +239,88 @@ mod tests {
         assert!(out.contains("hi"));
         assert_eq!(out.matches(DEFAULT_SEPARATOR_LEFT).count(), 2);
     }
+
+    #[test]
+    fn minimalist_mode_delegates_to_plain() {
+        let mut state = RenderState::default();
+        let mut t = default_theme_config();
+        t.minimalist_mode = true;
+        let p = Powerline::new(theme(), ColorLevel::TrueColor, false);
+        let segs = [Segment::plain("a"), Segment::plain("b")];
+        let out = p.render_line(&segs, &mut state, &t);
+        // Plain renderer produces pipe-separated text without ANSI.
+        assert!(!out.contains('\x1b'), "minimalist must be plain: {out:?}");
+        assert!(out.contains("a"), "missing 'a': {out:?}");
+        assert!(out.contains("b"), "missing 'b': {out:?}");
+    }
+
+    #[test]
+    fn compact_threshold_triggers_minimalist_when_narrow() {
+        let term_w = crate::util::terminal_width();
+        if term_w == 0 {
+            return; // can't meaningfully test in zero-width environment
+        }
+        let mut state = RenderState::default();
+        let mut t = default_theme_config();
+        // Threshold above current term width → minimalist activates.
+        t.compact_threshold = (term_w + 100) as u32;
+        let p = Powerline::new(theme(), ColorLevel::TrueColor, false);
+        let segs = [Segment::plain("x")];
+        let out = p.render_line(&segs, &mut state, &t);
+        assert!(
+            !out.contains('\x1b'),
+            "compact_threshold must fall back to plain: {out:?}"
+        );
+    }
+
+    #[test]
+    fn compact_threshold_does_not_trigger_when_wide() {
+        let term_w = crate::util::terminal_width();
+        let mut state = RenderState::default();
+        let mut t = default_theme_config();
+        // Threshold below current term width → normal powerline render.
+        t.compact_threshold = if term_w > 0 { 1 } else { 0 };
+        let p = Powerline::new(theme(), ColorLevel::TrueColor, false);
+        let segs = [Segment::plain("y")];
+        let out = p.render_line(&segs, &mut state, &t);
+        assert!(
+            out.contains('\x1b'),
+            "should use ANSI when wide enough: {out:?}"
+        );
+    }
+
+    #[test]
+    fn inherit_separator_colors_uses_prev_bg_for_both_sep_halves() {
+        let mut state = RenderState::default();
+        let mut t = default_theme_config();
+        t.inherit_separator_colors = true;
+        let p = Powerline::new(theme(), ColorLevel::TrueColor, false);
+        let segs = [Segment::plain("a"), Segment::plain("b")];
+        let normal_out = {
+            let mut s2 = RenderState::default();
+            let t2 = default_theme_config();
+            p.render_line(&segs, &mut s2, &t2)
+        };
+        let inherit_out = p.render_line(&segs, &mut state, &t);
+        // With inherited colors the separator styling differs from normal.
+        assert_ne!(
+            normal_out, inherit_out,
+            "inherit_separator_colors should change separator styling"
+        );
+    }
+
+    #[test]
+    fn auto_align_splits_at_marker_and_pads() {
+        let mut state = RenderState::default();
+        let mut t = default_theme_config();
+        t.auto_align = true;
+        let p = Powerline::new(theme(), ColorLevel::TrueColor, false);
+        let mut marker = Segment::plain("");
+        marker.align_marker = true;
+        let segs = [Segment::plain("left"), marker, Segment::plain("right")];
+        let out = p.render_line(&segs, &mut state, &t);
+        // Both sides must appear; padding spaces bridge them.
+        assert!(out.contains("left"), "missing left: {out:?}");
+        assert!(out.contains("right"), "missing right: {out:?}");
+    }
 }

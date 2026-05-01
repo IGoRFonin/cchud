@@ -3,6 +3,8 @@
 > **Источник:** `src/widgets/index.ts` upstream snapshot (см. `upstream-map.md`)
 > **Всего:** 60 (59 экспортируемых + встроенный `separator`)
 > **Дата:** 2026-04-26
+>
+> **60 widgets supported (60/60 upstream parity)**
 
 ## Колонки
 
@@ -69,13 +71,13 @@
 | `total-speed` | 6 | transcript | mid | DONE | ⇅N t/s от последнего assistant |
 | `block-timer` | 6 | transcript | mid | DONE | ⏰ HH:MM:SS time-to-end billing-блока |
 | `session-duration` | 6 | transcript | mid | DONE | диапазон last_msg - first_msg |
-| `skills` | 7 | transcript | high | TODO | skillsMetrics из transcript |
-| `claude-account-email` | 7 | env | mid | TODO | читает ~/.claude.json |
-| `free-memory` | 7 | env | mid | TODO | os.freemem() + macOS sysctl |
-| `session-usage` | 7 | http | high | TODO | usageData HTTP API |
-| `weekly-usage` | 7 | http | high | TODO | usageData HTTP API |
-| `block-reset-timer` | 7 | http | high | TODO | usageData + blockMetrics |
-| `weekly-reset-timer` | 7 | http | high | TODO | usageData |
+| `skills` | 7 | transcript | high | DONE | skillsMetrics из transcript |
+| `claude-account-email` | 7 | env | mid | DONE | читает ~/.claude.json |
+| `free-memory` | 7 | env | mid | DONE | os.freemem() + macOS sysctl |
+| `session-usage` | 7 | http | high | DONE | usageData HTTP API |
+| `weekly-usage` | 7 | http | high | DONE | usageData HTTP API |
+| `block-reset-timer` | 7 | http | high | DONE | usageData + blockMetrics |
+| `weekly-reset-timer` | 7 | http | high | DONE | usageData |
 
 ## Сводка по фазам
 
@@ -86,7 +88,7 @@
 | 4 | 0 (рендер-слой, не виджеты) | 25 |
 | 5 | 20 (git + git-pr) | 45 |
 | 6 | 8 (transcript + thinking-effort; skills → 7) | 53 |
-| 7 | 7 (env/http + skills) | 60 |
+| 7 | 7 (env/http + skills) | **60** |
 
 ## Замечания
 

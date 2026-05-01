@@ -1,6 +1,7 @@
 //! Auto-unit byte formatter (Kb/Mb/Gb/Tb).
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
+#![allow(dead_code)]
 
 const KB: u64 = 1024;
 const MB: u64 = 1024 * KB;
@@ -11,27 +12,32 @@ const TB: u64 = 1024 * GB;
 /// Drops trailing zeros: `2.0G → 2G`, `7.50G → 7.5G`.
 #[must_use]
 pub fn format(bytes: u64) -> String {
-    let (val, unit) = if bytes < KB {
-        return std::format!("{bytes}b");
-    } else if bytes < MB {
-        (bytes as f64 / KB as f64, "k")
+    if bytes < KB {
+        return format!("{bytes}b");
+    }
+    #[allow(clippy::cast_precision_loss)]
+    let (divisor, unit, next_unit): (f64, &str, Option<&str>) = if bytes < MB {
+        (KB as f64, "k", Some("M"))
     } else if bytes < GB {
-        (bytes as f64 / MB as f64, "M")
+        (MB as f64, "M", Some("G"))
     } else if bytes < TB {
-        (bytes as f64 / GB as f64, "G")
+        (GB as f64, "G", Some("T"))
     } else {
-        (bytes as f64 / TB as f64, "T")
+        (TB as f64, "T", None)
     };
-
-    format_one_decimal(val, unit)
-}
-
-fn format_one_decimal(val: f64, unit: &str) -> String {
-    let rounded = (val * 10.0).round() / 10.0;
-    if (rounded - rounded.trunc()).abs() < f64::EPSILON {
-        std::format!("{}{unit}", rounded.trunc() as u64)
+    #[allow(clippy::cast_precision_loss)]
+    let rounded = (bytes as f64 / divisor * 10.0).round() / 10.0;
+    if rounded >= 1024.0 {
+        if let Some(nu) = next_unit {
+            return format!("1{nu}");
+        }
+    }
+    if rounded.fract() == 0.0 {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let n = rounded as u64;
+        format!("{n}{unit}")
     } else {
-        std::format!("{rounded:.1}{unit}")
+        format!("{rounded:.1}{unit}")
     }
 }
 
@@ -69,5 +75,22 @@ mod tests {
         let tb = 1_099_511_627_776_u64;
         assert_eq!(format(tb), "1T");
         assert_eq!(format(tb * 3 / 2), "1.5T");
+    }
+
+    #[test]
+    fn boundary_rounding_mb_minus_1() {
+        // 1048575 / 1024 = 1023.999…, rounds to 1024.0 → must show "1M" not "1024k"
+        assert_eq!(format(MB - 1), "1M");
+    }
+
+    #[test]
+    fn boundary_rounding_gb_minus_1() {
+        assert_eq!(format(GB - 1), "1G");
+    }
+
+    #[test]
+    fn u64_max_does_not_panic() {
+        // u64::MAX / TB ≈ 16_777_216; no higher unit, so stays in T
+        assert_eq!(format(u64::MAX), "16777216T");
     }
 }

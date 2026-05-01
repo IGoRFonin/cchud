@@ -569,12 +569,14 @@ mod tests {
                 ("skill_executing-plans", "{}"),
             ],
         );
-        b.add_assistant_with_tool_uses(
-            "2026-04-29T10:01:00Z",
-            &[("skill_brainstorming", "{}")],
-        );
+        b.add_assistant_with_tool_uses("2026-04-29T10:01:00Z", &[("skill_brainstorming", "{}")]);
         let stats = parse_transcript(b.path()).unwrap();
-        assert_eq!(stats.skill_names.len(), 2, "dedup'd: {:?}", stats.skill_names);
+        assert_eq!(
+            stats.skill_names.len(),
+            2,
+            "dedup'd: {:?}",
+            stats.skill_names
+        );
         assert!(stats.skill_names.contains(&"brainstorming".to_string()));
         assert!(stats.skill_names.contains(&"executing-plans".to_string()));
         let mut sorted = stats.skill_names.clone();

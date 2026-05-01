@@ -8,14 +8,18 @@ pub struct ClaudeAccountEmail;
 pub struct FreeMemory;
 
 impl Widget for ClaudeAccountEmail {
-    fn id(&self) -> &'static str { "claude-account-email" }
+    fn id(&self) -> &'static str {
+        "claude-account-email"
+    }
     fn render(&self, _ctx: &RenderContext<'_>) -> Option<String> {
         crate::commands::env_loader::claude_account_email().map(str::to_string)
     }
 }
 
 impl Widget for FreeMemory {
-    fn id(&self) -> &'static str { "free-memory" }
+    fn id(&self) -> &'static str {
+        "free-memory"
+    }
     fn render(&self, _ctx: &RenderContext<'_>) -> Option<String> {
         let mut sys = sysinfo::System::new();
         sys.refresh_memory();
@@ -35,7 +39,9 @@ mod tests {
         let p = payload_no_transcript();
         let s = crate::config::default_line();
         let ctx = RenderContext::new(&p, &s);
-        let out = FreeMemory.render(&ctx).expect("system memory always present");
+        let out = FreeMemory
+            .render(&ctx)
+            .expect("system memory always present");
         assert!(out.starts_with("💾 "), "got: {out}");
         assert!(out.chars().last().is_some_and(|c| "bkMGT".contains(c)));
     }
@@ -64,7 +70,10 @@ mod tests {
         let ctx = RenderContext::new(&p, &s);
         let out = ClaudeAccountEmail.render(&ctx);
         if let Some(email) = out {
-            assert!(email.contains('@'), "render() returned non-email string: {email}");
+            assert!(
+                email.contains('@'),
+                "render() returned non-email string: {email}"
+            );
         }
     }
 
@@ -75,7 +84,10 @@ mod tests {
         let ctx = RenderContext::new(&p, &s);
         let out = ClaudeAccountEmail.render(&ctx);
         if let Some(email) = out {
-            assert!(email.contains('@'), "render() returned non-email string: {email}");
+            assert!(
+                email.contains('@'),
+                "render() returned non-email string: {email}"
+            );
         }
     }
 }

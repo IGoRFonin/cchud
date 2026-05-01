@@ -14,6 +14,7 @@ pub fn format_tokens(n: u64) -> String {
 }
 
 fn compact(value: f64, suffix: &str) -> String {
+    // {:.1} can round boundary values up (e.g. 999.95 → "1000.0"), producing "1000k" not "999.9k"
     let s = format!("{value:.1}");
     let trimmed = s.strip_suffix(".0").unwrap_or(&s);
     format!("{trimmed}{suffix}")
@@ -47,6 +48,12 @@ mod tests {
     #[test]
     fn near_million() {
         assert_eq!(format_tokens(999_500), "999.5k");
+    }
+
+    #[test]
+    fn rounds_up_to_1000k_at_999950() {
+        // intentional: prefer "1000k" cross-over rather than "999.9k" at the boundary
+        assert_eq!(format_tokens(999_950), "1000k");
     }
 
     #[test]

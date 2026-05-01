@@ -1,4 +1,4 @@
-//! ~/.claude.json reader — process-wide OnceLock cache.
+//! ~/.claude.json reader — process-wide `OnceLock` cache.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
@@ -34,32 +34,38 @@ pub fn claude_account_email() -> Option<&'static str> {
     json.oauth_account.as_ref()?.email_address.as_deref()
 }
 
-/// Pure helper: читает и парсит файл по абсолютному пути. Не трогает OnceLock.
+/// Pure helper: читает и парсит файл по абсолютному пути. Не трогает `OnceLock`.
 #[must_use]
 pub fn read_from_path(path: &Path) -> Option<ClaudeJson> {
     let bytes = std::fs::read(path).ok()?;
     serde_json::from_slice::<ClaudeJson>(&bytes).ok()
 }
 
-/// Pure helper для unit-тестов.
+/// Устанавливает `CLAUDE_JSON` для изолированного тестирования.
 #[cfg(test)]
-fn extract_email(json: &Option<ClaudeJson>) -> Option<&str> {
-    json.as_ref()?.oauth_account.as_ref()?.email_address.as_deref()
-}
-
-#[cfg(test)]
-#[allow(dead_code)]
 pub fn set_claude_json_for_tests(json: Option<ClaudeJson>) {
     let _ = CLAUDE_JSON.set(json);
 }
 
 #[cfg(test)]
+fn extract_email(json: &Option<ClaudeJson>) -> Option<&str> {
+    json.as_ref()?
+        .oauth_account
+        .as_ref()?
+        .email_address
+        .as_deref()
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
     #[test]
     fn returns_none_when_no_oauth_account() {
-        let json = ClaudeJson { oauth_account: None };
+        let json = ClaudeJson {
+            oauth_account: None,
+        };
         assert_eq!(extract_email(&Some(json)), None);
     }
 
@@ -76,7 +82,9 @@ mod tests {
     #[test]
     fn returns_none_when_email_missing() {
         let json = ClaudeJson {
-            oauth_account: Some(OauthAccount { email_address: None }),
+            oauth_account: Some(OauthAccount {
+                email_address: None,
+            }),
         };
         assert_eq!(extract_email(&Some(json)), None);
     }

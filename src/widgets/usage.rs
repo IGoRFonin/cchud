@@ -11,7 +11,7 @@ pub struct WeeklyUsage;
 pub struct BlockResetTimer;
 pub struct WeeklyResetTimer;
 
-fn buckets<'a>(ctx: &'a RenderContext<'a>) -> Option<&'a RateLimits> {
+const fn buckets<'a>(ctx: &'a RenderContext<'a>) -> Option<&'a RateLimits> {
     ctx.payload.rate_limits.as_ref()
 }
 
@@ -22,35 +22,47 @@ fn pct_str(b: &RateBucket, prefix: &str) -> Option<String> {
 
 fn timer_str(b: &RateBucket, now_ms: u64, long: bool) -> Option<String> {
     let resets_at = b.resets_at?;
-    let now_s = (now_ms / 1000) as i64;
-    let remaining = resets_at - now_s;
-    let body = if long { format_long(remaining) } else { format_short(remaining) };
+    let now_unix_s = i64::try_from(now_ms / 1000).unwrap_or(i64::MAX);
+    let remaining = resets_at - now_unix_s;
+    let body = if long {
+        format_long(remaining)
+    } else {
+        format_short(remaining)
+    };
     Some(format!("⏳ {body}"))
 }
 
 impl Widget for SessionUsage {
-    fn id(&self) -> &'static str { "session-usage" }
+    fn id(&self) -> &'static str {
+        "session-usage"
+    }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
         pct_str(buckets(ctx)?.five_hour.as_ref()?, "5h")
     }
 }
 
 impl Widget for WeeklyUsage {
-    fn id(&self) -> &'static str { "weekly-usage" }
+    fn id(&self) -> &'static str {
+        "weekly-usage"
+    }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
         pct_str(buckets(ctx)?.seven_day.as_ref()?, "7d")
     }
 }
 
 impl Widget for BlockResetTimer {
-    fn id(&self) -> &'static str { "block-reset-timer" }
+    fn id(&self) -> &'static str {
+        "block-reset-timer"
+    }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
         timer_str(buckets(ctx)?.five_hour.as_ref()?, ctx.now_ms, false)
     }
 }
 
 impl Widget for WeeklyResetTimer {
-    fn id(&self) -> &'static str { "weekly-reset-timer" }
+    fn id(&self) -> &'static str {
+        "weekly-reset-timer"
+    }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
         timer_str(buckets(ctx)?.seven_day.as_ref()?, ctx.now_ms, true)
     }

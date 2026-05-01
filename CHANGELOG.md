@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-04-29
+
+**Phase 7: Other Widgets, Style Overrides, Multi-line.** Финальный паритет 60/60 виджетов с ccstatusline 2.2.8.
+
+### Added
+
+- 7 виджетов: `session-usage`, `weekly-usage`, `block-reset-timer`, `weekly-reset-timer`, `claude-account-email`, `free-memory`, `skills`.
+- Per-widget overrides на каждом widget item (`color`, `background_color`, `bold`).
+- 9 global theme settings: `global_bold`, `inherit_separator_colors`, `override_background_color`, `override_foreground_color`, `minimalist_mode`, `flex_mode`, `compact_threshold`, `auto_align`, `continue_theme_across_lines`.
+- Multi-line render: `settings.lines` склеивается через `\n`.
+- `WidgetConfig::AlignRight` sentinel для `auto_align`.
+- `WidgetItem` wrapper в config schema (JSON-совместим с upstream).
+- `apply_widget_style` централизованно применяет stack overrides.
+- `RenderState` для theme/separator cycling между линиями.
+
+### Changed
+
+- `payload.rate_limits` теперь типизированный `Option<RateLimits>` (было `Option<Value>`).
+- `Renderer::render(segs)` → `render_line(segs, &mut state, theme)`.
+- `Line.widgets: Vec<WidgetConfig>` → `Vec<WidgetItem>` (внутреннее API; JSON shape совместим).
+- `TranscriptStats` добавляет `skill_names: Vec<String>` (sorted/unique).
+- `FORMAT_VERSION 1 → 2` — silent reset кэша при первом запуске.
+
+### Performance
+
+- cchud-8w: < 5 ms p95.
+- cchud-60w: < 12 ms p95.
+- Cold parse 50 MB transcript: < 11 ms (+1 ms на skill detection).
+
+### Dependencies
+
+- Added: `sysinfo = "0.32"` (default-features = false, features = ["system"]).
+
 ## [0.4.0] — 2026-04-29
 
 ### Added (Phase 6 — Transcript widgets + JSONL cache)
@@ -162,7 +195,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No widgets yet. Real pipeline lands in Phase 2.
 - Repository is private; switch to public is a manual decision after content review.
 
-[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/IGoRFonin/cchud/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/IGoRFonin/cchud/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/IGoRFonin/cchud/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/IGoRFonin/cchud/compare/v0.1.0-alpha...v0.2.0

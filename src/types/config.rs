@@ -190,6 +190,7 @@ const fn default_context_bar_width() -> u32 {
     10
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeConfig {
     #[serde(default)]
@@ -253,13 +254,13 @@ impl Default for ThemeConfig {
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub enum FlexMode {
-    #[default]
     #[serde(rename = "full")]
     Full,
     #[serde(rename = "full-minus-20")]
     FullMinus20,
     #[serde(rename = "full-minus-40")]
     FullMinus40,
+    #[default]
     #[serde(rename = "disabled")]
     Disabled,
 }
@@ -306,7 +307,10 @@ mod tests {
         assert_eq!(s.version, 1);
         assert_eq!(s.lines.len(), 1);
         assert_eq!(s.lines[0].widgets.len(), 1);
-        assert!(matches!(s.lines[0].widgets[0].kind, WidgetConfig::Model { .. }));
+        assert!(matches!(
+            s.lines[0].widgets[0].kind,
+            WidgetConfig::Model { .. }
+        ));
     }
 
     #[test]
@@ -522,7 +526,10 @@ mod tests {
         let s: Settings = serde_json::from_str(json).unwrap();
         assert!(s.theme.global_bold);
         assert!(s.theme.inherit_separator_colors);
-        assert_eq!(s.theme.override_background_color.as_deref(), Some("#aabbcc"));
+        assert_eq!(
+            s.theme.override_background_color.as_deref(),
+            Some("#aabbcc")
+        );
         assert!(s.theme.minimalist_mode);
         assert_eq!(s.theme.flex_mode, FlexMode::FullMinus40);
         assert_eq!(s.theme.compact_threshold, 80);
@@ -534,7 +541,10 @@ mod tests {
     fn align_right_widget_parses() {
         let json = r#"{"lines": [{"widgets": [{"type": "align-right"}]}]}"#;
         let s: Settings = serde_json::from_str(json).unwrap();
-        assert!(matches!(s.lines[0].widgets[0].kind, WidgetConfig::AlignRight));
+        assert!(matches!(
+            s.lines[0].widgets[0].kind,
+            WidgetConfig::AlignRight
+        ));
     }
 
     #[test]
