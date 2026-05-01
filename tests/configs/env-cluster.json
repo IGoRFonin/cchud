@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "lines": [{
+    "widgets": [
+      {"type": "claude-account-email"},
+      {"type": "free-memory"},
+      {"type": "skills"}
+    ]
+  }],
+  "theme": {"kind": "plain"}
+}

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "lines": [{
+    "widgets": [
+      {"type": "session-usage"},
+      {"type": "weekly-usage"},
+      {"type": "block-reset-timer"},
+      {"type": "weekly-reset-timer"}
+    ]
+  }],
+  "theme": {"kind": "plain"}
+}

@@ -1,0 +1,6 @@
+---
+source: tests/snapshots_phase7.rs
+assertion_line: 66
+expression: "render_with_fixture(\"tests/configs/per-widget-override.json\")"
+---
+ Sonnet 4.6  $0.72  main 

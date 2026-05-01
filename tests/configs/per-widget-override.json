@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "lines": [{
+    "widgets": [
+      {"type": "model", "color": "#fafafa", "bold": true},
+      {"type": "session-cost", "color": "#ff00ff"},
+      {"type": "git-branch", "background_color": "#00ff00"}
+    ]
+  }],
+  "theme": {"kind": "powerline", "theme_name": "dracula"}
+}

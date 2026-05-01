@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "lines": [{
+    "widgets": [
+      {"type": "model"}, {"type": "session-cost"}, {"type": "git-branch"}
+    ]
+  }],
+  "theme": {
+    "kind": "powerline",
+    "theme_name": "default",
+    "global_bold": true,
+    "inherit_separator_colors": true,
+    "override_background_color": "#aabbcc"
+  }
+}

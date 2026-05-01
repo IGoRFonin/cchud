@@ -1,0 +1,6 @@
+---
+source: tests/snapshots_phase7.rs
+assertion_line: 56
+expression: "render_with_fixture(\"tests/configs/usage-cluster.json\")"
+---
+5h: 1% | 7d: 6% | ⏳ 362d 6h | ⏳ 52w 1d

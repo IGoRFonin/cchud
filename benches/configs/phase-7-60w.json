@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "lines": [
+    {"widgets": [
+      {"type": "version"}, {"type": "model"}, {"type": "session-name"}, {"type": "session-clock"},
+      {"type": "session-cost"}, {"type": "context-length"}, {"type": "context-percentage"},
+      {"type": "context-percentage-usable"}, {"type": "context-bar"},
+      {"type": "tokens-input"}, {"type": "tokens-output"}, {"type": "tokens-cached"},
+      {"type": "tokens-total"}, {"type": "input-speed"}, {"type": "output-speed"}, {"type": "total-speed"},
+      {"type": "block-timer"}, {"type": "session-duration"}, {"type": "thinking-effort"}, {"type": "skills"},
+      {"type": "session-usage"}, {"type": "weekly-usage"}, {"type": "block-reset-timer"}, {"type": "weekly-reset-timer"},
+      {"type": "claude-session-id"}, {"type": "terminal-width"}, {"type": "output-style"}, {"type": "vim-mode"},
+      {"type": "claude-account-email"}, {"type": "free-memory"}
+    ]},
+    {"widgets": [
+      {"type": "git-branch"}, {"type": "git-sha"}, {"type": "git-root-dir"},
+      {"type": "git-status"}, {"type": "git-changes"}, {"type": "git-staged"},
+      {"type": "git-unstaged"}, {"type": "git-untracked"}, {"type": "git-conflicts"},
+      {"type": "git-insertions"}, {"type": "git-deletions"}, {"type": "git-ahead-behind"},
+      {"type": "git-origin-owner"}, {"type": "git-origin-repo"}, {"type": "git-origin-owner-repo"},
+      {"type": "git-upstream-owner"}, {"type": "git-upstream-repo"}, {"type": "git-upstream-owner-repo"},
+      {"type": "git-is-fork"}, {"type": "git-pr"},
+      {"type": "worktree"}, {"type": "worktree-mode"}, {"type": "worktree-name"},
+      {"type": "worktree-branch"}, {"type": "worktree-original-branch"},
+      {"type": "custom-text", "text": "[]"}, {"type": "custom-symbol", "symbol": "★"},
+      {"type": "link", "url": "https://x.com", "label": "X"}, {"type": "context-bar", "width": 20},
+      {"type": "custom-command", "command": "echo", "args": ["hi"], "timeout_ms": 50}
+    ]}
+  ],
+  "theme": {"kind": "powerline", "theme_name": "dracula"}
+}

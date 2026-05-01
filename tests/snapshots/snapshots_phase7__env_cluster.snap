@@ -1,0 +1,6 @@
+---
+source: tests/snapshots_phase7.rs
+assertion_line: 61
+expression: "render_with_fixture(\"tests/configs/env-cluster.json\")"
+---
+💾 0b

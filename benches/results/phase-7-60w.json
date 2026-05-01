@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "command": "echo '{\"session_id\":\"acf930ea-c916-44f9-a757-0f094f159ee3\",\"transcript_path\":\"/Users/igor/.claude/projects/-Users-igor-mp-startup-cchud/acf930ea-c916-44f9-a757-0f094f159ee3.jsonl\",\"cwd\":\"/Users/igor/mp/startup/cchud\",\"model\":{\"id\":\"claude-sonnet-4-6\",\"display_name\":\"Sonnet 4.6\"},\"workspace\":{\"current_dir\":\"/Users/igor/mp/startup/cchud\",\"project_dir\":\"/Users/igor/mp/startup/cchud\",\"added_dirs\":[]},\"version\":\"2.1.119\",\"output_style\":{\"name\":\"default\"},\"cost\":{\"total_cost_usd\":0.7181426000000001,\"total_duration_ms\":478472,\"total_api_duration_ms\":156756,\"total_lines_added\":0,\"total_lines_removed\":0},\"context_window\":{\"total_input_tokens\":399,\"total_output_tokens\":7062,\"context_window_size\":200000,\"current_usage\":{\"input_tokens\":1,\"output_tokens\":232,\"cache_creation_input_tokens\":241,\"cache_read_input_tokens\":49543},\"used_percentage\":25,\"remaining_percentage\":75},\"exceeds_200k_tokens\":false,\"fast_mode\":false,\"effort\":{\"level\":\"high\"},\"thinking\":{\"enabled\":true},\"rate_limits\":{\"five_hour\":{\"used_percentage\":1,\"resets_at\":1777198800},\"seven_day\":{\"used_percentage\":6,\"resets_at\":1777485600}}}' | CCHUD_CONFIG=benches/configs/phase-7-60w.json ./target/release/cchud",
+      "mean": 0.30054298006,
+      "stddev": 0.027476388131466193,
+      "median": 0.30924274706000004,
+      "user": 0.03654188,
+      "system": 0.03796432,
+      "min": 0.26245360056000006,
+      "max": 0.33624097556000004,
+      "times": [
+        0.32526014256,
+        0.27215355856,
+        0.33624097556000004,
+        0.27439901756,
+        0.31302564256000004,
+        0.30545985156000005,
+        0.27266485056000006,
+        0.32898455956000006,
+        0.26245360056000006,
+        0.31478760156
+      ],
+      "memory_usage_byte": [
+        35962880,
+        36159488,
+        36225024,
+        36225024,
+        36225024,
+        36225024,
+        36225024,
+        36225024,
+        36225024,
+        36487168
+      ],
+      "exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}
