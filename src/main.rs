@@ -36,6 +36,7 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         Some("install") => commands::install::run(&args[1..]),
+        Some("doctor") => commands::doctor::run(&args[1..]),
         Some("configure") => configure_command(&args[1..]),
         Some("import") => import_command(&args[1..]),
         Some(other) if other.starts_with("--") => {
@@ -54,14 +55,16 @@ fn print_help() {
     );
     println!();
     println!("USAGE:");
-    println!("  cchud                  read JSON payload from stdin, render statusline");
+    println!("  cchud                       read JSON payload from stdin, render statusline");
     println!("  cchud install               wire cchud + self-relocate to ~/.local/bin/");
     println!("  cchud install --force       overwrite existing statusLine");
     println!("  cchud install --no-relocate skip self-copy (dev-only)");
-    println!("  cchud configure        open the interactive TUI configurator");
-    println!("  cchud import [args]    migrate ccstatusline config; see --help");
-    println!("  cchud --version        print version");
-    println!("  cchud --help           print this help");
+    println!("  cchud doctor                run 9-check environment report");
+    println!("  cchud doctor --json         emit machine-readable JSON report");
+    println!("  cchud configure             open the interactive TUI configurator");
+    println!("  cchud import [args]         migrate ccstatusline config; see --help");
+    println!("  cchud --version             print version");
+    println!("  cchud --help                print this help");
 }
 
 #[cfg(feature = "tui")]
