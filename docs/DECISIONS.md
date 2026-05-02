@@ -278,3 +278,24 @@ sonic-rs остался в `Cargo.toml` как deps, но парсинг пол�
 10. **Sample payload — захардкоженный inline.** `tui::sample::payload() -> (StatusPayload, NamedTempFile)`. Никаких runtime-аллокаций.
 
 **Связанные документы:** `docs/superpowers/specs/2026-05-01-phase-8-tui-design.md`, `plan/phase-8-tui.md` (outline).
+
+---
+
+## D-2026-05-02 — Phase 9: Distribution + 1.0.0
+
+**Context:** Шипим `cchud 1.0.0` как production-grade CLI tool с двумя установочными каналами.
+
+**Decisions:**
+
+1. **Channels:** npm (primary, через `npx --yes cchud@1.0.0 install`) + `install.sh` (Mac/Linux secondary). Drop Homebrew (PAT-based formula auto-bump painful), drop crates.io (defer Phase 10).
+2. **5 cross-build targets:** `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-unknown-linux-gnu`, `x86_64-unknown-linux-musl`, `x86_64-pc-windows-msvc`. ARM Linux — defer Phase 10.
+3. **npm Approach 2 (`optionalDependencies` per platform):** 6 пакетов (`cchud` + 5× `@cchud/cli-<platform>`). Без `postinstall` script — нет network call на install, работает с `--ignore-scripts`.
+4. **`npx cchud@<version> install` — primary entry point.** Не `npm i -g cchud`. JS shim spawn'ит native binary с `["install"]`, native binary self-relocates в `~/.local/bin/cchud`.
+5. **Self-relocation:** `cchud install` копирует себя в `~/.local/bin/cchud` (Unix) или `%LOCALAPPDATA%\cchud\cchud.exe` (Windows). Идемпотентен. `--no-relocate` flag для разработчиков.
+6. **Pin версии в README:** ВСЕГДА конкретная версия (`@1.0.0`), никогда `@latest` — supply-chain mitigation.
+7. **Multi-layer security:** npm `--provenance` (sigstore attestations) + npm 2FA (`auth-and-writes`) + `NPM_TOKEN` тип `automation` + GH Actions SHA-pinning.
+8. **RC soak gating:** `v1.0.0-rc.1` → npm `dist-tag: next` → ≥ 24h manual soak × 4 envs → `v1.0.0` → npm `dist-tag: latest`. Workflow `npm dist-tag rm cchud latest` rollback при smoke fail.
+9. **Smoke-install matrix × 3 (mac/linux/win)** в release.yml — gate между `published` и `actually works`.
+10. **`cchud doctor` (9 checks, без Powerline-font detect):** version, binary path, platform target, color level, hyperlinks, cache dir, claude settings, cchud config, gh CLI (conditional). Exit 0/1/2.
+11. **Без `install.ps1`** — Windows users имеют npm. PowerShell-ports defer Phase 10.
+12. **Reuse Phase 8 `atomic_save` pattern** для settings.json backup `<path>.bak.<unix-ms>`.
