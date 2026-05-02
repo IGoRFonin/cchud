@@ -1,0 +1,5 @@
+{
+  "ccstatusline": {
+    "lines": [{"widgets": [{"type": "session-cost"}, {"type": "context-percentage"}]}]
+  }
+}

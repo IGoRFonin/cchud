@@ -2,7 +2,7 @@
 
 > Fast Rust statusline for Claude Code CLI — drop-in port of [ccstatusline](https://github.com/sirmalloc/ccstatusline) targeting < 5 ms cold-start and < 5 MB RSS.
 
-**Status:** 0.5.0 — 60 of 60 upstream widgets supported. Plain and Powerline renderers, 20 git-widgets via gix, 8 transcript-widgets via JSONL cache, 7 env/http widgets. See [`plan/README.md`](plan/README.md) for roadmap.
+**Status:** 0.9.0 — 60 of 60 upstream widgets supported. Interactive TUI configurator (`cchud configure`), ccstatusline import (`cchud import`). Plain and Powerline renderers, 20 git-widgets via gix, 8 transcript-widgets via JSONL cache, 7 env/http widgets. See [`plan/README.md`](plan/README.md) for roadmap.
 
 ## What
 
@@ -37,7 +37,36 @@ Claude Code invokes the statusline up to 3 times per second. For 4 parallel sess
 
 See [`docs/widgets.md`](docs/widgets.md) for the full widget reference.
 
-## Configure
+## TUI Configurator
+
+Run `cchud configure` to open the interactive 4-panel TUI (requires a real terminal):
+
+```bash
+cchud configure
+```
+
+**Panels:**
+- **Lines** — add/remove/reorder lines and widgets (Arrow keys, `a` to add, `d` to delete, `Alt+↑↓` to reorder).
+- **Palette** — 60-widget palette with live filter (`/`), 11 categories.
+- **Settings** — per-widget overrides: color picker (16 ANSI + custom hex), background_color, bold.
+- **Preview** — live statusbar preview using sample data.
+
+**Keybindings:** `Tab`/`Shift+Tab` — move between panels · `t` — themes overlay · `?` — help · `Ctrl+S` — save · `q` — quit (confirm if dirty).
+
+### Migrate from ccstatusline
+
+```bash
+# Auto-detect ccstatusline section in ~/.claude/settings.json
+cchud import
+
+# From a specific file, then open TUI
+cchud import --from /path/to/settings.json --then-configure
+
+# Force overwrite existing config (creates backup)
+cchud import --from /path/to/settings.json --force
+```
+
+## Configure (manual)
 
 `cchud install` wires cchud into `~/.claude/settings.json` as `statusLine.command`. Widget list lives in a **separate** file: `~/.config/cchud/settings.json` (auto-created with defaults on first run):
 

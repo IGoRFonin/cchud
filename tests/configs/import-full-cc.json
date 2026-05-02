@@ -1,0 +1,8 @@
+{
+  "ccstatusline": {
+    "version": 1,
+    "lines": [{"widgets": [{"type": "model"}, {"type": "git-branch"}]}],
+    "theme": {"kind": "powerline", "theme_name": "dracula"}
+  },
+  "statusLine": {"type": "command", "command": "/usr/local/bin/old"}
+}

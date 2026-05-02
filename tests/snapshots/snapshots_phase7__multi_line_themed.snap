@@ -3,4 +3,4 @@ source: tests/snapshots_phase7.rs
 expression: "render_with_fixture(\"tests/configs/multi-line-themed.json\")"
 ---
  Sonnet 4.6  $0.72  totT: 13.8M  25% 
- main  ~10 ?51  💾 0b 
+ main  default  7461  2.1.119  4% 

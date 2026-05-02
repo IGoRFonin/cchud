@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-05-02
+
+**Phase 8: TUI Configurator + Import.** Interactive TUI на ratatui+crossterm + CLI миграция с ccstatusline.
+
+### Added
+
+- `cchud configure` — interactive TUI configurator (4 panels: Lines / Palette / Settings / Preview).
+- `cchud import [--from <path>] [--then-configure] [--force]` — best-effort миграция с ccstatusline. Авто-детект секции `ccstatusline` в `~/.claude/settings.json`.
+- 60-widget palette с filter (`/`) + 11 категорий (Model/Static/Trivial/Session/Context/Worktree/Git/Transcript/Usage/Env).
+- Per-widget overrides через TUI: color picker (16 ANSI named + Custom hex), background_color, tri-state bold.
+- Themes overlay (`t`): 5 builtins + 9 globals.
+- Help overlay (`?`): cheatsheet keybindings.
+- Confirm-quit modal `[s/d/c]` для dirty changes.
+- Atomic save с backup `<path>.bak.<unix-ts-ms>`.
+- Feature flag `tui` (default = ["tui"]); `cargo install cchud --no-default-features` собирает минимальный бинарь.
+
+### Changed
+
+- **Refactor `Renderer::compose_line` extract** — pure-функция возвращает `Vec<StyledSegment>`. `Renderer::render_line = compose_line + emit_ansi` (общий ANSI emitter). TUI live preview переиспользует `compose_line + style_map::to_span`.
+- `Renderer::for_preview(&Settings)` (cfg tui) — конструктор forces TrueColor + hyperlinks=false.
+- `PartialEq, Eq` derived на Settings/Line/WidgetItem/WidgetConfig/ThemeConfig/PowerlineTheme/всех Params (`App.dirty()` через `==`).
+
+### Performance
+
+- TUI cold-start: 3.5 ms mean / 5.0 ms p95 (NFR < 50 ms ✓).
+- Hot path рендера (`cchud` без аргументов) — без изменений: cchud-8w < 5 ms p95 / cchud-60w < 12 ms p95.
+- Phase 4 + Phase 7 + git + transcript snapshots — byte-identical после refactor (no regression).
+
+### Dependencies
+
+- Added (optional, feature `tui`): `ratatui = "=0.30.0"` (crossterm backend), `crossterm = "=0.29.0"`, `tempfile = "3"` (поднято из dev-dependencies).
+
 ## [0.5.0] — 2026-04-29
 
 **Phase 7: Other Widgets, Style Overrides, Multi-line.** Финальный паритет 60/60 виджетов с ccstatusline 2.2.8.
