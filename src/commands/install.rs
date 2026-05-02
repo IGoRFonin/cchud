@@ -40,7 +40,9 @@ pub fn run(args: &[String]) -> ExitCode {
             }
         };
         if same_file(&current_exe, &target).unwrap_or(false) {
-            // Already at target — no-op.
+            // Already at target — no-op. The same_file short-circuit also prevents
+            // ETXTBSY on Linux: writing to the running executable is rejected by the
+            // kernel, but we never reach fs::copy if src==dst.
         } else if let Err(e) = relocate_to(&current_exe, &target) {
             eprintln!("cchud install: relocation failed: {e}");
             return ExitCode::from(1);
@@ -72,8 +74,13 @@ fn write_settings_with_exe(exe: &Path, force: bool) -> std::io::Result<()> {
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis())
             .unwrap_or(0);
+        // Include PID to avoid name collision if two `cchud install` run within the same ms.
+        // TOCTOU: path.exists() and fs::copy are not atomic; a concurrent write between
+        // them would result in a backup of the new content, not the original. For a
+        // single-user install tool this window is acceptable — backup is best-effort.
+        let pid = std::process::id();
         let mut bak = path.as_os_str().to_owned();
-        bak.push(format!(".bak.{unix_ms}"));
+        bak.push(format!(".bak.{unix_ms}-{pid}"));
         let bak_path = std::path::PathBuf::from(bak);
         let _ = std::fs::copy(&path, &bak_path); // best-effort
     }
@@ -131,9 +138,11 @@ fn write_atomic(path: &Path, value: &serde_json::Value) -> std::io::Result<()> {
 ///
 /// # Errors
 /// Returns an error if `$HOME` / `%LOCALAPPDATA%` cannot be resolved.
-#[allow(dead_code)] // used by install::run in T3
 pub fn canonical_target_path() -> io::Result<PathBuf> {
     if cfg!(target_os = "windows") {
+        // Prefer %LOCALAPPDATA% directly; fall back to dirs::data_local_dir() if the
+        // env var is missing (e.g. in restricted/service accounts). The two may diverge
+        // in non-standard configurations — documented in DECISIONS.md as accepted risk.
         let base = std::env::var_os("LOCALAPPDATA")
             .map(PathBuf::from)
             .or_else(dirs::data_local_dir)
@@ -150,7 +159,6 @@ pub fn canonical_target_path() -> io::Result<PathBuf> {
 ///
 /// # Errors
 /// Returns an error if `fs::canonicalize` fails for an existing path.
-#[allow(dead_code)] // used by install::run in T3
 pub fn same_file(a: &Path, b: &Path) -> io::Result<bool> {
     if !a.exists() || !b.exists() {
         return Ok(false);
@@ -163,7 +171,6 @@ pub fn same_file(a: &Path, b: &Path) -> io::Result<bool> {
 ///
 /// # Errors
 /// Returns an error if directory creation, file copy, or permission setting fails.
-#[allow(dead_code)] // used by install::run in T3
 pub fn relocate_to(src: &Path, dst: &Path) -> io::Result<()> {
     if let Some(parent) = dst.parent() {
         fs::create_dir_all(parent)?;
@@ -182,7 +189,6 @@ pub fn relocate_to(src: &Path, dst: &Path) -> io::Result<()> {
 /// Returns `(stdout_string, stderr_string)`. Caller decides куда писать.
 /// Pure: не делает println!/eprintln!.
 #[must_use]
-#[allow(dead_code)] // used by install::run in T3
 pub fn check_path_or_warn_capturing(
     target: &Path,
     path_var: &str,
@@ -192,6 +198,10 @@ pub fn check_path_or_warn_capturing(
         return (String::new(), String::new());
     };
     let separator = if cfg!(windows) { ';' } else { ':' };
+    // canonicalize errors on non-existent PATH entries are silently dropped (filter_map).
+    // If target_dir itself does not exist, canonicalize fails and we compare against its
+    // raw path — which won't match any canonical PATH entry, yielding a "not in PATH"
+    // warning. This is acceptable: if the directory doesn't exist it truly isn't useful.
     let in_path = path_var
         .split(separator)
         .filter_map(|p| Path::new(p).canonicalize().ok())
@@ -217,7 +227,6 @@ pub fn check_path_or_warn_capturing(
 }
 
 /// Real-side обёртка: печатает в stdout/stderr.
-#[allow(dead_code)] // used by install::run in T3
 pub fn check_path_or_warn(target: &Path) {
     let path_var = std::env::var("PATH").unwrap_or_default();
     let shell = std::env::var("SHELL").unwrap_or_default();

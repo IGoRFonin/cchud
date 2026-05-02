@@ -175,6 +175,8 @@ fn run_no_relocate_writes_settings_and_returns_zero() {
         .unwrap()
         .as_str()
         .unwrap();
+    // Under `cargo test`, current_exe() points to the test runner binary, not a cchud
+    // binary, so the path may contain "test_runner" rather than "cchud".
     assert!(
         cmd.contains("cchud") || cmd.contains("test_runner"),
         "cmd: {cmd}"
