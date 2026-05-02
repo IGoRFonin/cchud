@@ -18,6 +18,7 @@ pub mod ui;
 pub mod widget_meta;
 pub mod widgets_ui;
 
+#[allow(unused_imports)]
 pub use event::run_event_loop;
 
 /// Public entry — вызывается из `commands::configure::run`.

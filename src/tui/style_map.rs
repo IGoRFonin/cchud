@@ -1,7 +1,7 @@
 //! cchud Style/Color → ratatui Style/Color/Span — Phase 8 Task 3.
 //!
 //! Hot path остаётся под `Style::render(&str, ColorLevel) -> String` (ANSI emit).
-//! TUI preview мапит StyledSegment → ratatui::text::Span — без ANSI escape, без OSC 8.
+//! TUI preview мапит [`StyledSegment`] → [`ratatui::text::Span`] — без ANSI escape, без OSC 8.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
@@ -12,7 +12,7 @@ use crate::render::{Color, Style, StyledSegment};
 
 /// Converts cchud `Color` → ratatui `Color`. RGB → `Rgb(r,g,b)`; Ansi256 → `Indexed(n)`.
 #[must_use]
-pub fn to_ratatui_color(c: Color) -> RColor {
+pub const fn to_ratatui_color(c: Color) -> RColor {
     match c {
         Color::Rgb(r, g, b) => RColor::Rgb(r, g, b),
         Color::Ansi256(n) => RColor::Indexed(n),
@@ -22,7 +22,7 @@ pub fn to_ratatui_color(c: Color) -> RColor {
 /// Converts cchud `Style` → ratatui `Style`.
 ///
 /// fg/bg + bold/italic/dim/underline. `Style::adapt(level)` НЕ вызывается — preview
-/// forces TrueColor via `Renderer::for_preview` (T2). None fg/bg → None in ratatui.
+/// forces `TrueColor` via `Renderer::for_preview` (T2). None fg/bg → None in ratatui.
 #[must_use]
 pub fn to_ratatui_style(s: Style) -> RStyle {
     let mut out = RStyle::default();

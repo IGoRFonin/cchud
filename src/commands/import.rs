@@ -48,7 +48,10 @@ pub fn run(raw_args: &[String]) -> ExitCode {
     };
 
     let Some(cc_section) = extract_ccstatusline(&value) else {
-        eprintln!("cchud import: no ccstatusline section found in {}", src.display());
+        eprintln!(
+            "cchud import: no ccstatusline section found in {}",
+            src.display()
+        );
         return ExitCode::from(1);
     };
 
@@ -101,7 +104,9 @@ fn parse_args(raw: &[String]) -> Result<ImportArgs, String> {
         match raw[i].as_str() {
             "--from" => {
                 i += 1;
-                let p = raw.get(i).ok_or_else(|| "--from requires <path>".to_string())?;
+                let p = raw
+                    .get(i)
+                    .ok_or_else(|| "--from requires <path>".to_string())?;
                 from = Some(PathBuf::from(p));
             }
             "--then-configure" => then_configure = true,
@@ -110,12 +115,16 @@ fn parse_args(raw: &[String]) -> Result<ImportArgs, String> {
         }
         i += 1;
     }
-    Ok(ImportArgs { from, then_configure, force })
+    Ok(ImportArgs {
+        from,
+        then_configure,
+        force,
+    })
 }
 
 fn resolve_source(from: Option<&PathBuf>) -> Option<PathBuf> {
     if let Some(p) = from {
-        return p.exists().then(|| p.clone());
+        return Some(p.clone());
     }
     let claude = dirs::home_dir()?.join(".claude/settings.json");
     claude.exists().then_some(claude)
@@ -144,7 +153,7 @@ fn extract_ccstatusline(v: &Value) -> Option<Value> {
 /// Best-effort парсинг. Сначала пробует `serde_json::from_value::<Settings>`;
 /// если fail — фильтрует `lines[].widgets[]` по whitelist `widget_meta::lookup_by_kebab`.
 pub fn parse_best_effort(mut value: Value) -> (Settings, Vec<String>) {
-    if let Ok(s) = serde_json::from_value::<Settings>(value.clone()) {
+    if let Ok(s) = <Settings as serde::Deserialize>::deserialize(&value) {
         return (s, Vec::new());
     }
 

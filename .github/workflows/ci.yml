@@ -47,3 +47,16 @@ jobs:
         run: cargo clippy --locked -- -D warnings
       - name: Format check
         run: cargo fmt --check
+
+  lean-build:
+    name: lean build (no-default-features)
+    needs: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --no-default-features --locked
+      - name: Test
+        run: cargo test --no-default-features --locked

@@ -12,7 +12,7 @@ pub const fn glyph(value: Option<bool>) -> &'static str {
     match value {
         None => "[ ]",
         Some(true) => "[✓]",
-        Some(false) => "[ ✗]",
+        Some(false) => "[✗]",
     }
 }
 
@@ -34,6 +34,6 @@ mod tests {
     fn glyphs_for_three_states() {
         assert_eq!(glyph(None), "[ ]");
         assert_eq!(glyph(Some(true)), "[✓]");
-        assert_eq!(glyph(Some(false)), "[ ✗]");
+        assert_eq!(glyph(Some(false)), "[✗]");
     }
 }

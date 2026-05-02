@@ -11,18 +11,12 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use crate::tui::app::App;
 use crate::tui::overlays::modal::centered;
 
-pub static BUILTIN_THEMES: &[&str] = &["default", "dracula", "solarized-dark", "nord", "gruvbox-dark"];
-
-pub static GLOBAL_FIELDS: &[&str] = &[
-    "global_bold",
-    "inherit_separator_colors",
-    "override_background_color",
-    "override_foreground_color",
-    "minimalist_mode",
-    "flex_mode",
-    "compact_threshold",
-    "auto_align",
-    "continue_theme_across_lines",
+pub static BUILTIN_THEMES: &[&str] = &[
+    "default",
+    "dracula",
+    "solarized-dark",
+    "nord",
+    "gruvbox-dark",
 ];
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
@@ -34,7 +28,12 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
         .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
         .split(popup);
 
-    let theme_label = app.editable.theme.theme_name.as_deref().unwrap_or("default");
+    let theme_label = app
+        .editable
+        .theme
+        .theme_name
+        .as_deref()
+        .unwrap_or("default");
     let mut left_lines: Vec<Line<'_>> = vec![Line::from("Builtin themes (t to close)")];
     for (i, name) in BUILTIN_THEMES.iter().enumerate() {
         let mark = if *name == theme_label { "▶ " } else { "  " };
@@ -51,18 +50,40 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let mut right_lines: Vec<Line<'_>> = vec![Line::from("Global theme settings")];
     let theme = &app.editable.theme;
     let values: [(&str, String); 9] = [
-        ("global_bold",                bool_glyph(theme.global_bold)),
-        ("inherit_separator_colors",   bool_glyph(theme.inherit_separator_colors)),
-        ("override_background_color",  theme.override_background_color.clone().unwrap_or_else(|| "(none)".into())),
-        ("override_foreground_color",  theme.override_foreground_color.clone().unwrap_or_else(|| "(none)".into())),
-        ("minimalist_mode",            bool_glyph(theme.minimalist_mode)),
-        ("flex_mode",                  format!("{:?}", theme.flex_mode)),
-        ("compact_threshold",          theme.compact_threshold.to_string()),
-        ("auto_align",                 bool_glyph(theme.auto_align)),
-        ("continue_theme_across_lines",bool_glyph(theme.continue_theme_across_lines)),
+        ("global_bold", bool_glyph(theme.global_bold)),
+        (
+            "inherit_separator_colors",
+            bool_glyph(theme.inherit_separator_colors),
+        ),
+        (
+            "override_background_color",
+            theme
+                .override_background_color
+                .clone()
+                .unwrap_or_else(|| "(none)".into()),
+        ),
+        (
+            "override_foreground_color",
+            theme
+                .override_foreground_color
+                .clone()
+                .unwrap_or_else(|| "(none)".into()),
+        ),
+        ("minimalist_mode", bool_glyph(theme.minimalist_mode)),
+        ("flex_mode", format!("{:?}", theme.flex_mode)),
+        ("compact_threshold", theme.compact_threshold.to_string()),
+        ("auto_align", bool_glyph(theme.auto_align)),
+        (
+            "continue_theme_across_lines",
+            bool_glyph(theme.continue_theme_across_lines),
+        ),
     ];
     for (i, (k, v)) in values.iter().enumerate() {
-        let mark = if i + BUILTIN_THEMES.len() == app.theme_field_cursor { "▶ " } else { "  " };
+        let mark = if i + BUILTIN_THEMES.len() == app.theme_field_cursor {
+            "▶ "
+        } else {
+            "  "
+        };
         right_lines.push(Line::from(format!("{mark}{k:<28}: {v}")));
     }
     let right_block = Block::default().borders(Borders::ALL).title("Globals");

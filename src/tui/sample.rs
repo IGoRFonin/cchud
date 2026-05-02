@@ -36,7 +36,9 @@ const TRANSCRIPT_JSONL: &str = "\
 #[must_use]
 pub fn payload() -> (StatusPayload, Option<NamedTempFile>) {
     let tempfile = write_transcript_fixture();
-    let transcript_path = tempfile.as_ref().map(|f| f.path().to_string_lossy().into_owned());
+    let transcript_path = tempfile
+        .as_ref()
+        .map(|f| f.path().to_string_lossy().into_owned());
 
     let p = StatusPayload {
         session_id: "s_demo_abc123".into(),
@@ -115,7 +117,7 @@ fn now_plus_seconds(delta: i64) -> i64 {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
-        .unwrap_or(1_745_900_000);
+        .unwrap_or(1_778_000_000);
     now + delta
 }
 

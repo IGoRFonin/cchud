@@ -10,28 +10,38 @@ use ratatui::widgets::Paragraph;
 
 pub static NAMED_COLORS: &[(&str, &str)] = &[
     ("Default (none)", ""),
-    ("Black",          "#000000"),
-    ("Red",            "#cd0000"),
-    ("Green",          "#00cd00"),
-    ("Yellow",         "#cdcd00"),
-    ("Blue",           "#0000ee"),
-    ("Magenta",        "#cd00cd"),
-    ("Cyan",           "#00cdcd"),
-    ("White",          "#e5e5e5"),
-    ("Bright Black",   "#7f7f7f"),
-    ("Bright Red",     "#ff0000"),
-    ("Bright Green",   "#00ff00"),
-    ("Bright Yellow",  "#ffff00"),
-    ("Bright Blue",    "#5c5cff"),
+    ("Black", "#000000"),
+    ("Red", "#cd0000"),
+    ("Green", "#00cd00"),
+    ("Yellow", "#cdcd00"),
+    ("Blue", "#0000ee"),
+    ("Magenta", "#cd00cd"),
+    ("Cyan", "#00cdcd"),
+    ("White", "#e5e5e5"),
+    ("Bright Black", "#7f7f7f"),
+    ("Bright Red", "#ff0000"),
+    ("Bright Green", "#00ff00"),
+    ("Bright Yellow", "#ffff00"),
+    ("Bright Blue", "#5c5cff"),
     ("Bright Magenta", "#ff00ff"),
-    ("Bright Cyan",    "#00ffff"),
-    ("Bright White",   "#ffffff"),
-    ("Custom hex…",    ""),
+    ("Bright Cyan", "#00ffff"),
+    ("Bright White", "#ffffff"),
+    ("Custom hex…", ""),
 ];
 
-pub fn render(frame: &mut Frame<'_>, area: Rect, label: &str, current: Option<&str>, cursor: usize, focused: bool) {
+pub fn render(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    label: &str,
+    current: Option<&str>,
+    cursor: usize,
+    focused: bool,
+) {
     let mut lines = Vec::with_capacity(NAMED_COLORS.len() + 1);
-    lines.push(Line::from(format!("{label} = {}", current.unwrap_or("(none)"))));
+    lines.push(Line::from(format!(
+        "{label} = {}",
+        current.unwrap_or("(none)")
+    )));
     for (i, (name, hex)) in NAMED_COLORS.iter().enumerate() {
         let mark = if i == cursor && focused { "▶ " } else { "  " };
         let swatch = if hex.is_empty() {

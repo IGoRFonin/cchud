@@ -86,6 +86,34 @@ fn import_existing_dest_without_force_exits_1() {
 }
 
 #[test]
+fn import_ccstatusline_nested_section_succeeds() {
+    let dir = tempdir().unwrap();
+    let dest = dir.path().join("settings.json");
+    cchud_with_dest(&dest)
+        .args(["import", "--from", "tests/configs/import-with-section.json"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("widgets across"));
+    assert!(dest.exists());
+}
+
+#[test]
+fn import_then_configure_without_tty_exits_2() {
+    let dir = tempdir().unwrap();
+    let dest = dir.path().join("settings.json");
+    cchud_with_dest(&dest)
+        .args([
+            "import",
+            "--from",
+            "tests/configs/import-full-cc.json",
+            "--then-configure",
+        ])
+        .assert()
+        .failure()
+        .code(2);
+}
+
+#[test]
 fn import_existing_dest_with_force_overwrites_and_backs_up() {
     let dir = tempdir().unwrap();
     let dest = dir.path().join("settings.json");

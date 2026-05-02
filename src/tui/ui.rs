@@ -8,7 +8,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::Paragraph;
 
-use crate::tui::app::{App, Mode, MessageKind};
+use crate::tui::app::{App, MessageKind, Mode};
 use crate::tui::overlays;
 use crate::tui::panels;
 
@@ -56,10 +56,20 @@ fn render_status_bar(frame: &mut Frame<'_>, area: ratatui::layout::Rect, app: &A
     let dirty_glyph = if app.dirty() { "● " } else { "  " };
     let mode = format!("{dirty_glyph}{:?}  focus={:?}", app.mode, app.focus);
     let msg = match &app.status_message {
-        Some((m, MessageKind::Info)) => Line::from(m.clone()).style(Style::default().fg(Color::Green)),
-        Some((m, MessageKind::Warn)) => Line::from(m.clone()).style(Style::default().fg(Color::Yellow)),
-        Some((m, MessageKind::Error)) => Line::from(m.clone()).style(Style::default().fg(Color::Red)),
-        None => Line::from(format!("{mode}  ·  ? for help")).style(Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+        Some((m, MessageKind::Info)) => {
+            Line::from(m.clone()).style(Style::default().fg(Color::Green))
+        }
+        Some((m, MessageKind::Warn)) => {
+            Line::from(m.clone()).style(Style::default().fg(Color::Yellow))
+        }
+        Some((m, MessageKind::Error)) => {
+            Line::from(m.clone()).style(Style::default().fg(Color::Red))
+        }
+        None => Line::from(format!("{mode}  ·  ? for help")).style(
+            Style::default()
+                .fg(Color::DarkGray)
+                .add_modifier(Modifier::DIM),
+        ),
     };
     frame.render_widget(Paragraph::new(msg), area);
 }

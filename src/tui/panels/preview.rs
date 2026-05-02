@@ -25,7 +25,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
     if lines.is_empty() {
         tui_lines.push(Line::from("(empty — add a widget from the palette)"));
     } else {
-        for line_widgets in lines.iter() {
+        for line_widgets in &lines {
             let segments: Vec<Segment> = line_widgets
                 .iter()
                 .filter_map(|(w, ovr)| {
@@ -57,6 +57,10 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let block = Block::default()
         .borders(Borders::ALL)
         .title("Preview")
-        .border_style(if focused { Style::default().fg(Color::Yellow) } else { Style::default() });
+        .border_style(if focused {
+            Style::default().fg(Color::Yellow)
+        } else {
+            Style::default()
+        });
     frame.render_widget(Paragraph::new(tui_lines).block(block), area);
 }

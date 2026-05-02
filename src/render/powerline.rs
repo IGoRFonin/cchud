@@ -43,6 +43,7 @@ impl Powerline {
     }
 
     #[must_use]
+    #[allow(dead_code)]
     pub fn render_line(
         &self,
         segments: &[Segment],

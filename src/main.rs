@@ -5,8 +5,6 @@
 //! Config loading lands in Task 6; install command in Task 7.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
-// TUI (mod tui) is not yet wired to main() — T12 connects it. Suppress binary dead_code until then.
-#![allow(dead_code, unused_imports)]
 
 mod cache;
 mod commands;

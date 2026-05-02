@@ -58,7 +58,9 @@ pub static ALL_KINDS: &[WidgetMeta] = &[
         display: "Model",
         kebab_type: "model",
         category: WidgetCategory::Model,
-        factory: || WidgetConfig::Model { params: ModelParams {} },
+        factory: || WidgetConfig::Model {
+            params: ModelParams {},
+        },
     },
     // Static (5)
     WidgetMeta {
@@ -71,26 +73,43 @@ pub static ALL_KINDS: &[WidgetMeta] = &[
         display: "Custom Text",
         kebab_type: "custom-text",
         category: WidgetCategory::Static,
-        factory: || WidgetConfig::CustomText { params: CustomTextParams { text: "text".into() } },
+        factory: || WidgetConfig::CustomText {
+            params: CustomTextParams {
+                text: "text".into(),
+            },
+        },
     },
     WidgetMeta {
         display: "Custom Symbol",
         kebab_type: "custom-symbol",
         category: WidgetCategory::Static,
-        factory: || WidgetConfig::CustomSymbol { params: CustomSymbolParams { symbol: "★".into() } },
+        factory: || WidgetConfig::CustomSymbol {
+            params: CustomSymbolParams {
+                symbol: "★".into()
+            },
+        },
     },
     WidgetMeta {
         display: "Link",
         kebab_type: "link",
         category: WidgetCategory::Static,
-        factory: || WidgetConfig::Link { params: LinkParams { url: "https://example.com".into(), label: None } },
+        factory: || WidgetConfig::Link {
+            params: LinkParams {
+                url: "https://example.com".into(),
+                label: None,
+            },
+        },
     },
     WidgetMeta {
         display: "Custom Command",
         kebab_type: "custom-command",
         category: WidgetCategory::Static,
         factory: || WidgetConfig::CustomCommand {
-            params: CustomCommandParams { command: "echo".into(), args: vec!["hi".into()], timeout_ms: 200 },
+            params: CustomCommandParams {
+                command: "echo".into(),
+                args: vec!["hi".into()],
+                timeout_ms: 200,
+            },
         },
     },
     // Trivial (5)
@@ -166,7 +185,9 @@ pub static ALL_KINDS: &[WidgetMeta] = &[
         display: "Context Bar",
         kebab_type: "context-bar",
         category: WidgetCategory::Context,
-        factory: || WidgetConfig::ContextBar { params: ContextBarParams { width: 10 } },
+        factory: || WidgetConfig::ContextBar {
+            params: ContextBarParams { width: 10 },
+        },
     },
     WidgetMeta {
         display: "Tokens Input",
@@ -449,7 +470,11 @@ mod tests {
         use std::collections::HashSet;
         let mut seen = HashSet::new();
         for m in ALL_KINDS {
-            assert!(seen.insert(m.kebab_type), "duplicate kebab_type: {}", m.kebab_type);
+            assert!(
+                seen.insert(m.kebab_type),
+                "duplicate kebab_type: {}",
+                m.kebab_type
+            );
         }
         assert_eq!(seen.len(), 60);
     }
@@ -459,7 +484,10 @@ mod tests {
         use crate::types::config::{WidgetItem, WidgetStyleOverride};
         for m in ALL_KINDS {
             let cfg = (m.factory)();
-            let item = WidgetItem { kind: cfg, style: WidgetStyleOverride::default() };
+            let item = WidgetItem {
+                kind: cfg,
+                style: WidgetStyleOverride::default(),
+            };
             let json = serde_json::to_value(&item).unwrap();
             let actual = json.get("type").and_then(|v| v.as_str()).unwrap();
             assert_eq!(
@@ -480,7 +508,9 @@ mod tests {
     #[test]
     fn each_category_has_at_least_one_entry() {
         use WidgetCategory::*;
-        for cat in [Model, Static, Trivial, Session, Context, Worktree, Git, Transcript, Usage, Env] {
+        for cat in [
+            Model, Static, Trivial, Session, Context, Worktree, Git, Transcript, Usage, Env,
+        ] {
             assert!(
                 ALL_KINDS.iter().any(|m| m.category == cat),
                 "category {cat:?} has no entries"

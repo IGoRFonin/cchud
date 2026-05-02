@@ -49,11 +49,7 @@ pub fn set_claude_json_for_tests(json: Option<ClaudeJson>) {
 
 #[cfg(test)]
 fn extract_email(json: Option<&ClaudeJson>) -> Option<&str> {
-    json?
-        .oauth_account
-        .as_ref()?
-        .email_address
-        .as_deref()
+    json?.oauth_account.as_ref()?.email_address.as_deref()
 }
 
 #[cfg(test)]

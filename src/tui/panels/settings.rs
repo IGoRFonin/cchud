@@ -9,6 +9,9 @@ use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, Paragraph};
 
 use crate::tui::app::{App, Pane};
+
+const TIMEOUT_MIN_MS: u64 = 50;
+const TIMEOUT_MAX_MS: u64 = 5000;
 use crate::tui::widgets_ui::{color_picker, list_editor, number_input, tri_bool};
 use crate::types::config::WidgetConfig;
 
@@ -17,7 +20,11 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let block = Block::default()
         .borders(Borders::ALL)
         .title("Widget Settings")
-        .border_style(if focused { Style::default().fg(Color::Yellow) } else { Style::default() });
+        .border_style(if focused {
+            Style::default().fg(Color::Yellow)
+        } else {
+            Style::default()
+        });
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
@@ -40,16 +47,42 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
         .split(inner);
 
     let cursor = app.settings_field_cursor;
-    color_picker::render(frame, chunks[0], "FG", item.style.color.as_deref(), cursor, focused && cursor == 0);
-    color_picker::render(frame, chunks[1], "BG", item.style.background_color.as_deref(), cursor, focused && cursor == 1);
-    tri_bool::render(frame, chunks[2], "Bold", item.style.bold, focused && cursor == 2);
+    color_picker::render(
+        frame,
+        chunks[0],
+        "FG",
+        item.style.color.as_deref(),
+        app.color_fg_cursor,
+        focused && cursor == 0,
+    );
+    color_picker::render(
+        frame,
+        chunks[1],
+        "BG",
+        item.style.background_color.as_deref(),
+        app.color_bg_cursor,
+        focused && cursor == 1,
+    );
+    tri_bool::render(
+        frame,
+        chunks[2],
+        "Bold",
+        item.style.bold,
+        focused && cursor == 2,
+    );
 
     match &item.kind {
         WidgetConfig::CustomText { params } => {
-            frame.render_widget(Paragraph::new(format!("Text:    {}", params.text)), chunks[3]);
+            frame.render_widget(
+                Paragraph::new(format!("Text:    {}", params.text)),
+                chunks[3],
+            );
         }
         WidgetConfig::CustomSymbol { params } => {
-            frame.render_widget(Paragraph::new(format!("Symbol:  {}", params.symbol)), chunks[3]);
+            frame.render_widget(
+                Paragraph::new(format!("Symbol:  {}", params.symbol)),
+                chunks[3],
+            );
         }
         WidgetConfig::Link { params } => {
             let mut lines = vec![Line::from(format!("URL:    {}", params.url))];
@@ -67,17 +100,27 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     Constraint::Min(0),
                 ])
                 .split(chunks[3]);
-            frame.render_widget(Paragraph::new(format!("Command: {}", params.command)), custom_chunks[0]);
+            frame.render_widget(
+                Paragraph::new(format!("Command: {}", params.command)),
+                custom_chunks[0],
+            );
             number_input::render(
                 frame,
                 custom_chunks[1],
                 "Timeout ms:",
                 &params.timeout_ms.to_string(),
-                50,
-                5000,
+                TIMEOUT_MIN_MS,
+                TIMEOUT_MAX_MS,
                 focused && cursor == 3,
             );
-            list_editor::render(frame, custom_chunks[2], "Args:", &params.args, cursor.saturating_sub(4), focused);
+            list_editor::render(
+                frame,
+                custom_chunks[2],
+                "Args:",
+                &params.args,
+                cursor.saturating_sub(4),
+                focused,
+            );
         }
         WidgetConfig::ContextBar { params } => {
             number_input::render(

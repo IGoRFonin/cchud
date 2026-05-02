@@ -586,8 +586,14 @@ mod tests {
 
     #[test]
     fn merge_stats_unions_skill_names_sorted_dedup() {
-        let a = TranscriptStats { skill_names: vec!["alpha".into(), "gamma".into()], ..Default::default() };
-        let b = TranscriptStats { skill_names: vec!["beta".into(), "alpha".into()], ..Default::default() };
+        let a = TranscriptStats {
+            skill_names: vec!["alpha".into(), "gamma".into()],
+            ..Default::default()
+        };
+        let b = TranscriptStats {
+            skill_names: vec!["beta".into(), "alpha".into()],
+            ..Default::default()
+        };
         let merged = merge_stats(a, b);
         assert_eq!(
             merged.skill_names,

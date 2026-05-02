@@ -52,6 +52,7 @@ impl Plain {
     }
 
     #[must_use]
+    #[allow(dead_code)]
     pub fn render_line(
         &self,
         segments: &[Segment],
@@ -63,6 +64,7 @@ impl Plain {
     }
 }
 
+#[allow(dead_code)] // remove in T13
 fn emit_plain(
     composed: &[super::StyledSegment],
     level: super::ColorLevel,
@@ -98,6 +100,7 @@ pub(super) fn compose_minimalist(segments: &[Segment]) -> Vec<super::StyledSegme
     out
 }
 
+#[allow(dead_code)] // remove in T13
 pub(super) fn render_minimalist(segments: &[Segment]) -> String {
     compose_minimalist(segments)
         .iter()

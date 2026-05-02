@@ -33,7 +33,7 @@ pub fn atomic_save(settings: &Settings, dest: &Path) -> std::io::Result<Option<P
     };
 
     let json = serde_json::to_string_pretty(settings).map_err(std::io::Error::other)?;
-    let tmp = dest.with_extension("json.tmp");
+    let tmp = dest.with_extension("tmp");
     std::fs::write(&tmp, json)?;
     std::fs::rename(&tmp, dest)?;
 
@@ -54,7 +54,9 @@ fn backup_path(dest: &Path) -> PathBuf {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::types::config::{Line, ModelParams, Settings, ThemeConfig, WidgetConfig, WidgetItem, WidgetStyleOverride};
+    use crate::types::config::{
+        Line, ModelParams, Settings, ThemeConfig, WidgetConfig, WidgetItem, WidgetStyleOverride,
+    };
     use tempfile::tempdir;
 
     fn sample_settings() -> Settings {
@@ -62,7 +64,9 @@ mod tests {
             version: 1,
             lines: vec![Line {
                 widgets: vec![WidgetItem {
-                    kind: WidgetConfig::Model { params: ModelParams {} },
+                    kind: WidgetConfig::Model {
+                        params: ModelParams {},
+                    },
                     style: WidgetStyleOverride::default(),
                 }],
             }],
@@ -108,7 +112,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let dest = dir.path().join("settings.json");
         atomic_save(&sample_settings(), &dest).unwrap();
-        let tmp = dest.with_extension("json.tmp");
+        let tmp = dest.with_extension("tmp");
         assert!(!tmp.exists(), ".tmp file should be removed by rename");
     }
 
@@ -119,6 +123,9 @@ mod tests {
         let s = bak.to_string_lossy();
         assert!(s.starts_with("/tmp/settings.json.bak."));
         let suffix = s.strip_prefix("/tmp/settings.json.bak.").unwrap();
-        assert!(suffix.parse::<u128>().is_ok(), "suffix must be unix-ms integer");
+        assert!(
+            suffix.parse::<u128>().is_ok(),
+            "suffix must be unix-ms integer"
+        );
     }
 }

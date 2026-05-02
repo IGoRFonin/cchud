@@ -8,7 +8,7 @@ use crate::types::config::Settings;
 use crate::types::payload::StatusPayload;
 
 /// Top-level UI mode. Edit — нормальное редактирование, panel focused.
-/// Overlays open over Edit. ConfirmQuit — modal `[s/d/c]`.
+/// Overlays open over Edit. `ConfirmQuit` — modal `[s/d/c]`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mode {
     Edit,
@@ -27,6 +27,7 @@ pub enum Pane {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum MessageKind {
     Info,
     Warn,
@@ -35,6 +36,7 @@ pub enum MessageKind {
 
 /// Какое поле редактируется по типу. Используется в Settings panel и Palette filter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum SettingsField {
     Color,
     BackgroundColor,
@@ -45,7 +47,7 @@ pub enum SettingsField {
     LinkLabel,
     CustomCommandCommand,
     CustomCommandTimeoutMs,
-    /// Index в `params.args` (CustomCommand only).
+    /// Index в `params.args` (`CustomCommand` only).
     CustomCommandArgs(usize),
     ContextBarWidth,
     /// Theme global (Themes overlay):
@@ -61,6 +63,7 @@ pub enum SettingsField {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum ColorField {
     Foreground,
     Background,
@@ -69,6 +72,7 @@ pub enum ColorField {
 /// Active edit-mode под курсором: Esc выходит → None. Печать символов в `App.editing_field`
 /// модифицирует `buffer`/`cursor` соответствующего варианта.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum EditField {
     PaletteFilter,
     Text {
@@ -91,7 +95,7 @@ pub struct App {
     pub editable: Settings,
     pub initial: Settings,
     pub sample_payload: StatusPayload,
-    /// RAII держит NamedTempFile до Drop App'а. Не Pub — нужен только для жизни fixture-файла.
+    /// RAII держит `NamedTempFile` до Drop App'а. Не Pub — нужен только для жизни fixture-файла.
     _sample_transcript: Option<NamedTempFile>,
 
     pub mode: Mode,
@@ -103,6 +107,10 @@ pub struct App {
     pub palette_filter: String,
     pub palette_cursor: usize,
     pub settings_field_cursor: usize,
+    /// Navigation cursor inside the FG color picker (index into `NAMED_COLORS`). T11 wires up selection.
+    pub color_fg_cursor: usize,
+    /// Navigation cursor inside the BG color picker (index into `NAMED_COLORS`). T11 wires up selection.
+    pub color_bg_cursor: usize,
     pub editing_field: Option<EditField>,
     pub theme_field_cursor: usize,
     pub status_message: Option<(String, MessageKind)>,
@@ -119,8 +127,7 @@ impl App {
         let selected_widget = settings
             .lines
             .first()
-            .map(|l| l.widgets.is_empty())
-            .map_or(None, |empty| if empty { None } else { Some(0) });
+            .and_then(|l| if l.widgets.is_empty() { None } else { Some(0) });
         Self {
             editable: settings,
             initial,
@@ -133,20 +140,22 @@ impl App {
             palette_filter: String::new(),
             palette_cursor: 0,
             settings_field_cursor: 0,
+            color_fg_cursor: 0,
+            color_bg_cursor: 0,
             editing_field: None,
             theme_field_cursor: 0,
             status_message: None,
         }
     }
 
-    /// Структурное сравнение через PartialEq (Phase 8 T1 derive chain).
+    /// Структурное сравнение через `PartialEq` (Phase 8 T1 derive chain).
     /// True если user сделал изменения относительно начального состояния.
     #[must_use]
     pub fn dirty(&self) -> bool {
         self.editable != self.initial
     }
 
-    /// Reset editable к initial (Discard действие из ConfirmQuit modal).
+    /// Reset editable к initial (Discard действие из `ConfirmQuit` modal).
     pub fn discard(&mut self) {
         self.editable = self.initial.clone();
     }
@@ -157,11 +166,12 @@ impl App {
     }
 
     /// Текущая выбранная линия (mut). None если `selected_line` за пределами.
+    #[allow(dead_code)]
     pub fn current_line_mut(&mut self) -> Option<&mut crate::types::config::Line> {
         self.editable.lines.get_mut(self.selected_line)
     }
 
-    /// Текущий выбранный widget item (mut). None если линия пуста или selected_widget = None.
+    /// Текущий выбранный widget item (mut). None если линия пуста или `selected_widget` = None.
     pub fn current_widget_mut(&mut self) -> Option<&mut crate::types::config::WidgetItem> {
         let idx = self.selected_widget?;
         self.editable

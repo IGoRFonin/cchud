@@ -116,8 +116,7 @@ fn write_cache_best_effort(path: &Path, file: &CacheFile) -> std::io::Result<()>
     {
         let f = File::create(&tmp)?;
         let mut writer = BufWriter::new(f);
-        bincode::serialize_into(&mut writer, file)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        bincode::serialize_into(&mut writer, file).map_err(std::io::Error::other)?;
         writer.flush()?;
     }
     fs::rename(&tmp, path)

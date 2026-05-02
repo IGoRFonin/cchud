@@ -8,7 +8,7 @@
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::tui::app::{App, EditField, Mode, Pane, SettingsField};
+use crate::tui::app::{App, ColorField, EditField, Mode, Pane, SettingsField};
 use crate::tui::effects::ReducerEffect;
 use crate::tui::widget_meta::{ALL_KINDS, WidgetMeta};
 use crate::types::config::{Line, WidgetItem, WidgetStyleOverride};
@@ -32,7 +32,9 @@ pub fn handle_key(app: &mut App, key: KeyEvent) -> ReducerEffect {
     // Глобальные key-биндинги в Edit (focus-independent).
     match (key.code, key.modifiers) {
         (KeyCode::Char('q'), m) if !m.contains(KeyModifiers::SHIFT) => return quit_or_confirm(app),
-        (KeyCode::Char('c'), m) if m.contains(KeyModifiers::CONTROL) => return quit_or_confirm(app),
+        (KeyCode::Char('c'), m) if m.contains(KeyModifiers::CONTROL) => {
+            return quit_or_confirm(app);
+        }
         (KeyCode::Char('s'), m) if m.contains(KeyModifiers::CONTROL) => {
             return ReducerEffect::RequestSaveAndQuit;
         }
@@ -64,9 +66,14 @@ pub fn handle_key(app: &mut App, key: KeyEvent) -> ReducerEffect {
     }
 }
 
-fn cycle_focus(app: &mut App, backward: bool) {
+const fn cycle_focus(app: &mut App, backward: bool) {
     let order = [Pane::Lines, Pane::Palette, Pane::Settings, Pane::Preview];
-    let idx = order.iter().position(|p| *p == app.focus).unwrap_or(0);
+    let idx = match app.focus {
+        Pane::Lines => 0,
+        Pane::Palette => 1,
+        Pane::Settings => 2,
+        Pane::Preview => 3,
+    };
     let next = if backward {
         (idx + order.len() - 1) % order.len()
     } else {
@@ -160,7 +167,9 @@ fn handle_lines(app: &mut App, key: KeyEvent) -> ReducerEffect {
                 }
             } else if !app.editable.lines.is_empty() {
                 app.editable.lines.remove(app.selected_line);
-                app.selected_line = app.selected_line.saturating_sub(1);
+                app.selected_line = app
+                    .selected_line
+                    .min(app.editable.lines.len().saturating_sub(1));
                 sync_selected_widget(app);
             }
             ReducerEffect::RebuildPreview
@@ -196,8 +205,12 @@ fn handle_lines(app: &mut App, key: KeyEvent) -> ReducerEffect {
 }
 
 fn move_widget(app: &mut App, up: bool) {
-    let Some(idx) = app.selected_widget else { return };
-    let Some(line) = app.editable.lines.get_mut(app.selected_line) else { return };
+    let Some(idx) = app.selected_widget else {
+        return;
+    };
+    let Some(line) = app.editable.lines.get_mut(app.selected_line) else {
+        return;
+    };
     if up && idx > 0 {
         line.widgets.swap(idx, idx - 1);
         app.selected_widget = Some(idx - 1);
@@ -213,7 +226,11 @@ fn sync_selected_widget(app: &mut App) {
         .lines
         .get(app.selected_line)
         .map_or(0, |l| l.widgets.len());
-    app.selected_widget = if len == 0 { None } else { Some(0) };
+    app.selected_widget = if len == 0 {
+        None
+    } else {
+        Some(app.selected_widget.unwrap_or(0).min(len - 1))
+    };
 }
 
 fn handle_palette(app: &mut App, key: KeyEvent) -> ReducerEffect {
@@ -299,44 +316,46 @@ fn handle_settings(app: &mut App, key: KeyEvent) -> ReducerEffect {
 
 #[allow(clippy::too_many_lines)]
 fn handle_editing(app: &mut App, key: KeyEvent) -> ReducerEffect {
-    let Some(field) = app.editing_field.as_mut() else { return ReducerEffect::None };
+    let Some(field) = app.editing_field.as_mut() else {
+        return ReducerEffect::None;
+    };
     match key.code {
         KeyCode::Esc => {
             app.editing_field = None;
             ReducerEffect::None
         }
-        KeyCode::Char(c) => {
-            match field {
-                EditField::PaletteFilter => {
-                    app.palette_filter.push(c);
-                    app.palette_cursor = 0;
-                    ReducerEffect::None
-                }
-                EditField::Text { buffer, cursor, .. } => {
-                    buffer.insert(*cursor, c);
-                    *cursor += c.len_utf8();
-                    ReducerEffect::None
-                }
-                EditField::Number { buffer, .. } => {
-                    if c.is_ascii_digit() {
-                        buffer.push(c);
-                    }
-                    ReducerEffect::None
-                }
-                EditField::ColorHex { buffer, cursor, .. } => {
-                    if c == '#' || c.is_ascii_hexdigit() {
-                        buffer.insert(*cursor, c);
-                        *cursor += 1;
-                    }
-                    ReducerEffect::None
-                }
+        KeyCode::Char(c) => match field {
+            EditField::PaletteFilter => {
+                app.palette_filter.push(c);
+                let max = filter_meta(&app.palette_filter).len().saturating_sub(1);
+                app.palette_cursor = app.palette_cursor.min(max);
+                ReducerEffect::None
             }
-        }
+            EditField::Text { buffer, cursor, .. } => {
+                buffer.insert(*cursor, c);
+                *cursor += c.len_utf8();
+                ReducerEffect::None
+            }
+            EditField::Number { buffer, .. } => {
+                if c.is_ascii_digit() {
+                    buffer.push(c);
+                }
+                ReducerEffect::None
+            }
+            EditField::ColorHex { buffer, cursor, .. } => {
+                if c == '#' || c.is_ascii_hexdigit() {
+                    buffer.insert(*cursor, c);
+                    *cursor += 1;
+                }
+                ReducerEffect::None
+            }
+        },
         KeyCode::Backspace => {
             match field {
                 EditField::PaletteFilter => {
                     app.palette_filter.pop();
-                    app.palette_cursor = 0;
+                    let max = filter_meta(&app.palette_filter).len().saturating_sub(1);
+                    app.palette_cursor = app.palette_cursor.min(max);
                 }
                 EditField::Text { buffer, cursor, .. }
                 | EditField::ColorHex { buffer, cursor, .. } => {
@@ -360,7 +379,9 @@ fn handle_editing(app: &mut App, key: KeyEvent) -> ReducerEffect {
 }
 
 fn commit_editing(app: &mut App) {
-    let Some(field) = app.editing_field.take() else { return };
+    let Some(field) = app.editing_field.take() else {
+        return;
+    };
     match field {
         EditField::PaletteFilter => {
             // Filter уже применился inline; Enter просто закрывает edit-mode.
@@ -373,7 +394,9 @@ fn commit_editing(app: &mut App) {
 
 fn apply_text(app: &mut App, field: SettingsField, buffer: String) {
     use crate::types::config::WidgetConfig;
-    let Some(item) = app.current_widget_mut() else { return };
+    let Some(item) = app.current_widget_mut() else {
+        return;
+    };
     match (field, &mut item.kind) {
         (SettingsField::CustomTextText, WidgetConfig::CustomText { params }) => {
             params.text = buffer;
@@ -385,7 +408,11 @@ fn apply_text(app: &mut App, field: SettingsField, buffer: String) {
             params.url = buffer;
         }
         (SettingsField::LinkLabel, WidgetConfig::Link { params }) => {
-            params.label = if buffer.is_empty() { None } else { Some(buffer) };
+            params.label = if buffer.is_empty() {
+                None
+            } else {
+                Some(buffer)
+            };
         }
         (SettingsField::CustomCommandCommand, WidgetConfig::CustomCommand { params }) => {
             params.command = buffer;
@@ -402,7 +429,9 @@ fn apply_text(app: &mut App, field: SettingsField, buffer: String) {
 fn apply_number(app: &mut App, field: SettingsField, buffer: &str) {
     use crate::types::config::WidgetConfig;
     let Ok(n) = buffer.parse::<u64>() else { return };
-    let Some(item) = app.current_widget_mut() else { return };
+    let Some(item) = app.current_widget_mut() else {
+        return;
+    };
     match (field, &mut item.kind) {
         (SettingsField::CustomCommandTimeoutMs, WidgetConfig::CustomCommand { params }) => {
             if (50..=5000).contains(&n) {
@@ -421,20 +450,20 @@ fn apply_number(app: &mut App, field: SettingsField, buffer: &str) {
     }
 }
 
-fn apply_color_hex(app: &mut App, field: ColorField_alias, buffer: &str) {
-    let Some(item) = app.current_widget_mut() else { return };
+fn apply_color_hex(app: &mut App, field: ColorField, buffer: &str) {
+    let Some(item) = app.current_widget_mut() else {
+        return;
+    };
     let v = if buffer.is_empty() {
         None
     } else {
         Some(buffer.to_string())
     };
     match field {
-        ColorField_alias::Foreground => item.style.color = v,
-        ColorField_alias::Background => item.style.background_color = v,
+        ColorField::Foreground => item.style.color = v,
+        ColorField::Background => item.style.background_color = v,
     }
 }
-// Локальный alias — чтобы не тащить полный path в импорты
-use crate::tui::app::ColorField as ColorField_alias;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
@@ -550,15 +579,18 @@ mod tests {
     }
 
     #[test]
-    fn typing_in_palette_filter_updates_buffer_and_resets_cursor() {
+    fn typing_in_palette_filter_clamps_cursor_to_results() {
         let mut app = make_app();
         app.focus = Pane::Palette;
         app.editing_field = Some(EditField::PaletteFilter);
         app.palette_cursor = 5;
-        handle_key(&mut app, key(KeyCode::Char('g')));
-        handle_key(&mut app, key(KeyCode::Char('i')));
-        handle_key(&mut app, key(KeyCode::Char('t')));
-        assert_eq!(app.palette_filter, "git");
+        // "model" yields exactly 1 result → cursor clamped from 5 to 0
+        handle_key(&mut app, key(KeyCode::Char('m')));
+        handle_key(&mut app, key(KeyCode::Char('o')));
+        handle_key(&mut app, key(KeyCode::Char('d')));
+        handle_key(&mut app, key(KeyCode::Char('e')));
+        handle_key(&mut app, key(KeyCode::Char('l')));
+        assert_eq!(app.palette_filter, "model");
         assert_eq!(app.palette_cursor, 0);
     }
 
@@ -652,5 +684,45 @@ mod tests {
         let mut app = make_app();
         let eff = handle_key(&mut app, key_mod(KeyCode::Char('s'), KeyModifiers::CONTROL));
         assert_eq!(eff, ReducerEffect::RequestSaveAndQuit);
+    }
+
+    #[test]
+    fn delete_only_line_leaves_valid_state() {
+        let mut app = make_app();
+        // Only one line, selected_widget = None (widget deleted first)
+        app.selected_widget = None;
+        assert_eq!(app.editable.lines.len(), 1);
+        handle_key(&mut app, key(KeyCode::Char('d')));
+        assert_eq!(app.editable.lines.len(), 0);
+        assert_eq!(app.selected_line, 0);
+        assert_eq!(app.selected_widget, None);
+    }
+
+    #[test]
+    fn delete_middle_line_keeps_cursor_at_same_index() {
+        let mut app = make_app();
+        let json = r#"{"lines":[{"widgets":[]},{"widgets":[]},{"widgets":[]}]}"#;
+        app.editable = serde_json::from_str(json).unwrap();
+        app.selected_line = 1;
+        app.selected_widget = None;
+        handle_key(&mut app, key(KeyCode::Char('d')));
+        // After deleting index 1, cursor should stay at 1 (now pointing to old index 2)
+        assert_eq!(app.editable.lines.len(), 2);
+        assert_eq!(app.selected_line, 1);
+    }
+
+    #[test]
+    fn sync_selected_widget_preserves_position_across_lines() {
+        let mut app = make_app();
+        let json = r#"{"lines":[{"widgets":[{"type":"model"},{"type":"version"},{"type":"vim-mode"}]},{"widgets":[{"type":"model"}]}]}"#;
+        app.editable = serde_json::from_str(json).unwrap();
+        app.selected_widget = Some(2);
+        // Navigate to line 1 (1 widget) and back
+        handle_key(&mut app, key(KeyCode::Down));
+        // On line 1 with only 1 widget, cursor clamped to 0
+        assert_eq!(app.selected_widget, Some(0));
+        handle_key(&mut app, key(KeyCode::Up));
+        // Back on line 0 (3 widgets), cursor preserved at 0 (was clamped from 2)
+        assert_eq!(app.selected_widget, Some(0));
     }
 }

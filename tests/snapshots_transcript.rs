@@ -7,7 +7,9 @@
 #![cfg(test)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use cchud::types::config::{Line, Settings, ThemeConfig, WidgetConfig, WidgetItem, WidgetStyleOverride};
+use cchud::types::config::{
+    Line, Settings, ThemeConfig, WidgetConfig, WidgetItem, WidgetStyleOverride,
+};
 use cchud::types::payload::{ModelInfo, StatusPayload, Workspace};
 use cchud::widgets::{RenderContext, build_widgets};
 use std::path::Path;

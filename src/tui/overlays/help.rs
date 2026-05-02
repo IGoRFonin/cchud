@@ -11,18 +11,18 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use crate::tui::overlays::modal::centered;
 
 const KEYBINDINGS: &[(&str, &str)] = &[
-    ("Tab / Shift+Tab",  "cycle focus across 4 panels"),
-    ("↑ ↓ ← →",          "navigate within active panel"),
-    ("Enter",            "add widget (palette) · commit edit (settings)"),
-    ("Space",            "toggle tri-state bool (settings)"),
-    ("a",                "add line (Lines pane)"),
-    ("d / Delete",       "delete selected widget · or empty line"),
-    ("Alt + ↑ / ↓",      "reorder widget within line"),
-    ("/",                "filter palette by name / category"),
-    ("t",                "toggle Themes overlay"),
-    ("?",                "this help (any key closes)"),
-    ("Ctrl + S",         "save and quit"),
-    ("q / Ctrl + C",     "quit (confirms if unsaved)"),
+    ("Tab / Shift+Tab", "cycle focus across 4 panels"),
+    ("↑ ↓ ← →", "navigate within active panel"),
+    ("Enter", "add widget (palette) · commit edit (settings)"),
+    ("Space", "toggle tri-state bool (settings)"),
+    ("a", "add line (Lines pane)"),
+    ("d / Delete", "delete selected widget · or empty line"),
+    ("Alt + ↑ / ↓", "reorder widget within line"),
+    ("/", "filter palette by name / category"),
+    ("t", "toggle Themes overlay"),
+    ("?", "this help (any key closes)"),
+    ("Ctrl + S", "save and quit"),
+    ("q / Ctrl + C", "quit (confirms if unsaved)"),
 ];
 
 pub fn render(frame: &mut Frame<'_>, area: Rect) {
@@ -32,7 +32,9 @@ pub fn render(frame: &mut Frame<'_>, area: Rect) {
     let mut lines: Vec<Line<'_>> = Vec::with_capacity(KEYBINDINGS.len() + 3);
     lines.push(Line::from(Span::styled(
         "cchud configure  ·  keybindings",
-        Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow),
+        Style::default()
+            .add_modifier(Modifier::BOLD)
+            .fg(Color::Yellow),
     )));
     lines.push(Line::from(""));
     for (k, desc) in KEYBINDINGS {
@@ -44,6 +46,8 @@ pub fn render(frame: &mut Frame<'_>, area: Rect) {
         Style::default().fg(Color::DarkGray),
     )));
 
-    let block = Block::default().borders(Borders::ALL).title("Help (? to close)");
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title("Help (? to close)");
     frame.render_widget(Paragraph::new(lines).block(block), popup);
 }

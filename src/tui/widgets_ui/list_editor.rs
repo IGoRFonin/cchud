@@ -7,7 +7,14 @@ use ratatui::layout::Rect;
 use ratatui::text::Line;
 use ratatui::widgets::Paragraph;
 
-pub fn render(frame: &mut Frame<'_>, area: Rect, label: &str, items: &[String], cursor: usize, focused: bool) {
+pub fn render(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    label: &str,
+    items: &[String],
+    cursor: usize,
+    focused: bool,
+) {
     let mut lines = Vec::with_capacity(items.len() + 1);
     lines.push(Line::from(format!("{label}  ({} items)", items.len())));
     for (i, item) in items.iter().enumerate() {

@@ -35,7 +35,9 @@ pub fn render_confirm_quit(frame: &mut Frame<'_>, area: Rect) {
     let lines = vec![
         Line::from(Span::styled(
             "Unsaved changes",
-            Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow),
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
         )),
         Line::from("You have unsaved changes."),
         Line::from(""),
@@ -43,6 +45,8 @@ pub fn render_confirm_quit(frame: &mut Frame<'_>, area: Rect) {
         Line::from("[d] Discard and quit"),
         Line::from("[c] Cancel (Esc)"),
     ];
-    let block = Block::default().borders(Borders::ALL).title("Unsaved changes");
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title("Unsaved changes");
     frame.render_widget(Paragraph::new(lines).block(block), popup);
 }

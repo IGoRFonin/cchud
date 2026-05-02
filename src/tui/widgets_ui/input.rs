@@ -1,6 +1,7 @@
 //! Single-line text input — Phase 8 Task 8.
 //!
 //! Render-helper: рисует buffer + cursor caret. Event handling — в reducer (T7).
+//! `render` будет вызываться из settings.rs при редактировании текстовых полей (T11).
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
@@ -10,7 +11,15 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
 
-pub fn render(frame: &mut Frame<'_>, area: Rect, label: &str, buffer: &str, cursor: usize, focused: bool) {
+#[allow(dead_code)]
+pub fn render(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    label: &str,
+    buffer: &str,
+    cursor: usize,
+    focused: bool,
+) {
     let (left, mid, right) = split_at_cursor(buffer, cursor);
     let line = Line::from(vec![
         Span::raw(format!("{label} ")),
@@ -37,10 +46,7 @@ fn split_at_cursor(s: &str, cursor: usize) -> (&str, &str, &str) {
         (left, " ", "")
     } else {
         // Take 1 char width as caret highlight.
-        let head_len = rest
-            .chars()
-            .next()
-            .map_or(0, char::len_utf8);
+        let head_len = rest.chars().next().map_or(0, char::len_utf8);
         let (mid, tail) = rest.split_at(head_len);
         (left, mid, tail)
     }

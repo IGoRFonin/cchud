@@ -384,7 +384,11 @@ mod apply_style_tests {
 
     #[test]
     fn per_widget_override_changes_color_and_bold() {
-        let ovr = WidgetStyleOverride { color: Some("#fafafa".into()), bold: Some(true), ..Default::default() };
+        let ovr = WidgetStyleOverride {
+            color: Some("#fafafa".into()),
+            bold: Some(true),
+            ..Default::default()
+        };
         let s = apply_widget_style(Style::none(), None, &ovr, &theme());
         assert_eq!(s.fg, Some(Color::Rgb(0xfa, 0xfa, 0xfa)));
         assert!(s.bold);
@@ -394,7 +398,10 @@ mod apply_style_tests {
     fn global_bold_force_enables_after_override() {
         let mut theme = theme();
         theme.global_bold = true;
-        let ovr = WidgetStyleOverride { bold: Some(false), ..Default::default() };
+        let ovr = WidgetStyleOverride {
+            bold: Some(false),
+            ..Default::default()
+        };
         let s = apply_widget_style(Style::none(), None, &ovr, &theme);
         assert!(
             s.bold,
@@ -406,7 +413,10 @@ mod apply_style_tests {
     fn override_foreground_color_wins_over_per_widget() {
         let mut theme = theme();
         theme.override_foreground_color = Some("#aabbcc".into());
-        let ovr = WidgetStyleOverride { color: Some("#000000".into()), ..Default::default() };
+        let ovr = WidgetStyleOverride {
+            color: Some("#000000".into()),
+            ..Default::default()
+        };
         let s = apply_widget_style(Style::none(), None, &ovr, &theme);
         assert_eq!(s.fg, Some(Color::Rgb(0xaa, 0xbb, 0xcc)));
     }
@@ -483,6 +493,7 @@ impl StyledSegment {
     }
 
     #[must_use]
+    #[allow(dead_code)]
     pub fn styled(text: impl Into<String>, style: Style) -> Self {
         Self {
             text: text.into(),
@@ -667,7 +678,10 @@ mod compose_line_tests {
         let line = r.render_line(&segs, &mut s1, &ThemeConfig::default());
         let composed = r.compose_line(&segs, &mut s2, &ThemeConfig::default());
         let emit = r.emit_ansi(&composed);
-        assert_eq!(line, emit, "render_line must equal emit_ansi(compose_line(_))");
+        assert_eq!(
+            line, emit,
+            "render_line must equal emit_ansi(compose_line(_))"
+        );
     }
 
     #[test]

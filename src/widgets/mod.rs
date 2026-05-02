@@ -230,9 +230,20 @@ mod transcript_ctx_tests {
     }
 }
 
+struct SeparatorWidget;
+impl Widget for SeparatorWidget {
+    fn id(&self) -> &'static str {
+        "separator"
+    }
+    fn render(&self, _: &RenderContext<'_>) -> Option<String> {
+        None
+    }
+}
+
 fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
     match cfg {
         WidgetConfig::Model { .. } => Box::new(model::Model),
+        WidgetConfig::Separator => Box::new(SeparatorWidget),
 
         // Phase 3 — Task 2 (static cluster):
         WidgetConfig::CustomText { params } => Box::new(static_text::CustomText {

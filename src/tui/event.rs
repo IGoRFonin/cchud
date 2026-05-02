@@ -9,10 +9,10 @@ use std::time::Duration;
 use crossterm::event::{self, Event};
 use crossterm::execute;
 use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
-use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use ratatui::backend::CrosstermBackend;
 
 use crate::tui::app::{App, MessageKind, Mode};
 use crate::tui::effects::ReducerEffect;
@@ -27,7 +27,10 @@ impl TerminalGuard {
     pub fn enter() -> io::Result<Self> {
         enable_raw_mode()?;
         let mut out = io::stdout();
-        execute!(out, EnterAlternateScreen)?;
+        if let Err(e) = execute!(out, EnterAlternateScreen) {
+            let _ = disable_raw_mode();
+            return Err(e);
+        }
         Ok(Self)
     }
 }
@@ -55,13 +58,17 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
         if !event::poll(Duration::from_millis(100))? {
             continue;
         }
-        let Event::Key(key) = event::read()? else { continue };
+        let Event::Key(key) = event::read()? else {
+            continue;
+        };
         match reducer::handle_key(&mut app, key) {
             ReducerEffect::None | ReducerEffect::RebuildPreview => {}
             ReducerEffect::Quit => return Ok(false),
             ReducerEffect::RequestSaveAndQuit => {
-                let saved = perform_save(&mut app);
-                return Ok(saved);
+                if perform_save(&mut app) {
+                    return Ok(true);
+                }
+                // on failure: status_message already set, mode=Edit, continue loop
             }
             ReducerEffect::RequestDiscardAndQuit => {
                 app.discard();
@@ -71,6 +78,8 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
     }
 }
 
+// Returns bool instead of io::Result<bool>: errors are surfaced via app.status_message so
+// the caller decides whether to exit or stay in the loop without unwrapping.
 fn perform_save(app: &mut App) -> bool {
     let dest = config_destination();
     match save::atomic_save(&app.editable, &dest) {

@@ -26,29 +26,47 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let filtered: Vec<&WidgetMeta> = filter_meta(&app.palette_filter);
 
     let mut lines = Vec::with_capacity(filtered.len() + 6);
-    lines.push(Line::from(Span::styled(filter_str, Style::default().fg(Color::Cyan))));
+    lines.push(Line::from(Span::styled(
+        filter_str,
+        Style::default().fg(Color::Cyan),
+    )));
     lines.push(Line::from(""));
 
     let mut current_cat: Option<WidgetCategory> = None;
     for (i, m) in filtered.iter().enumerate() {
         if Some(m.category) != current_cat {
-            lines.push(Line::from(Span::styled(format!("── {} ──", m.category.label()),
-                Style::default().fg(Color::DarkGray))));
+            lines.push(Line::from(Span::styled(
+                format!("── {} ──", m.category.label()),
+                Style::default().fg(Color::DarkGray),
+            )));
             current_cat = Some(m.category);
         }
-        let mark = if i == app.palette_cursor && focused { "▶ " } else { "  " };
+        let mark = if i == app.palette_cursor && focused {
+            "▶ "
+        } else {
+            "  "
+        };
         let style = if i == app.palette_cursor && focused {
-            Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow)
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow)
         } else {
             Style::default()
         };
-        lines.push(Line::from(vec![Span::raw(mark), Span::styled(m.display, style)]));
+        lines.push(Line::from(vec![
+            Span::raw(mark),
+            Span::styled(m.display, style),
+        ]));
     }
 
     let block = Block::default()
         .borders(Borders::ALL)
         .title(format!("Widgets ({}/60)", filtered.len()))
-        .border_style(if focused { Style::default().fg(Color::Yellow) } else { Style::default() });
+        .border_style(if focused {
+            Style::default().fg(Color::Yellow)
+        } else {
+            Style::default()
+        });
     frame.render_widget(Paragraph::new(lines).block(block), area);
 }
 
