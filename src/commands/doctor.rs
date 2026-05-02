@@ -14,6 +14,8 @@
 
 use std::process::ExitCode;
 
+#[must_use]
+#[allow(dead_code)] // wired in T6
 pub fn run(_args: &[String]) -> ExitCode {
     eprintln!("cchud doctor: not yet implemented (Phase 9 Task 5)");
     ExitCode::from(2)

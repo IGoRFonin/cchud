@@ -71,61 +71,37 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
         focused && cursor == 2,
     );
 
-    match &item.kind {
+    render_kind_params(frame, chunks[3], &item.kind, cursor, focused);
+}
+
+fn render_kind_params(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    kind: &WidgetConfig,
+    cursor: usize,
+    focused: bool,
+) {
+    match kind {
         WidgetConfig::CustomText { params } => {
-            frame.render_widget(
-                Paragraph::new(format!("Text:    {}", params.text)),
-                chunks[3],
-            );
+            frame.render_widget(Paragraph::new(format!("Text:    {}", params.text)), area);
         }
         WidgetConfig::CustomSymbol { params } => {
-            frame.render_widget(
-                Paragraph::new(format!("Symbol:  {}", params.symbol)),
-                chunks[3],
-            );
+            frame.render_widget(Paragraph::new(format!("Symbol:  {}", params.symbol)), area);
         }
         WidgetConfig::Link { params } => {
             let mut lines = vec![Line::from(format!("URL:    {}", params.url))];
             if let Some(l) = &params.label {
                 lines.push(Line::from(format!("Label:  {l}")));
             }
-            frame.render_widget(Paragraph::new(lines), chunks[3]);
+            frame.render_widget(Paragraph::new(lines), area);
         }
         WidgetConfig::CustomCommand { params } => {
-            let custom_chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints(vec![
-                    Constraint::Length(1),
-                    Constraint::Length(1),
-                    Constraint::Min(0),
-                ])
-                .split(chunks[3]);
-            frame.render_widget(
-                Paragraph::new(format!("Command: {}", params.command)),
-                custom_chunks[0],
-            );
-            number_input::render(
-                frame,
-                custom_chunks[1],
-                "Timeout ms:",
-                &params.timeout_ms.to_string(),
-                TIMEOUT_MIN_MS,
-                TIMEOUT_MAX_MS,
-                focused && cursor == 3,
-            );
-            list_editor::render(
-                frame,
-                custom_chunks[2],
-                "Args:",
-                &params.args,
-                cursor.saturating_sub(4),
-                focused,
-            );
+            render_custom_command(frame, area, params, cursor, focused);
         }
         WidgetConfig::ContextBar { params } => {
             number_input::render(
                 frame,
-                chunks[3],
+                area,
                 "Width:",
                 &params.width.to_string(),
                 1,
@@ -136,8 +112,46 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
         _ => {
             frame.render_widget(
                 Paragraph::new("(no custom params)").style(Style::default().fg(Color::DarkGray)),
-                chunks[3],
+                area,
             );
         }
     }
+}
+
+fn render_custom_command(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    params: &crate::types::config::CustomCommandParams,
+    cursor: usize,
+    focused: bool,
+) {
+    let custom_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Min(0),
+        ])
+        .split(area);
+    frame.render_widget(
+        Paragraph::new(format!("Command: {}", params.command)),
+        custom_chunks[0],
+    );
+    number_input::render(
+        frame,
+        custom_chunks[1],
+        "Timeout ms:",
+        &params.timeout_ms.to_string(),
+        TIMEOUT_MIN_MS,
+        TIMEOUT_MAX_MS,
+        focused && cursor == 3,
+    );
+    list_editor::render(
+        frame,
+        custom_chunks[2],
+        "Args:",
+        &params.args,
+        cursor.saturating_sub(4),
+        focused,
+    );
 }
