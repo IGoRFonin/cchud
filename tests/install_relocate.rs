@@ -239,6 +239,62 @@ fn run_force_overwrites_non_cchud_status_line() {
     assert!(!cmd.contains("ccstatusline"));
 }
 
+#[test]
+fn run_creates_bak_file_when_settings_already_exists() {
+    let _lock = ENV_LOCK.lock().unwrap();
+    let dir = tempdir().unwrap();
+    let settings_path = dir.path().join("settings.json");
+    let _guard = EnvVarGuard::set("CCHUD_SETTINGS", &settings_path);
+
+    fs::write(
+        &settings_path,
+        r#"{"statusLine":{"type":"command","command":"cchud-old"}}"#,
+    )
+    .unwrap();
+
+    let exit = cchud::commands::install::run(&["--no-relocate".to_string()]);
+    assert_eq!(
+        format!("{exit:?}"),
+        format!("{:?}", std::process::ExitCode::SUCCESS)
+    );
+
+    // Должен существовать хотя бы один файл с prefix settings.json.bak.
+    let entries: Vec<_> = fs::read_dir(dir.path())
+        .unwrap()
+        .filter_map(Result::ok)
+        .map(|e| e.file_name().to_string_lossy().to_string())
+        .filter(|n| n.starts_with("settings.json.bak."))
+        .collect();
+    assert!(
+        !entries.is_empty(),
+        "expected at least one backup, got: {entries:?}"
+    );
+
+    let bak_name = entries.first().unwrap();
+    let bak_body = fs::read_to_string(dir.path().join(bak_name)).unwrap();
+    assert!(
+        bak_body.contains("cchud-old"),
+        "backup should contain prev content; got: {bak_body}"
+    );
+}
+
+#[test]
+fn run_no_backup_when_settings_did_not_exist() {
+    let _lock = ENV_LOCK.lock().unwrap();
+    let dir = tempdir().unwrap();
+    let settings_path = dir.path().join("settings.json");
+    let _guard = EnvVarGuard::set("CCHUD_SETTINGS", &settings_path);
+
+    let _ = cchud::commands::install::run(&["--no-relocate".to_string()]);
+
+    let has_bak = fs::read_dir(dir.path())
+        .unwrap()
+        .filter_map(Result::ok)
+        .map(|e| e.file_name().to_string_lossy().to_string())
+        .any(|n| n.contains(".bak."));
+    assert!(!has_bak, "no backup expected if file did not exist");
+}
+
 // Tiny RAII helper для env vars в tests.
 struct EnvVarGuard {
     key: &'static str,

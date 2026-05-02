@@ -67,6 +67,17 @@ fn write_settings_with_exe(exe: &Path, force: bool) -> std::io::Result<()> {
     let path = settings_path();
     let mut root = read_or_empty(&path);
 
+    if path.exists() {
+        let unix_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0);
+        let mut bak = path.as_os_str().to_owned();
+        bak.push(format!(".bak.{unix_ms}"));
+        let bak_path = std::path::PathBuf::from(bak);
+        let _ = std::fs::copy(&path, &bak_path); // best-effort
+    }
+
     if let Some(cmd) = root
         .get("statusLine")
         .and_then(|s| s.get("command"))
