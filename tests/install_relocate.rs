@@ -5,11 +5,16 @@
 #![allow(clippy::unwrap_used)]
 
 use std::fs;
+use std::path::Path;
+use std::sync::Mutex;
 
 use cchud::commands::install::testing::{
     canonical_target_path, check_path_or_warn_capturing, relocate_to, same_file,
 };
 use tempfile::tempdir;
+
+// Serialize tests that mutate process env vars.
+static ENV_LOCK: Mutex<()> = Mutex::new(());
 
 #[test]
 fn same_file_distinguishes_different_paths() {
@@ -39,7 +44,10 @@ fn same_file_handles_symlinks_correctly() {
     std::os::unix::fs::symlink(&real, &link).unwrap();
     #[cfg(windows)]
     std::os::windows::fs::symlink_file(&real, &link).unwrap();
-    assert!(same_file(&real, &link).unwrap(), "canonicalize should equate symlink and target");
+    assert!(
+        same_file(&real, &link).unwrap(),
+        "canonicalize should equate symlink and target"
+    );
 }
 
 #[test]
@@ -135,4 +143,123 @@ fn check_path_or_warn_not_in_path_emits_fish_hint() {
     fs::write(&target, b"x").unwrap();
     let (_, stderr) = check_path_or_warn_capturing(&target, "/usr/bin:/bin", "fish");
     assert!(stderr.contains("fish_add_path"), "stderr: {stderr}");
+}
+
+// ---------- High-level integration tests for `commands::install::run` ----------
+//
+// Используем CCHUD_SETTINGS env var (existing escape hatch в settings_path())
+// чтобы redirect ~/.claude/settings.json в tempdir.
+// Используем --no-relocate чтобы skip копирование (избежать write в $HOME/.local/bin).
+
+#[test]
+fn run_no_relocate_writes_settings_and_returns_zero() {
+    let _lock = ENV_LOCK.lock().unwrap();
+    let dir = tempdir().unwrap();
+    let settings_path = dir.path().join("settings.json");
+
+    let _guard = EnvVarGuard::set("CCHUD_SETTINGS", &settings_path);
+
+    let args = vec!["--no-relocate".to_string()];
+    let exit = cchud::commands::install::run(&args);
+    assert_eq!(
+        format!("{exit:?}"),
+        format!("{:?}", std::process::ExitCode::SUCCESS)
+    );
+
+    let body = fs::read_to_string(&settings_path).unwrap();
+    let v: serde_json::Value = serde_json::from_str(&body).unwrap();
+    let cmd = v
+        .get("statusLine")
+        .unwrap()
+        .get("command")
+        .unwrap()
+        .as_str()
+        .unwrap();
+    assert!(
+        cmd.contains("cchud") || cmd.contains("test_runner"),
+        "cmd: {cmd}"
+    );
+}
+
+#[test]
+fn run_idempotent_second_call_is_no_op_logically() {
+    let _lock = ENV_LOCK.lock().unwrap();
+    let dir = tempdir().unwrap();
+    let settings_path = dir.path().join("settings.json");
+    let _guard = EnvVarGuard::set("CCHUD_SETTINGS", &settings_path);
+
+    let args = vec!["--no-relocate".to_string()];
+    let _ = cchud::commands::install::run(&args);
+    let first = fs::read_to_string(&settings_path).unwrap();
+    let _ = cchud::commands::install::run(&args);
+    let second = fs::read_to_string(&settings_path).unwrap();
+    assert_eq!(
+        first, second,
+        "second run should produce identical settings.json"
+    );
+}
+
+#[test]
+fn run_force_overwrites_non_cchud_status_line() {
+    let _lock = ENV_LOCK.lock().unwrap();
+    let dir = tempdir().unwrap();
+    let settings_path = dir.path().join("settings.json");
+    let _guard = EnvVarGuard::set("CCHUD_SETTINGS", &settings_path);
+
+    fs::write(
+        &settings_path,
+        r#"{"statusLine":{"type":"command","command":"ccstatusline"}}"#,
+    )
+    .unwrap();
+
+    // Без --force должен fail.
+    let exit_no_force = cchud::commands::install::run(&["--no-relocate".to_string()]);
+    assert_eq!(
+        format!("{exit_no_force:?}"),
+        format!("{:?}", std::process::ExitCode::from(1))
+    );
+
+    // С --force должен пройти.
+    let exit_force =
+        cchud::commands::install::run(&["--force".to_string(), "--no-relocate".to_string()]);
+    assert_eq!(
+        format!("{exit_force:?}"),
+        format!("{:?}", std::process::ExitCode::SUCCESS)
+    );
+
+    let v: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&settings_path).unwrap()).unwrap();
+    let cmd = v
+        .get("statusLine")
+        .unwrap()
+        .get("command")
+        .unwrap()
+        .as_str()
+        .unwrap();
+    assert!(!cmd.contains("ccstatusline"));
+}
+
+// Tiny RAII helper для env vars в tests.
+struct EnvVarGuard {
+    key: &'static str,
+    prev: Option<std::ffi::OsString>,
+}
+
+impl EnvVarGuard {
+    fn set<P: AsRef<Path>>(key: &'static str, val: P) -> Self {
+        let prev = std::env::var_os(key);
+        // SAFETY: тесты запускаются в однопоточном контексте (cargo test --test …).
+        unsafe { std::env::set_var(key, val.as_ref()) };
+        Self { key, prev }
+    }
+}
+
+impl Drop for EnvVarGuard {
+    fn drop(&mut self) {
+        match &self.prev {
+            // SAFETY: тесты однопоточны.
+            Some(v) => unsafe { std::env::set_var(self.key, v) },
+            None => unsafe { std::env::remove_var(self.key) },
+        }
+    }
 }

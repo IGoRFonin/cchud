@@ -55,8 +55,9 @@ fn print_help() {
     println!();
     println!("USAGE:");
     println!("  cchud                  read JSON payload from stdin, render statusline");
-    println!("  cchud install          wire cchud into ~/.claude/settings.json");
-    println!("  cchud install --force  overwrite existing statusLine");
+    println!("  cchud install               wire cchud + self-relocate to ~/.local/bin/");
+    println!("  cchud install --force       overwrite existing statusLine");
+    println!("  cchud install --no-relocate skip self-copy (dev-only)");
     println!("  cchud configure        open the interactive TUI configurator");
     println!("  cchud import [args]    migrate ccstatusline config; see --help");
     println!("  cchud --version        print version");

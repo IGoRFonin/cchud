@@ -15,17 +15,56 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::{fs, io};
 
+#[must_use]
 pub fn run(args: &[String]) -> ExitCode {
     let force = args.iter().any(|a| a == "--force");
-    let exe = match std::env::current_exe() {
+    let no_relocate = args.iter().any(|a| a == "--no-relocate");
+
+    let current_exe = match std::env::current_exe() {
         Ok(p) => p,
         Err(e) => {
             eprintln!("cchud: cannot determine executable path: {e}");
             return ExitCode::from(1);
         }
     };
-    let path = settings_path();
 
+    // Step 1: Self-relocate (если не --no-relocate).
+    let final_exe = if no_relocate {
+        current_exe
+    } else {
+        let target = match canonical_target_path() {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("cchud install: cannot resolve target path: {e}");
+                return ExitCode::from(1);
+            }
+        };
+        if same_file(&current_exe, &target).unwrap_or(false) {
+            // Already at target — no-op.
+        } else if let Err(e) = relocate_to(&current_exe, &target) {
+            eprintln!("cchud install: relocation failed: {e}");
+            return ExitCode::from(1);
+        } else {
+            println!("cchud: binary installed to {}", target.display());
+        }
+        target
+    };
+
+    // Step 2: Wire ~/.claude/settings.json.
+    if let Err(e) = write_settings_with_exe(&final_exe, force) {
+        eprintln!("cchud install: cannot write settings.json: {e}");
+        return ExitCode::from(1);
+    }
+    println!("cchud: wired into Claude Code");
+
+    // Step 3: PATH check (warning не валит exit).
+    check_path_or_warn(&final_exe);
+
+    ExitCode::SUCCESS
+}
+
+fn write_settings_with_exe(exe: &Path, force: bool) -> std::io::Result<()> {
+    let path = settings_path();
     let mut root = read_or_empty(&path);
 
     if let Some(cmd) = root
@@ -36,7 +75,7 @@ pub fn run(args: &[String]) -> ExitCode {
         if !cmd.contains("cchud") && !force {
             eprintln!("cchud: statusLine already set to: {cmd}");
             eprintln!("       use --force to overwrite, or remove it manually first.");
-            return ExitCode::from(1);
+            return Err(std::io::Error::other("statusLine occupied"));
         }
     }
 
@@ -46,12 +85,7 @@ pub fn run(args: &[String]) -> ExitCode {
         "padding": 0,
     });
 
-    if let Err(e) = write_atomic(&path, &root) {
-        eprintln!("cchud: cannot write {}: {e}", path.display());
-        return ExitCode::from(1);
-    }
-    println!("cchud installed: {}", exe.display());
-    ExitCode::SUCCESS
+    write_atomic(&path, &root)
 }
 
 fn settings_path() -> PathBuf {
@@ -160,12 +194,10 @@ pub fn check_path_or_warn_capturing(
     } else {
         let mut stderr = format!("⚠ {} is not in PATH\n", target_dir.display());
         match shell_name {
-            "zsh" => stderr.push_str(
-                "  Run: echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.zshrc\n",
-            ),
-            "bash" => stderr.push_str(
-                "  Run: echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.bashrc\n",
-            ),
+            "zsh" => stderr
+                .push_str("  Run: echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.zshrc\n"),
+            "bash" => stderr
+                .push_str("  Run: echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.bashrc\n"),
             "fish" => stderr.push_str("  Run: fish_add_path -U $HOME/.local/bin\n"),
             _ => stderr.push_str("  Add $HOME/.local/bin to your PATH manually\n"),
         }
@@ -192,7 +224,5 @@ pub fn check_path_or_warn(target: &Path) {
 #[doc(hidden)]
 #[allow(unused_imports)]
 pub mod testing {
-    pub use super::{
-        canonical_target_path, check_path_or_warn_capturing, relocate_to, same_file,
-    };
+    pub use super::{canonical_target_path, check_path_or_warn_capturing, relocate_to, same_file};
 }
