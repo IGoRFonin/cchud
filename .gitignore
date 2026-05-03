@@ -22,3 +22,9 @@ benches/samples/payload-with-transcript-large.json
 
 # Claude Code local settings (private)
 .claude/
+
+# Phase 9 — npm package binaries (populated by release.yml).
+npm/*/bin/cchud
+npm/*/bin/cchud.exe
+npm/*/node_modules/
+npm/*/package-lock.json
