@@ -42,7 +42,7 @@ gix = { version = "=0.81.0", default-features = false, features = ["max-performa
 # Phase 5 — Task 7: GitPr HTTP + cache.
 # ureq sync HTTP (no async runtime); tls feature = rustls (pure Rust).
 ureq = { version = "2", default-features = false, features = ["json", "tls", "gzip"] }
-bincode = "1"
+bincode = "3"
 
 # Phase 6 — JSONL-кэш + transcript-виджеты.
 # sonic-rs: ~3× быстрее serde_json на построчном JSONL (бенч в DECISIONS D-2026-04-28).
