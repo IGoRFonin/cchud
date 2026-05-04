@@ -54,7 +54,7 @@ siphasher = "1"
 time = { version = "0.3", default-features = false, features = ["parsing", "macros"] }
 
 # Phase 7 — FreeMemory widget (no system-side process scan, just memory).
-sysinfo = { version = "0.32", default-features = false, features = ["system"] }
+sysinfo = { version = "0.36", default-features = false, features = ["system"] }
 
 # Phase 8 — TUI (optional; default = ["tui"]).
 # Pin minor to avoid surprise breaks; ratatui 0.30.x line is stable.
