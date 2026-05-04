@@ -1,0 +1,4 @@
+#!/bin/sh
+# Fake cchud binary used by tests/install_sh.rs.
+echo "cchud-fixture-version $*"
+exit 0
