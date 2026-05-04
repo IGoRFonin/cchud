@@ -2,7 +2,7 @@
 
 > Fast Rust statusline for Claude Code CLI — drop-in port of [ccstatusline](https://github.com/sirmalloc/ccstatusline) targeting < 5 ms cold-start and < 5 MB RSS.
 
-**Status:** 0.9.0 — 60 of 60 upstream widgets supported. Interactive TUI configurator (`cchud configure`), ccstatusline import (`cchud import`). Plain and Powerline renderers, 20 git-widgets via gix, 8 transcript-widgets via JSONL cache, 7 env/http widgets. See [`plan/README.md`](plan/README.md) for roadmap.
+**Status:** 1.0.0 — 60 of 60 upstream widgets supported. Interactive TUI configurator (`cchud configure`), ccstatusline import (`cchud import`). Plain and Powerline renderers, 20 git-widgets via gix, 8 transcript-widgets via JSONL cache, 7 env/http widgets. See [`plan/README.md`](plan/README.md) for roadmap.
 
 ## What
 
@@ -18,6 +18,45 @@
 | `ccstatusline` (global install) | 246.7 | 97.7 MB |
 
 Claude Code invokes the statusline up to 3 times per second. For 4 parallel sessions that is ≈ 3 calls/s × 247 ms × 4 ≈ 296% of a single core. `cchud` targets ≤ 5 ms cold-start and ≤ 5 MB RSS — a ~50× / ~20× reduction respectively.
+
+## Install
+
+Pick one:
+
+```bash
+# Recommended (one-liner via Node):
+npx --yes cchud@1.0.0 install
+
+# Without Node (macOS / Linux gnu/musl):
+curl -fsSL https://raw.githubusercontent.com/IGoRFonin/cchud/main/install.sh | sh
+```
+
+Both methods install the binary at `~/.local/bin/cchud` (or
+`%LOCALAPPDATA%\cchud\cchud.exe` on Windows) and wire Claude Code via
+`cchud install`. The path is stable across `nvm use` and Node-version
+switches.
+
+After install:
+
+```bash
+cchud doctor       # 9-check health report
+cchud configure    # interactive TUI configurator
+cchud import       # migrate from ccstatusline (if applicable)
+```
+
+## Verify install (security-conscious users)
+
+Each npm package is published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements):
+
+```bash
+npm view cchud@1.0.0 --json | jq .dist.attestations
+```
+
+GitHub Releases tarballs include `.sha256` checksums alongside each tarball:
+
+```bash
+curl -sSL https://github.com/IGoRFonin/cchud/releases/download/v1.0.0/cchud-darwin-arm64.tar.gz.sha256
+```
 
 ## Status
 
@@ -36,6 +75,15 @@ Claude Code invokes the statusline up to 3 times per second. For 4 parallel sess
 | Env / system | `claude-account-email`, `free-memory` |
 
 See [`docs/widgets.md`](docs/widgets.md) for the full widget reference.
+
+## Migrating from ccstatusline
+
+See [MIGRATION.md](./MIGRATION.md) for a step-by-step guide. Quick path:
+
+```bash
+npx --yes cchud@1.0.0 install
+cchud import      # auto-detects ccstatusline section in ~/.claude/settings.json
+```
 
 ## TUI Configurator
 
@@ -196,4 +244,4 @@ Requires `rustc >= 1.85` (Edition 2024). MSRV is enforced via `rust-toolchain.to
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE). Original `ccstatusline` is also MIT; see [`ATTRIBUTION.md`](ATTRIBUTION.md) for credits.
+MIT. See [LICENSE](./LICENSE) for the full text. See [ATTRIBUTION.md](./ATTRIBUTION.md) for credits to third-party projects (ccstatusline, ratatui, crossterm, и т.д.).

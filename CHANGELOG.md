@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-05-04
+
+> **Production-grade release.** Two install channels (`npx` + `install.sh`), self-relocation, `cchud doctor`, RC soak gating, npm provenance + 2FA + SHA-pinned actions.
+
+### Added
+
+- **`npx --yes cchud@1.0.0 install`** — primary install channel via npm Approach 2 (`optionalDependencies` per platform). 6 packages: `cchud` + `@cchud/cli-{darwin-arm64,darwin-x64,linux-x64,linux-x64-musl,win32-x64}`. Published with `--provenance` (sigstore attestations).
+- **`curl install.sh | sh`** — secondary channel. POSIX sh, sha256 verify, glibc/musl detection.
+- **Self-relocation:** `cchud install` копирует себя в `~/.local/bin/cchud` (Unix) или `%LOCALAPPDATA%\cchud\cchud.exe` (Windows). Idempotent. Stable через `nvm use`. `--no-relocate` flag для разработки.
+- **`cchud doctor`** — 9-check environment report (version, binary path, platform, color, hyperlinks, cache, claude settings, cchud config, gh CLI). Exit 0/1/2. `--json` для скриптинга.
+- **5 cross-platform releases:** macOS arm64, macOS x64, Linux x64 (gnu + musl), Windows x64.
+- **`MIGRATION.md`** — step-by-step guide для пользователей ccstatusline.
+- **PATH check + shell-specific suggestion** при `cchud install` (zsh/bash/fish).
+
+### Changed
+
+- **Cargo version:** 0.9.0 → 1.0.0 через 1.0.0-rc.1 RC cycle.
+- **`~/.claude/settings.json` backup:** перед write создаётся `<path>.bak.<unix-ms>` (best-effort, не fatal). Reuse паттерна Phase 8 atomic_save.
+- **README:** добавлены Install, Verify, Migration sections. Версия в одной строке (pinned, никогда `@latest` — supply-chain mitigation).
+
+### Security
+
+- npm 2FA (`auth-and-writes`).
+- `NPM_TOKEN` тип `--type=automation` (scoped, не имеет права менять профиль).
+- All GitHub Actions pinned по 40-char SHA (не tag).
+- npm publish с `--provenance` flag — sigstore attestations доступны через `npm view cchud@1.0.0 --json | jq .dist.attestations`.
+
+### CI
+
+- New `.github/workflows/release.yml` — 5-job pipeline (build × 5 → GitHub Release → npm publish 6 packages → smoke-install × 3 → rollback handler).
+- Smoke-install matrix gate: реальный `npx --yes cchud@<version> install` против live npm registry на свежих GH-managed runners (mac/linux/win) перед declarated success.
+
+### Tests
+
+- +8 install_relocate (canonical_target_path, same_file, relocate_to с симлинками, idempotent overwrite, mode 0755, shell-specific PATH hints).
+- +6 doctor (all-pass, invalid claude settings, missing binary fail, gh skip без git-pr widget, exit 2 on warn, JSON serialize).
+- +4 install_sh (extract+chmod, sha256 mismatch, idempotent re-run, unreachable url).
+- +3 npm_shim (spawn fixture, missing native package, bogus CCHUD_NPM_PACKAGE).
+- Total ≥ 230 tests.
+
 ## [0.9.0] — 2026-05-02
 
 **Phase 8: TUI Configurator + Import.** Interactive TUI на ratatui+crossterm + CLI миграция с ccstatusline.
