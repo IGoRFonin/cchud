@@ -1,4 +1,4 @@
-//! Git domain — lazy `GitInfo` через gix; виджеты Phase 5 — тонкие
+//! Git domain — lazy `GitInfo` через gix; git-виджеты — тонкие
 //! getter'ы над этой структурой.
 //!
 //! Контракт:
@@ -6,7 +6,7 @@
 //!   за границу маунта или до `/`.
 //! - `head` и `remotes` парсятся eagerly при `discover()` (стоимость ~50 µs).
 //! - `status_counts` и `diff_stat` — `OnceCell`, считаются только при
-//!   запросе соответствующим виджетом (T3, T4).
+//!   запросе соответствующим виджетом.
 //! - `RenderContext::git()` обеспечивает однократный `discover()` за render.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
@@ -20,18 +20,18 @@ pub mod fixture;
 pub mod pr;
 pub mod remote;
 
-/// Главная git-структура, переиспользуемая всеми Phase 5 виджетами.
+/// Главная git-структура, переиспользуемая всеми git-виджетами.
 pub struct GitInfo {
     /// `gix::Repository` — переиспользуется внутренними методами для status/diff.
     pub(crate) repo: gix::Repository,
     pub root_dir: PathBuf,
     pub head: Head,
     pub remotes: HashMap<String, RemoteInfo>,
-    /// T3: lazy. None если ещё не считали.
+    /// Lazy. None если ещё не считали.
     pub(crate) status_counts: OnceCell<Option<GitStatusCounts>>,
-    /// T4: lazy. None если ещё не считали.
+    /// Lazy. None если ещё не считали.
     pub(crate) diff_stat: OnceCell<Option<DiffStat>>,
-    /// T5: lazy ahead/behind.
+    /// Lazy ahead/behind.
     pub(crate) tracking: OnceCell<Option<Tracking>>,
 }
 
@@ -83,7 +83,7 @@ pub struct Tracking {
 pub struct RemoteInfo {
     #[allow(dead_code)]
     pub url: String,
-    /// Заполняется в T6 (`parse_url`). В T1 — None.
+    /// Заполняется через `parse_url`; None если remote URL непарсимый.
     pub owner: Option<String>,
     pub repo: Option<String>,
 }
@@ -429,7 +429,7 @@ mod tests {
             info.remotes.get("upstream").unwrap().url,
             "https://github.com/baz/bar.git"
         );
-        // T6 заполняет owner/repo через parse_url.
+        // owner/repo заполняются через `parse_url`.
         assert_eq!(
             info.remotes.get("origin").unwrap().owner.as_deref(),
             Some("foo")

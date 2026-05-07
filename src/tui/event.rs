@@ -1,4 +1,4 @@
-//! `TerminalGuard` + event loop — Phase 8 Task 12.
+//! `TerminalGuard` + event loop.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

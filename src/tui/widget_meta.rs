@@ -1,4 +1,4 @@
-//! Static widget palette registry — Phase 8 Task 5.
+//! Static widget palette registry.
 //!
 //! 60 виджетов из `WidgetConfig` (без `AlignRight` — sentinel, не показывается в палитре).
 //! Категории отвечают «бакету» в UI (Model / Static / Trivial / Session / Context / ...).

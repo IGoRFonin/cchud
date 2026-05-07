@@ -1,4 +1,4 @@
-//! Phase 7: parse hex/ANSI-256 colors from per-widget overrides + theme globals.
+//! Parse hex/ANSI-256 colors from per-widget overrides + theme globals.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 #![allow(dead_code)]

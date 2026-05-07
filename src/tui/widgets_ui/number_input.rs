@@ -1,4 +1,4 @@
-//! Numeric input + min/max validation — Phase 8 Task 8.
+//! Numeric input + min/max validation.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn module_compiles() {
         // Render-helper смок-тест на полноценном `Frame` потребует ratatui::TestBackend
-        // — покрытие в `tests/tui_snapshots.rs` (T14). Здесь — sanity-check на module link.
+        // — покрытие в `tests/tui_snapshots.rs`. Здесь — sanity-check на module link.
         let _ = super::render;
     }
 }

@@ -1,4 +1,4 @@
-//! Sample payload + transcript fixture — Phase 8 Task 4.
+//! Sample payload + transcript fixture.
 //!
 //! Inline mock-данные для TUI live preview. Tempfile RAII через `NamedTempFile` —
 //! owned `App` (Task 6) держит его до выхода TUI.

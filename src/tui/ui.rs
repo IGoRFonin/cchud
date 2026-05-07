@@ -1,4 +1,4 @@
-//! Top-level draw orchestration — Phase 8 Task 10.
+//! Top-level draw orchestration.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

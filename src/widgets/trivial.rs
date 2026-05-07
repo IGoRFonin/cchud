@@ -1,4 +1,4 @@
-//! Trivial single-field widgets — Phase 3 Task 3.
+//! Trivial single-field widgets.
 //!
 //! Каждый виджет читает одно поле payload (или одно env-значение) и
 //! форматирует его минимально. Все impl следуют единой схеме:
@@ -87,18 +87,6 @@ impl Widget for VimMode {
     }
     fn default_style(&self) -> crate::render::Style {
         crate::render::Style::none().bold()
-    }
-}
-
-/// Phase 7 setup stub. T11 заменит на реальный виджет.
-pub struct Stub;
-
-impl super::Widget for Stub {
-    fn id(&self) -> &'static str {
-        "stub"
-    }
-    fn render(&self, _: &super::RenderContext<'_>) -> Option<String> {
-        None
     }
 }
 

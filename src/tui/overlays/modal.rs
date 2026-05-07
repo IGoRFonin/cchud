@@ -1,4 +1,4 @@
-//! Modal helpers — Phase 8 Task 10.
+//! Modal helpers.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

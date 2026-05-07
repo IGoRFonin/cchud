@@ -1,4 +1,4 @@
-//! `cchud doctor` — environment health check (Phase 9).
+//! `cchud doctor` — environment health check.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
@@ -49,7 +49,6 @@ pub struct DoctorEnv {
 }
 
 #[must_use]
-#[allow(dead_code)] // wired in T6
 pub fn run(args: &[String]) -> ExitCode {
     let json_mode = args.iter().any(|a| a == "--json");
     let env = build_env_from_real_paths();

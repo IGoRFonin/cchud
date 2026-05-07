@@ -1,4 +1,4 @@
-//! Embedded sub-list editor (CustomCommand.args) — Phase 8 Task 8.
+//! Embedded sub-list editor (CustomCommand.args).
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

@@ -1,7 +1,7 @@
-//! Context-window cluster — Phase 3 Task 4.
+//! Context-window cluster.
 //!
-//! Шесть виджетов читают `payload.context_window` (типизировано в T1 как
-//! `ContextWindowInfo`). `ContextPercentageUsable` дополнительно зависит
+//! Шесть виджетов читают `payload.context_window: Option<ContextWindowInfo>`.
+//! `ContextPercentageUsable` дополнительно зависит
 //! от `payload.model.id` через `util::model_context_size::max_tokens_for`.
 //! `ContextBar` использует `util::ascii_bar::render` + `params.width`.
 

@@ -1,4 +1,4 @@
-//! OSC 8 hyperlink wrapper — Phase 4 Task 6.
+//! OSC 8 hyperlink wrapper.
 //!
 //! Compact: terminal detection via `supports-hyperlinks 3`, formatting is
 //! a 2-line `format!` (no extra crate).

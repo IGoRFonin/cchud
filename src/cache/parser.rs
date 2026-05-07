@@ -1,4 +1,4 @@
-//! JSONL transcript parser — Phase 6 Task 3.
+//! JSONL transcript parser.
 //!
 //! - `parse_from_offset(path, start)` — incremental tail парс; возвращает
 //!   `(stats, new_offset)`.

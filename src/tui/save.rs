@@ -1,4 +1,4 @@
-//! Atomic save with backup — Phase 8 Task 11.
+//! Atomic save with backup.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

@@ -1,8 +1,8 @@
-//! Static-text cluster — Phase 3 Task 2.
+//! Static-text cluster.
 //!
 //! Виджеты этого модуля не читают payload; они рендерят буквальный текст
 //! из конфига. `Link` использует OSC 8 hyperlink escape-последовательность
-//! (без detect terminal capability — Phase 7 добавит graceful fallback).
+//! (без detect terminal capability добавит graceful fallback).
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

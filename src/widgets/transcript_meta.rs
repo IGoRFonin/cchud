@@ -1,4 +1,4 @@
-//! Transcript meta cluster — Phase 6 Task 8.
+//! Transcript meta cluster.
 //!
 //! `ThinkingEffort` отображает уровень thinking из последнего
 //! assistant-сообщения. Принимаем любую непустую строку (low/medium/high/

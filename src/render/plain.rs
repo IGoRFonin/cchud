@@ -1,4 +1,4 @@
-//! Plain (single-line) renderer — Phase 4 Task 8 / Phase 7 Task 11.
+//! Plain (single-line) renderer.
 //!
 //! Joins segments with `separator`. If `level != None`, applies each
 //! segment's `Style`. If `hyperlinks == true`, wraps segments with
@@ -64,7 +64,6 @@ impl Plain {
     }
 }
 
-#[allow(dead_code)] // remove in T13
 fn emit_plain(
     composed: &[super::StyledSegment],
     level: super::ColorLevel,
@@ -98,14 +97,6 @@ pub(super) fn compose_minimalist(segments: &[Segment]) -> Vec<super::StyledSegme
         out.push(super::StyledSegment::plain(strip_emoji_prefix(&seg.text)));
     }
     out
-}
-
-#[allow(dead_code)] // remove in T13
-pub(super) fn render_minimalist(segments: &[Segment]) -> String {
-    compose_minimalist(segments)
-        .iter()
-        .map(|s| s.text.clone())
-        .collect::<String>()
 }
 
 fn strip_emoji_prefix(s: &str) -> String {

@@ -1,6 +1,6 @@
-//! Git head cluster — Phase 5 Task 2.
+//! Git head cluster.
 //!
-//! Тонкие getter'ы над `GitInfo::head` и `GitInfo::root_dir` (T1).
+//! Тонкие getter'ы над `GitInfo::head` и `GitInfo::root_dir`.
 //! Виджеты возвращают None если cwd вне git-репо или HEAD detached/unborn.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]

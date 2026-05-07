@@ -1,4 +1,4 @@
-//! `GitPr` — Phase 5 Task 7.
+//! `GitPr`.
 //!
 //! Единственный сетевой виджет фазы. Контракт:
 //! - cache-hit < 1 ms; cache-miss = 200 ms hard timeout.

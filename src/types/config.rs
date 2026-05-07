@@ -1,9 +1,7 @@
 //! User config schema — parsed from `~/.config/cchud/settings.json`.
 //!
-//! Phase 2 supports only `WidgetConfig::Model`. Phase 3 adds 9 more variants.
-//! `ThemeConfig` is an empty slot — populated in Phase 4 (Powerline colors,
-//! separator overrides). Migrations infrastructure intentionally omitted —
-//! current `version: 1` is the only version that exists.
+//! Migrations infrastructure intentionally omitted — current `version: 1`
+//! is the only version that exists.
 
 use serde::{Deserialize, Serialize};
 
@@ -44,14 +42,13 @@ pub struct WidgetStyleOverride {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum WidgetConfig {
-    // Phase 2:
     Model {
         #[serde(flatten, default)]
         params: ModelParams,
     },
     Separator,
 
-    // Phase 3 — без параметров:
+    // без параметров:
     Version,
     ClaudeSessionId,
     TerminalWidth,
@@ -71,7 +68,7 @@ pub enum WidgetConfig {
     WorktreeBranch,
     WorktreeOriginalBranch,
 
-    // Phase 3 — с параметрами:
+    // с параметрами:
     CustomText {
         #[serde(flatten)]
         params: CustomTextParams,
@@ -93,23 +90,23 @@ pub enum WidgetConfig {
         params: ContextBarParams,
     },
 
-    // Phase 5 — Task 2 (head cluster):
+    // head cluster:
     GitBranch,
     GitSha,
     GitRootDir,
-    // Phase 5 — Task 3 (status cluster):
+    // status cluster:
     GitStatus,
     GitChanges,
     GitStaged,
     GitUnstaged,
     GitUntracked,
     GitConflicts,
-    // Phase 5 — Task 4 (diff stat):
+    // diff stat:
     GitInsertions,
     GitDeletions,
-    // Phase 5 — Task 5 (tracking):
+    // tracking:
     GitAheadBehind,
-    // Phase 5 — Task 6 (remote):
+    // remote:
     GitOriginOwner,
     GitOriginRepo,
     GitOriginOwnerRepo,
@@ -117,39 +114,39 @@ pub enum WidgetConfig {
     GitUpstreamRepo,
     GitUpstreamOwnerRepo,
     GitIsFork,
-    // Phase 5 — Task 7 (PR):
+    // PR:
     GitPr,
 
-    // Phase 6 — Task 6 (transcript tokens cluster):
+    // transcript tokens cluster:
     TokensCached,
     TokensTotal,
     InputSpeed,
     OutputSpeed,
     TotalSpeed,
-    // Phase 6 — Task 7 (transcript timing cluster):
+    // transcript timing cluster:
     BlockTimer,
     SessionDuration,
-    // Phase 6 — Task 8 (transcript meta cluster):
+    // transcript meta cluster:
     ThinkingEffort,
 
-    // Phase 7 — usage cluster (payload.rate_limits):
+    // usage cluster (payload.rate_limits):
     SessionUsage,
     WeeklyUsage,
     BlockResetTimer,
     WeeklyResetTimer,
 
-    // Phase 7 — env cluster:
+    // env cluster:
     ClaudeAccountEmail,
     FreeMemory,
 
-    // Phase 7 — transcript meta:
+    // transcript meta:
     Skills,
 
-    // Phase 7 — sentinel for auto_align (не считается в "60 widgets"):
+    // sentinel for auto_align (не считается в "60 widgets"):
     AlignRight,
 }
 
-/// Per-widget parameters. Phase 7 adds custom format strings, etc.
+/// Per-widget parameters.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ModelParams {}
 
@@ -209,7 +206,7 @@ pub struct ThemeConfig {
     #[serde(default)]
     pub color_level: Option<crate::render::ColorLevel>,
 
-    // Phase 7 — global theme settings (7.0b):
+    // global theme settings (7.0b):
     #[serde(default)]
     pub global_bold: bool,
     #[serde(default)]
@@ -327,8 +324,7 @@ mod tests {
         let json = r#"{
             "lines": [{"widgets": [{"type": "branch"}]}]
         }"#;
-        // Phase 2 не знает про Branch — должен упасть на парсинге.
-        // Phase 3 добавит вариант, тест обновится.
+        // "branch" — не валидный variant; используем GitBranch / WorktreeBranch.
         assert!(serde_json::from_str::<Settings>(json).is_err());
     }
 

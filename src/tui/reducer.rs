@@ -1,8 +1,8 @@
-//! Pure reducer — Phase 8 Task 7.
+//! Pure reducer.
 //!
 //! `handle_key(&mut App, KeyEvent) -> ReducerEffect` — единственная mutating-точка
 //! для App'а. Никакого file/terminal IO. Save/Quit/Discard поднимаются как
-//! `ReducerEffect` и обрабатываются в event loop (T12).
+//! `ReducerEffect` и обрабатываются в event loop.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

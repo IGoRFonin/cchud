@@ -1,4 +1,4 @@
-//! Test fixture helpers — Phase 5 Task 1.
+//! Test fixture helpers.
 //!
 //! Создаёт tempfile-репозитории через `git` CLI (cross-platform, доступен
 //! на macos/linux/windows CI runners). Использовать gix для setup'а

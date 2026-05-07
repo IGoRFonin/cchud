@@ -1,4 +1,4 @@
-//! ANSI strip + visible width helpers — Phase 4 Task 2.
+//! ANSI strip + visible width helpers.
 //!
 //! Used by `widgets::TerminalWidth` (subtract content width) and
 //! `render::powerline::Powerline` (truncate by terminal width).

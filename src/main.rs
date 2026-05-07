@@ -1,8 +1,7 @@
 //! cchud — Fast Rust statusline for Claude Code CLI.
 //!
-//! Phase 2 walking skeleton. Reads JSON payload from stdin, renders
-//! configured widgets joined by Plain renderer, prints to stdout.
-//! Config loading lands in Task 6; install command in Task 7.
+//! Reads JSON payload from stdin, renders configured widgets joined by the
+//! Plain or Powerline renderer, prints to stdout.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

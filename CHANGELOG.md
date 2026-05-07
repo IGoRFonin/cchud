@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.2] — 2026-05-07
+
+### Changed
+
+- Doc-comments cleanup: убраны устаревшие `Phase X / Task Y` ссылки из исходников (50+ файлов). Поведение не меняется.
+
+### CI
+
+- `release.yml` — pin Rust toolchain к `1.87` (вместо `stable`) для воспроизводимости release builds.
+
 ## [1.0.0] — 2026-05-04
 
 > **Production-grade release.** Two install channels (`npx` + `install.sh`), self-relocation, `cchud doctor`, RC soak gating, npm provenance + 2FA + SHA-pinned actions.

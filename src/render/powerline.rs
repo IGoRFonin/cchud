@@ -1,4 +1,4 @@
-//! Powerline (filled-arrow) renderer — Phase 4 Task 9 / Phase 7 Task 11.
+//! Powerline (filled-arrow) renderer.
 //!
 //! Default separator U+E0B0 (right-pointing filled triangle). Each segment
 //! emits: `style(prev_bg→bg, sep)` + `style(seg, fg, bg)`. After the last
@@ -154,7 +154,6 @@ impl Powerline {
     }
 }
 
-#[allow(dead_code)] // remove in T13
 fn emit_powerline(
     composed: &[super::StyledSegment],
     level: super::ColorLevel,

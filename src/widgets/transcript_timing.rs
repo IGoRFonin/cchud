@@ -1,4 +1,4 @@
-//! Transcript timing cluster — Phase 6 Task 7.
+//! Transcript timing cluster.
 //!
 //! - `BlockTimer`: time-to-end текущего 5h billing-блока.
 //! - `SessionDuration`: диапазон между первым и последним сообщением.

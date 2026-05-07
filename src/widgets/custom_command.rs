@@ -1,8 +1,8 @@
-//! `CustomCommand` widget — Phase 3 Task 7.
+//! `CustomCommand` widget.
 //!
 //! Spawns a user-configured subprocess argv-style (без shell), читает
 //! stdout с timeout'ом и возвращает trimmed-content. Любой негативный
-//! сценарий → None молча (Phase 3 не диагностирует stderr).
+//! сценарий → None молча (stderr не диагностируем).
 //!
 //! Security:
 //! - Без `sh -c` → нет shell-injection.
@@ -12,8 +12,7 @@
 //! - Stderr = null → не загрязняем stderr cchud.
 //!
 //! Платформа: Unix-only тесты под `#[cfg(unix)]`. Windows валиден на
-//! компиляции, но behavioural-тесты (echo / sleep / false) отложены до
-//! Phase 9 (distribution).
+//! компиляции, но behavioural-тесты не покрыты.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

@@ -1,4 +1,4 @@
-//! Reusable embedded widgets — Phase 8 Task 8.
+//! Reusable embedded widgets.
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 pub mod color_picker;

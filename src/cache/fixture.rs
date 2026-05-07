@@ -1,4 +1,4 @@
-//! Test fixture helpers — Phase 6 Task 1.
+//! Test fixture helpers.
 //!
 //! `TranscriptBuilder` создаёт tempfile-`.jsonl` транскрипты для тестов
 //! парсера, store, виджетов. Каждый `.add_user`/`.add_assistant` пишет

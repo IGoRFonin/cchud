@@ -1,4 +1,4 @@
-//! Color downgrade ladder — Phase 4 Task 4.
+//! Color downgrade ladder.
 //!
 //! Single-step adapt: `Rgb → Ansi256` only when truecolor unavailable.
 //! `Ansi256` always passes through. `None` level always returns `None`.

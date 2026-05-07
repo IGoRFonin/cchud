@@ -1,8 +1,8 @@
-//! Worktree cluster — Phase 3 Task 6.
+//! Worktree cluster.
 //!
 //! Пять виджетов читают `payload.worktree: Option<Worktree>`. CC шлёт
 //! поле только если активная сессия идёт в git-worktree (`git worktree add`).
-//! Phase 0 семплы worktree не содержат — тесты используют synthetic-семпл
+//! Реальные семплы worktree не содержат — тесты используют synthetic-семпл
 //! `payload-synthetic-vim-worktree.json` + struct-литералы.
 //!
 //! `Worktree` (без суффикса) и `WorktreeName` дают один и тот же контент;

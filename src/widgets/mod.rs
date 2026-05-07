@@ -4,14 +4,15 @@
 //! (immutable view of payload + settings) and returns `Option<String>`
 //! (None = "nothing to show", filtered out by the renderer).
 //!
-//! Phase 5 added `git: OnceCell<Option<GitInfo>>` to `RenderContext`.
-//! Phase 6 added `transcript: OnceCell<Option<TranscriptStats>>`.
+//! `RenderContext` lazily resolves `git: OnceCell<Option<GitInfo>>` and
+//! `transcript: OnceCell<Option<TranscriptStats>>` so widgets that don't
+//! need them don't pay for IO.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 pub mod context;
 pub mod custom_command;
-pub mod env; // Phase 7 — env cluster
+pub mod env;
 pub mod git_diff;
 pub mod git_head;
 pub mod git_pr;
@@ -25,7 +26,7 @@ pub mod transcript_meta;
 pub mod transcript_timing;
 pub mod transcript_tokens;
 pub mod trivial;
-pub mod usage; // Phase 7 — usage cluster
+pub mod usage;
 pub mod worktree;
 
 #[cfg(test)]
@@ -54,14 +55,14 @@ pub struct RenderContext<'a> {
     pub payload: &'a StatusPayload,
     #[allow(dead_code)]
     pub settings: &'a Settings,
-    /// Phase 5: lazy git discover. None если cwd не git-репо.
+    /// Lazy git discover. None если cwd не git-репо.
     #[allow(dead_code)]
     git: std::cell::OnceCell<Option<crate::git::GitInfo>>,
-    /// Phase 6: lazy transcript-кэш. None если payload без `transcript_path`
+    /// Lazy transcript-кэш. None если payload без `transcript_path`
     /// или транскрипт недоступен.
     #[allow(dead_code)]
     transcript: std::cell::OnceCell<Option<crate::cache::TranscriptStats>>,
-    /// Phase 6: текущее время в Unix-ms. Дефолт = `unix_now_ms()`.
+    /// Текущее время в Unix-ms. Дефолт = `unix_now_ms()`.
     /// Тесты могут перезаписать через field-init синтаксис.
     #[allow(dead_code)]
     pub now_ms: u64,
@@ -105,7 +106,7 @@ impl<'a> RenderContext<'a> {
     }
 
     /// Test-only: pre-populate transcript cell с фиксированной `TranscriptStats`.
-    /// Используется в unit-тестах T6/T7/T8 чтобы не зависеть от файлового IO.
+    /// Используется в unit-тестах transcript-кластеров чтобы не зависеть от файлового IO.
     #[cfg(test)]
     pub fn set_transcript_for_tests(&self, stats: Option<crate::cache::TranscriptStats>) {
         let _ = self.transcript.set(stats);
@@ -245,7 +246,7 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::Model { .. } => Box::new(model::Model),
         WidgetConfig::Separator => Box::new(SeparatorWidget),
 
-        // Phase 3 — Task 2 (static cluster):
+        // static cluster:
         WidgetConfig::CustomText { params } => Box::new(static_text::CustomText {
             params: params.clone(),
         }),
@@ -256,17 +257,17 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
             params: params.clone(),
         }),
 
-        // Phase 3 — Task 3 (trivial cluster):
+        // trivial cluster:
         WidgetConfig::Version => Box::new(trivial::Version),
         WidgetConfig::ClaudeSessionId => Box::new(trivial::ClaudeSessionId),
         WidgetConfig::TerminalWidth => Box::new(trivial::TerminalWidth),
         WidgetConfig::OutputStyle => Box::new(trivial::OutputStyle),
         WidgetConfig::VimMode => Box::new(trivial::VimMode),
         WidgetConfig::SessionName => Box::new(session::SessionName),
-        // Phase 3 — Task 5 (cost cluster):
+        // cost cluster:
         WidgetConfig::SessionClock => Box::new(session::SessionClock),
         WidgetConfig::SessionCost => Box::new(session::SessionCost),
-        // Phase 3 — Task 4 (context cluster):
+        // context cluster:
         WidgetConfig::ContextLength => Box::new(context::ContextLength),
         WidgetConfig::ContextPercentage => Box::new(context::ContextPercentage),
         WidgetConfig::ContextPercentageUsable => Box::new(context::ContextPercentageUsable),
@@ -275,34 +276,34 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         }),
         WidgetConfig::TokensInput => Box::new(context::TokensInput),
         WidgetConfig::TokensOutput => Box::new(context::TokensOutput),
-        // Phase 3 — Task 6 (worktree cluster):
+        // worktree cluster:
         WidgetConfig::Worktree => Box::new(worktree::Worktree),
         WidgetConfig::WorktreeMode => Box::new(worktree::WorktreeMode),
         WidgetConfig::WorktreeName => Box::new(worktree::WorktreeName),
         WidgetConfig::WorktreeBranch => Box::new(worktree::WorktreeBranch),
         WidgetConfig::WorktreeOriginalBranch => Box::new(worktree::WorktreeOriginalBranch),
-        // Phase 3 — Task 7 (custom-command):
+        // custom-command:
         WidgetConfig::CustomCommand { params } => Box::new(custom_command::CustomCommand {
             params: params.clone(),
         }),
 
-        // Phase 5 — Task 2 (head cluster):
+        // head cluster:
         WidgetConfig::GitBranch => Box::new(git_head::GitBranch),
         WidgetConfig::GitSha => Box::new(git_head::GitSha),
         WidgetConfig::GitRootDir => Box::new(git_head::GitRootDir),
-        // Phase 5 — Task 3 (status cluster):
+        // status cluster:
         WidgetConfig::GitStatus => Box::new(git_status::GitStatus),
         WidgetConfig::GitChanges => Box::new(git_status::GitChanges),
         WidgetConfig::GitStaged => Box::new(git_status::GitStaged),
         WidgetConfig::GitUnstaged => Box::new(git_status::GitUnstaged),
         WidgetConfig::GitUntracked => Box::new(git_status::GitUntracked),
         WidgetConfig::GitConflicts => Box::new(git_status::GitConflicts),
-        // Phase 5 — Task 4 (diff stat):
+        // diff stat:
         WidgetConfig::GitInsertions => Box::new(git_diff::GitInsertions),
         WidgetConfig::GitDeletions => Box::new(git_diff::GitDeletions),
-        // Phase 5 — Task 5 (tracking):
+        // tracking:
         WidgetConfig::GitAheadBehind => Box::new(git_tracking::GitAheadBehind),
-        // Phase 5 — Task 6 (remote):
+        // remote:
         WidgetConfig::GitOriginOwner => Box::new(git_remote::GitOriginOwner),
         WidgetConfig::GitOriginRepo => Box::new(git_remote::GitOriginRepo),
         WidgetConfig::GitOriginOwnerRepo => Box::new(git_remote::GitOriginOwnerRepo),
@@ -310,35 +311,35 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::GitUpstreamRepo => Box::new(git_remote::GitUpstreamRepo),
         WidgetConfig::GitUpstreamOwnerRepo => Box::new(git_remote::GitUpstreamOwnerRepo),
         WidgetConfig::GitIsFork => Box::new(git_remote::GitIsFork),
-        // Phase 5 — Task 7 (PR):
+        // PR:
         WidgetConfig::GitPr => Box::new(git_pr::GitPr),
 
-        // Phase 6 — Task 6 (transcript tokens cluster):
+        // transcript tokens cluster:
         WidgetConfig::TokensCached => Box::new(transcript_tokens::TokensCached),
         WidgetConfig::TokensTotal => Box::new(transcript_tokens::TokensTotal),
         WidgetConfig::InputSpeed => Box::new(transcript_tokens::InputSpeed),
         WidgetConfig::OutputSpeed => Box::new(transcript_tokens::OutputSpeed),
         WidgetConfig::TotalSpeed => Box::new(transcript_tokens::TotalSpeed),
-        // Phase 6 — Task 7 (transcript timing cluster):
+        // transcript timing cluster:
         WidgetConfig::BlockTimer => Box::new(transcript_timing::BlockTimer),
         WidgetConfig::SessionDuration => Box::new(transcript_timing::SessionDuration),
-        // Phase 6 — Task 8 (transcript meta cluster):
+        // transcript meta cluster:
         WidgetConfig::ThinkingEffort => Box::new(transcript_meta::ThinkingEffort),
 
-        // Phase 7 — usage cluster:
+        // usage cluster:
         WidgetConfig::SessionUsage => Box::new(usage::SessionUsage),
         WidgetConfig::WeeklyUsage => Box::new(usage::WeeklyUsage),
         WidgetConfig::BlockResetTimer => Box::new(usage::BlockResetTimer),
         WidgetConfig::WeeklyResetTimer => Box::new(usage::WeeklyResetTimer),
 
-        // Phase 7 — env cluster:
+        // env cluster:
         WidgetConfig::ClaudeAccountEmail => Box::new(env::ClaudeAccountEmail),
         WidgetConfig::FreeMemory => Box::new(env::FreeMemory),
 
-        // Phase 7 — transcript meta:
+        // transcript meta:
         WidgetConfig::Skills => Box::new(transcript_meta::Skills),
 
-        // Phase 7 — AlignRight sentinel (T11):
+        // AlignRight sentinel:
         WidgetConfig::AlignRight => Box::new(AlignRightSentinel),
     }
 }

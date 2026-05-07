@@ -1,14 +1,7 @@
 //! Full `StatusPayload` envelope — типизация всех полей.
 //!
-//! Phase 2 walking skeleton хранил `cost`, `context_window`, `output_style`
-//! как `Option<serde_json::Value>` — Phase 3 типизирует эти три поля
-//! (14 виджетов их читают). `vim` и `worktree` — новые поля envelope
-//! (отсутствуют во всех Phase 0 семплах; добавляются под synthetic
-//! fixture-файлы). Phase 6 типизировал `effort` и `thinking`; Phase 7 —
-//! `rate_limits` (`RateLimits` / `RateBucket`).
-//!
 //! `CurrentUsage` — untagged enum: upstream zod допускает форму
-//! `current_usage?: number | { ... } | null`. В Phase 0 семплах — только
+//! `current_usage?: number | { ... } | null`. На практике приходит только
 //! object | null, но защитный fallback на `Total(u64)` стоит копейки.
 //!
 //! Top-level envelope полностью типизирован; snapshot-тесты ловят
@@ -35,7 +28,7 @@ pub struct StatusPayload {
     #[serde(default)]
     pub exceeds_200k_tokens: Option<bool>,
 
-    // Phase 3 — typed:
+    // typed:
     #[serde(default)]
     pub output_style: Option<OutputStyle>,
     #[serde(default)]
@@ -47,7 +40,6 @@ pub struct StatusPayload {
     #[serde(default)]
     pub vim: Option<VimState>,
 
-    // Phase 7 — typed (replaces Option<Value> from Phase 0):
     #[serde(default)]
     pub rate_limits: Option<RateLimits>,
     // Остаются Value — типизация позже:
@@ -104,7 +96,7 @@ pub struct ContextWindowInfo {
 }
 
 /// Upstream zod допускает `current_usage?: number | object | null`.
-/// Phase 0 семплы шлют только object; Total — защита от потенциального
+/// На практике приходит только object; Total — защита от потенциального
 /// упрощения схемы Anthropic.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]

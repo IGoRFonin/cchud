@@ -1,7 +1,6 @@
-//! Single-line text input — Phase 8 Task 8.
+//! Single-line text input.
 //!
-//! Render-helper: рисует buffer + cursor caret. Event handling — в reducer (T7).
-//! `render` будет вызываться из settings.rs при редактировании текстовых полей (T11).
+//! Render-helper: рисует buffer + cursor caret. Event handling — в reducer.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

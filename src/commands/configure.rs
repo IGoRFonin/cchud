@@ -1,4 +1,4 @@
-//! `cchud configure` — TUI entry-point. Phase 8 Task 13.
+//! `cchud configure` — TUI entry-point.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

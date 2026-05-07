@@ -1,4 +1,4 @@
-//! Unix-epoch ms helper — Phase 6 Task 5.
+//! Unix-epoch ms helper.
 //!
 //! Используется `RenderContext::new` для дефолтного `now_ms`. Тесты
 //! инжектируют свой `now_ms` через explicit field-init синтаксис, не вызывая

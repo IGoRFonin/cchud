@@ -1,4 +1,4 @@
-//! Color picker — Phase 8 Task 8. 16 ANSI named + Default + Custom hex.
+//! Color picker. 16 ANSI named + Default + Custom hex.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

@@ -1,4 +1,4 @@
-//! Render layer — Phase 4.
+//! Render layer.
 //!
 //! Pipeline: Widget produces text → wrapped into `Segment { text, style, hyperlink }`
 //! → `Renderer::render(segments)` joins them. `Plain` and `Powerline` are
@@ -150,7 +150,7 @@ const fn to_anstyle_color(c: Color) -> anstyle::Color {
     }
 }
 
-pub mod flex; // Phase 7
+pub mod flex;
 pub mod hyperlink;
 pub mod plain;
 pub mod powerline;
@@ -299,7 +299,6 @@ impl Renderer {
     }
 
     /// Backward-compatible API. Hot path дёргает этот метод.
-    /// Поведение байт-эквивалентно Phase 7.
     #[must_use]
     pub fn render_line(
         &self,
@@ -508,7 +507,7 @@ pub struct Segment {
     pub text: String,
     pub style: Style,
     pub hyperlink: Option<String>,
-    /// Phase 7: marker для `auto_align` — сегмент действует как разделитель left/right.
+    /// Marker для `auto_align` — сегмент действует как разделитель left/right.
     pub align_marker: bool,
 }
 

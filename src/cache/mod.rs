@@ -1,11 +1,11 @@
-//! Transcript JSONL cache — Phase 6.
+//! Transcript JSONL cache.
 //!
 //! Контракт:
-//! - `load_or_build_incremental(path)` (T4) — single entry point. Возвращает
+//! - `load_or_build_incremental(path)` — single entry point. Возвращает
 //!   `Option<TranscriptStats>`; None если транскрипт недоступен / битый /
 //!   IO error. Никогда не панкует.
 //! - Внутренняя структура (`parser`, `store`) — pub(crate); внешние
-//!   потребители (виджеты Phase 6) обращаются только через `RenderContext::transcript()`.
+//!   потребители (transcript-виджеты) обращаются только через `RenderContext::transcript()`.
 //! - `cache/fixture.rs` — `#[cfg(test)]` helper `TranscriptBuilder` для
 //!   интеграционных тестов парсера и store.
 //!

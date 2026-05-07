@@ -1,4 +1,4 @@
-//! JSONL transcript types and bincode cache layout — Phase 6 Task 2.
+//! JSONL transcript types and bincode cache layout.
 //!
 //! Двунаправленные типы:
 //! - `TranscriptEntry`/`MessagePayload`/`Usage`/`ThinkingMeta` — read-only,
@@ -10,13 +10,13 @@
 //!
 //! `FORMAT_VERSION` увеличиваем при любом breaking change в layout
 //! `TranscriptStats`/`MessageStats`/`BillingBlock`/`CacheMeta`. Mismatch →
-//! silent reset кэша (T4).
+//! silent reset кэша.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 use serde::{Deserialize, Serialize};
 
-/// Текущая версия on-disk схемы. T4 при mismatch делает full rebuild.
+/// Текущая версия on-disk схемы. При mismatch делается full rebuild.
 pub const FORMAT_VERSION: u32 = 2;
 
 // ───────────────────── Wire types (read JSONL) ─────────────────────
@@ -33,7 +33,7 @@ pub struct TranscriptEntry {
 #[derive(Debug, Deserialize)]
 pub struct MessagePayload {
     pub usage: Option<Usage>,
-    /// Не парсим в Phase 6 — Phase 7 (Skills widget) пройдётся по content.
+    /// Не парсим — будущий Skills widget пройдётся по content.
     #[serde(default)]
     #[allow(dead_code)]
     pub content: Option<serde_json::Value>,

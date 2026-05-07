@@ -1,4 +1,4 @@
-//! `GitPr` widget — Phase 5 Task 7.
+//! `GitPr` widget.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

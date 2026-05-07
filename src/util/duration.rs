@@ -1,7 +1,7 @@
 //! Duration formatter — `HH:MM:SS` (≥ 1h) или `MM:SS` (< 1h).
 //!
-//! Используется `widgets::session::SessionClock`. Phase 4/8 могут
-//! получить colored variant; для Phase 3 — plain string.
+//! Используется `widgets::session::SessionClock`. Возвращает plain string;
+//! раскраска — в render-слое.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

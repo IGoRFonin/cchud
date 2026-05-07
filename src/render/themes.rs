@@ -1,4 +1,4 @@
-//! Powerline themes — Phase 4 Task 7.
+//! Powerline themes.
 //!
 //! 5 hardcoded built-ins as `static BuiltinTheme` (refs only — no `LazyLock`).
 //! Runtime `PowerlineTheme` is owned (serde-friendly). Lookup converts
@@ -202,9 +202,8 @@ mod tests {
     }
 
     #[test]
-    fn widget_styles_are_empty_for_phase4() {
-        // Per spec decision #10/11 — phase 4 keeps widget_styles available but
-        // does not populate it for builtins. Custom themes can override.
+    fn widget_styles_are_empty_for_builtin_themes() {
+        // Builtin темы не preset-ят widget_styles; custom темы могут override.
         for theme in [&DEFAULT, &DRACULA, &SOLARIZED_DARK, &NORD, &GRUVBOX_DARK] {
             assert!(
                 theme.widget_styles.is_empty(),

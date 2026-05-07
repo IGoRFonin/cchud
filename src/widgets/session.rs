@@ -1,4 +1,4 @@
-//! Session-cluster widgets — Phase 3 Task 3 (`SessionName`) + Task 5
+//! Session-cluster widgets (`SessionName`) + Task 5
 //! (`SessionClock`, `SessionCost`).
 //!
 //! Объединены в один файл, потому что все три читают `payload.session_id`,

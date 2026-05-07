@@ -1,4 +1,4 @@
-//! 4 TUI panels — Phase 8 Task 9.
+//! 4 TUI panels.
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 pub mod lines;

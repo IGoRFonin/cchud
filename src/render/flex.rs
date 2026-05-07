@@ -1,4 +1,4 @@
-//! Phase 7 Task 11 — `flex_mode` width truncation.
+//! `flex_mode` width truncation.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

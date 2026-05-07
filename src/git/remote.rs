@@ -1,4 +1,4 @@
-//! Remote URL parser — Phase 5 Task 6.
+//! Remote URL parser.
 //!
 //! Hand-parser без зависимости `regex` (экономия ~300 КБ).
 //! Покрывает 4 канонических формата git remote URL.

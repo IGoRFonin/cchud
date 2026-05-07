@@ -1,4 +1,4 @@
-//! Tri-state bool — Phase 8 Task 8. None / Some(true) / Some(false).
+//! Tri-state bool. None / Some(true) / Some(false).
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

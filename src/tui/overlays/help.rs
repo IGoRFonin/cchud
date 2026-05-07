@@ -1,4 +1,4 @@
-//! Help overlay (?) — Phase 8 Task 10.
+//! Help overlay (?).
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

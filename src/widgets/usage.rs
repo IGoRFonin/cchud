@@ -1,4 +1,4 @@
-//! Usage cluster widgets — Phase 7 Task 8.
+//! Usage cluster widgets.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

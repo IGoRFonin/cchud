@@ -1,4 +1,4 @@
-//! TUI configurator — Phase 8.
+//! TUI configurator.
 //!
 //! Все модули под `#[cfg(feature = "tui")]`. Hot path рендера (`cchud` без аргументов)
 //! не зависит от этого модуля. См. `docs/superpowers/specs/2026-05-01-phase-8-tui-design.md`.

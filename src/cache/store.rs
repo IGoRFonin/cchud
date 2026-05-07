@@ -1,8 +1,8 @@
-//! Disk-IO для transcript-кэша — Phase 6 Task 4.
+//! Disk-IO для transcript-кэша.
 //!
 //! Public surface:
 //! - [`load_or_build_incremental`] — единственный entry point
-//!   виджетов Phase 6 (через `RenderContext::transcript()`).
+//!   transcript-виджетов (через `RenderContext::transcript()`).
 //!
 //! Стратегия:
 //! - Hit-path: `cached.format_version == FORMAT_VERSION`

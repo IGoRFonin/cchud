@@ -1,4 +1,4 @@
-//! TUI App state — Phase 8 Task 6.
+//! TUI App state.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
@@ -107,9 +107,9 @@ pub struct App {
     pub palette_filter: String,
     pub palette_cursor: usize,
     pub settings_field_cursor: usize,
-    /// Navigation cursor inside the FG color picker (index into `NAMED_COLORS`). T11 wires up selection.
+    /// Navigation cursor inside the FG color picker (index into `NAMED_COLORS`).
     pub color_fg_cursor: usize,
-    /// Navigation cursor inside the BG color picker (index into `NAMED_COLORS`). T11 wires up selection.
+    /// Navigation cursor inside the BG color picker (index into `NAMED_COLORS`).
     pub color_bg_cursor: usize,
     pub editing_field: Option<EditField>,
     pub theme_field_cursor: usize,
@@ -148,7 +148,7 @@ impl App {
         }
     }
 
-    /// Структурное сравнение через `PartialEq` (Phase 8 T1 derive chain).
+    /// Структурное сравнение через `PartialEq` derive chain.
     /// True если user сделал изменения относительно начального состояния.
     #[must_use]
     pub fn dirty(&self) -> bool {

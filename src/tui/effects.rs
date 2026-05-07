@@ -1,4 +1,4 @@
-//! Reducer effects — Phase 8 Task 7.
+//! Reducer effects.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

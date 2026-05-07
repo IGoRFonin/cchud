@@ -1,4 +1,4 @@
-//! Git remote widgets — Phase 5 Task 6.
+//! Git remote widgets.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

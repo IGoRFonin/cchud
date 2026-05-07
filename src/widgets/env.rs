@@ -1,4 +1,4 @@
-//! Environment widgets — Phase 7 Task 9.
+//! Environment widgets.
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 

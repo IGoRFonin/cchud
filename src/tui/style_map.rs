@@ -1,4 +1,4 @@
-//! cchud Style/Color → ratatui Style/Color/Span — Phase 8 Task 3.
+//! cchud Style/Color → ratatui Style/Color/Span.
 //!
 //! Hot path остаётся под `Style::render(&str, ColorLevel) -> String` (ANSI emit).
 //! TUI preview мапит [`StyledSegment`] → [`ratatui::text::Span`] — без ANSI escape, без OSC 8.
@@ -22,7 +22,7 @@ pub const fn to_ratatui_color(c: Color) -> RColor {
 /// Converts cchud `Style` → ratatui `Style`.
 ///
 /// fg/bg + bold/italic/dim/underline. `Style::adapt(level)` НЕ вызывается — preview
-/// forces `TrueColor` via `Renderer::for_preview` (T2). None fg/bg → None in ratatui.
+/// forces `TrueColor` via `Renderer::for_preview`. None fg/bg → None in ratatui.
 #[must_use]
 pub fn to_ratatui_style(s: Style) -> RStyle {
     let mut out = RStyle::default();
