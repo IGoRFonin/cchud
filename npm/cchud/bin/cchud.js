@@ -34,7 +34,7 @@ function main() {
   try {
     const ext = process.platform === 'win32' ? '.exe' : '';
     binPath = require.resolve(`${pkg}/bin/cchud${ext}`);
-  } catch (e) {
+  } catch {
     process.stderr.write(
       `cchud: native binary package "${pkg}" not installed.\n` +
       `Try: npm install --include=optional ${pkg}@<version>\n` +
@@ -51,7 +51,14 @@ function main() {
     process.stderr.write(`cchud: failed to spawn ${binPath}: ${result.error.message}\n`);
     process.exit(1);
   }
-  process.exit(result.status === null ? 1 : result.status);
+  if (result.status !== null) {
+    process.exit(result.status);
+  } else if (result.signal) {
+    // Re-raise so the parent shell sees the correct exit code (e.g. 130 for SIGINT).
+    process.kill(process.pid, result.signal);
+  } else {
+    process.exit(1);
+  }
 }
 
 main();

@@ -59,8 +59,8 @@ fn print_help() {
     println!("  cchud install               wire cchud + self-relocate to ~/.local/bin/");
     println!("  cchud install --force       overwrite existing statusLine");
     println!("  cchud install --no-relocate skip self-copy (dev-only)");
-    println!("  cchud doctor                run 9-check environment report");
-    println!("  cchud doctor --json         emit machine-readable JSON report");
+    println!("  cchud doctor                run 9-check environment report (stdout; exit 0/1/2)");
+    println!("  cchud doctor --json         emit machine-readable JSON to stdout (exit 0/1/2)");
     println!("  cchud configure             open the interactive TUI configurator");
     println!("  cchud import [args]         migrate ccstatusline config; see --help");
     println!("  cchud --version             print version");

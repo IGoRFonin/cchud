@@ -299,3 +299,19 @@ sonic-rs остался в `Cargo.toml` как deps, но парсинг пол�
 10. **`cchud doctor` (9 checks, без Powerline-font detect):** version, binary path, platform target, color level, hyperlinks, cache dir, claude settings, cchud config, gh CLI (conditional). Exit 0/1/2.
 11. **Без `install.ps1`** — Windows users имеют npm. PowerShell-ports defer Phase 10.
 12. **Reuse Phase 8 `atomic_save` pattern** для settings.json backup `<path>.bak.<unix-ms>`.
+
+---
+
+## D-2026-05-04 — check_binary_path всегда Pass (Phase 9 / T5)
+
+**Контекст:** План T5 требовал выдавать `Warn`, если бинарь запущен не из `~/.local/bin/`. Реализация выдаёт `Pass` при любом существующем пути (включая `target/release/cchud`).
+
+**Решение:** убрать проверку пути установки из `check_binary_path`. Только `Pass` (путь существует) / `Fail` (путь не существует или `current_exe()` = Err).
+
+**Обоснование:**
+- В dev-workflow бинарь всегда запускается из `target/release/`; Warn там создавал бы постоянный «жёлтый» шум без практической ценности.
+- Цель `cchud doctor` — быстро найти реальные проблемы, а не предписывать layout установки.
+- Пользователь, установивший через `npx cchud install`, получает бинарь в `~/.local/bin/` — и `Pass` там корректен.
+- Если понадобится path-lint (например, проверка, что бинарь в `$PATH`) — добавить отдельный чек в Phase 10.
+
+**Последствия:** GoD пункт «Warn для бинаря не из `~/.local/bin/`» закрыт как WONTFIX для Phase 9.

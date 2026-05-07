@@ -198,7 +198,7 @@ jobs:
 
       - name: Wait for npm CDN propagation
         shell: bash
-        run: sleep 30
+        run: sleep 60
 
       - name: Install via npx
         shell: bash
@@ -273,6 +273,16 @@ jobs:
         shell: bash
         run: |
           set -e
-          echo "Smoke install failed for stable release ${{ needs.release.outputs.version }}."
-          echo "Removing 'latest' dist-tag to prevent broken installs."
-          npm dist-tag rm cchud latest || true
+          FAILED="${{ needs.release.outputs.version }}"
+          echo "Smoke install failed for stable release $FAILED."
+          # Find the most recent stable version before the failed one and restore latest to it.
+          # If none exists (first ever release), remove the tag entirely.
+          PREV=$(npm view cchud versions --json 2>/dev/null \
+            | node -e "const v=require('fs').readFileSync('/dev/stdin','utf8');const a=JSON.parse(v);const prev=a.filter(x=>!x.includes('-')&&x!=='$FAILED').pop();process.stdout.write(prev||'')")
+          if [ -n "$PREV" ]; then
+            echo "Restoring latest -> $PREV"
+            npm dist-tag add "cchud@$PREV" latest
+          else
+            echo "No previous stable release; removing latest tag."
+            npm dist-tag rm cchud latest || true
+          fi

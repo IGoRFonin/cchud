@@ -25,6 +25,19 @@ fn ensure_node_available() -> bool {
         .unwrap_or(false)
 }
 
+fn copy_dir_all(src: &Path, dst: &Path) {
+    fs::create_dir_all(dst).unwrap();
+    for entry in fs::read_dir(src).unwrap() {
+        let entry = entry.unwrap();
+        let dst_path = dst.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            copy_dir_all(&entry.path(), &dst_path);
+        } else {
+            fs::copy(&entry.path(), &dst_path).unwrap();
+        }
+    }
+}
+
 fn link_fixture_into(tempdir_root: &Path, fixture_subdir: &str) -> PathBuf {
     let root = project_root();
     let shim = root.join("npm/cchud/bin/cchud.js");
@@ -36,14 +49,8 @@ fn link_fixture_into(tempdir_root: &Path, fixture_subdir: &str) -> PathBuf {
     fs::copy(&shim, main_pkg.join("bin/cchud.js")).unwrap();
 
     let nm = main_pkg.join("node_modules/@cchud").join(fixture_subdir);
-    fs::create_dir_all(nm.parent().unwrap()).unwrap();
-
-    // Симлинк на репозиторскую fixture директорию.
     let fixture = root.join("tests/fixtures/npm_shim/cli-fixture");
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(&fixture, &nm).unwrap();
-    #[cfg(windows)]
-    std::os::windows::fs::symlink_dir(&fixture, &nm).unwrap();
+    copy_dir_all(&fixture, &nm);
 
     main_pkg.join("bin/cchud.js")
 }

@@ -267,7 +267,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No widgets yet. Real pipeline lands in Phase 2.
 - Repository is private; switch to public is a manual decision after content review.
 
-[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/IGoRFonin/cchud/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/IGoRFonin/cchud/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/IGoRFonin/cchud/compare/v0.5.0...v0.9.0
 [0.5.0]: https://github.com/IGoRFonin/cchud/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/IGoRFonin/cchud/compare/v0.3.0...v0.4.0

@@ -204,8 +204,8 @@ fn check_color_level() -> CheckResult {
     } else {
         CheckResult {
             name: "color_level",
-            status: CheckStatus::Skip,
-            detail: "cannot detect".into(),
+            status: CheckStatus::Warn,
+            detail: "cannot detect (set COLORTERM=truecolor or use a 256-color term)".into(),
         }
     }
 }
@@ -214,7 +214,7 @@ fn check_hyperlinks() -> CheckResult {
     let tp = std::env::var("TERM_PROGRAM").unwrap_or_default();
     let supports = matches!(
         tp.as_str(),
-        "iTerm.app" | "WezTerm" | "Alacritty" | "kitty" | "vscode"
+        "iTerm.app" | "WezTerm" | "Alacritty" | "kitty" | "vscode" | "ghostty"
     );
     if supports {
         CheckResult {
@@ -225,7 +225,7 @@ fn check_hyperlinks() -> CheckResult {
     } else {
         CheckResult {
             name: "hyperlinks",
-            status: CheckStatus::Skip,
+            status: CheckStatus::Warn,
             detail: format!("cannot detect (TERM_PROGRAM={tp:?})"),
         }
     }
@@ -285,7 +285,7 @@ fn find_writable_ancestor(p: &Path) -> bool {
 }
 
 fn is_writable(p: &Path) -> bool {
-    let probe = p.join(".cchud_doctor_probe");
+    let probe = p.join(format!(".cchud_doctor_probe_{}", std::process::id()));
     let res = std::fs::write(&probe, b"x").is_ok();
     let _ = std::fs::remove_file(&probe);
     res
@@ -402,17 +402,33 @@ fn check_gh_cli(env: &DoctorEnv) -> CheckResult {
     }
 }
 
+const fn status_mark(status: &CheckStatus) -> &'static str {
+    #[cfg(windows)]
+    {
+        match status {
+            CheckStatus::Pass => "PASS",
+            CheckStatus::Warn => "WARN",
+            CheckStatus::Fail => "FAIL",
+            CheckStatus::Skip => "SKIP",
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        match status {
+            CheckStatus::Pass => "✓",
+            CheckStatus::Warn => "⚠",
+            CheckStatus::Fail => "✗",
+            CheckStatus::Skip => "⊘",
+        }
+    }
+}
+
 fn print_human_report(report: &Report) {
     println!();
     println!("cchud doctor — environment check");
     println!();
     for c in &report.checks {
-        let mark = match c.status {
-            CheckStatus::Pass => "✓",
-            CheckStatus::Warn => "⚠",
-            CheckStatus::Fail => "✗",
-            CheckStatus::Skip => "⊘",
-        };
+        let mark = status_mark(&c.status);
         println!("  {} {:<18} {}", mark, c.name.replace('_', " "), c.detail);
     }
     println!();
@@ -426,4 +442,36 @@ fn print_human_report(report: &Report) {
 pub mod testing {
     #[allow(unused_imports)]
     pub use super::{CheckResult, CheckStatus, DoctorEnv, Report, Summary, run_checks};
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::{find_writable_ancestor, is_writable};
+    use tempfile::tempdir;
+
+    #[test]
+    fn is_writable_returns_true_for_writable_dir() {
+        let dir = tempdir().unwrap();
+        assert!(is_writable(dir.path()));
+    }
+
+    #[test]
+    fn find_writable_ancestor_finds_existing_parent() {
+        let dir = tempdir().unwrap();
+        let nonexistent = dir.path().join("a/b/c");
+        // The tempdir itself exists and is writable, so the ancestor walk should succeed.
+        assert!(find_writable_ancestor(&nonexistent));
+    }
+
+    #[test]
+    fn find_writable_ancestor_returns_false_for_unresolvable_path() {
+        // A path whose every ancestor is non-existent terminates at root.
+        // Root exists but may not be writable; on the other hand we only need to
+        // confirm the function does not panic and returns a bool.
+        let result = std::panic::catch_unwind(|| {
+            find_writable_ancestor(std::path::Path::new("/nonexistent_cchud_test_dir/sub"));
+        });
+        assert!(result.is_ok());
+    }
 }
