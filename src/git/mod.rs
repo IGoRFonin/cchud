@@ -275,10 +275,10 @@ fn lines_in(data: &[u8]) -> u32 {
 }
 
 fn blob_line_diff(old: &[u8], new: &[u8]) -> (u32, u32) {
-    use gix::diff::blob::{Algorithm, diff, intern::InternedInput, sink::Counter};
+    use gix::diff::blob::{Algorithm, Diff, InternedInput};
     let input = InternedInput::new(old, new);
-    let counter = diff(Algorithm::Histogram, &input, Counter::default());
-    (counter.insertions, counter.removals)
+    let diff = Diff::compute(Algorithm::Histogram, &input);
+    (diff.count_additions(), diff.count_removals())
 }
 
 fn compute_status(repo: &gix::Repository) -> Option<GitStatusCounts> {
