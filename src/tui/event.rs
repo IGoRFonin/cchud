@@ -62,10 +62,9 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
             continue;
         };
         match reducer::handle_key(&mut app, key) {
-            // RunInstall / RequestSaveAndReturnHome / RequestDiscardAndReturnHome wired in T3/T6.
+            // RequestSaveAndReturnHome / RequestDiscardAndReturnHome wired in T6.
             ReducerEffect::None
             | ReducerEffect::RebuildPreview
-            | ReducerEffect::RunInstall
             | ReducerEffect::RequestSaveAndReturnHome
             | ReducerEffect::RequestDiscardAndReturnHome => {}
             ReducerEffect::Quit => return Ok(false),
@@ -79,6 +78,42 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
                 app.discard();
                 return Ok(false);
             }
+            ReducerEffect::RunInstall => run_install_inline(&mut app),
+        }
+    }
+}
+
+fn run_install_inline(app: &mut App) {
+    use crate::commands::install::{InstallArgs, InstallError, InstallStatus, install_idempotent};
+    let args = InstallArgs::default();
+    match install_idempotent(&args) {
+        Ok(report) => {
+            let msg = match report.status {
+                InstallStatus::Installed => {
+                    format!("Installed · {}", report.settings_path.display())
+                }
+                InstallStatus::AlreadyConfigured => {
+                    "Already configured · cchud is wired into Claude Code".to_string()
+                }
+                InstallStatus::OverwroteForce => format!(
+                    "Overwrote · backup at {}",
+                    report
+                        .backup_path
+                        .as_ref()
+                        .map(|p| p.display().to_string())
+                        .unwrap_or_default()
+                ),
+            };
+            app.status_message = Some((msg, MessageKind::Info));
+        }
+        Err(InstallError::OccupiedByOther { existing }) => {
+            app.status_message = Some((
+                format!("statusLine occupied: {existing} · use 'cchud install --force' from CLI"),
+                MessageKind::Warn,
+            ));
+        }
+        Err(e) => {
+            app.status_message = Some((format!("Install failed: {e}"), MessageKind::Error));
         }
     }
 }

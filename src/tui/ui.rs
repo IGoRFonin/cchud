@@ -8,9 +8,10 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph};
 
-use crate::tui::app::{App, MessageKind, Mode};
+use crate::tui::app::{App, MessageKind, Mode, Screen};
 use crate::tui::overlays;
 use crate::tui::panels;
+use crate::tui::screens;
 
 /// Стандартная рамка панели — rounded углы, dim-серая обводка
 /// (yellow + bold когда `focused`), боковые отступы 1 col, заголовок
@@ -56,7 +57,26 @@ pub fn draw(frame: &mut Frame<'_>, app: &App) {
     let main = outer[0];
     let status = outer[1];
 
-    // 4-panel grid (palette скрыта пока не нужна).
+    match app.screen {
+        Screen::Home => screens::home::render(frame, main, app),
+        Screen::EditLines => render_edit_lines(frame, main, app),
+        Screen::ChoosePreset => render_choose_preset_stub(frame, main),
+    }
+
+    // Status bar.
+    render_status_bar(frame, status, app);
+
+    // Overlays поверх всего.
+    match app.mode {
+        // ConfirmReturnHome / PresetNamePrompt wired in T6/T7.
+        Mode::Edit | Mode::ConfirmReturnHome | Mode::PresetNamePrompt => {}
+        Mode::ThemesOverlay => overlays::themes::render(frame, area, app),
+        Mode::HelpOverlay => overlays::help::render(frame, area),
+        Mode::ConfirmQuit => overlays::modal::render_confirm_quit(frame, area),
+    }
+}
+
+fn render_edit_lines(frame: &mut Frame<'_>, main: ratatui::layout::Rect, app: &App) {
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
@@ -78,18 +98,16 @@ pub fn draw(frame: &mut Frame<'_>, app: &App) {
     }
     panels::settings::render(frame, bottom[0], app);
     panels::preview::render(frame, bottom[1], app);
+}
 
-    // Status bar.
-    render_status_bar(frame, status, app);
-
-    // Overlays поверх всего.
-    match app.mode {
-        // ConfirmReturnHome / PresetNamePrompt wired in T6/T7.
-        Mode::Edit | Mode::ConfirmReturnHome | Mode::PresetNamePrompt => {}
-        Mode::ThemesOverlay => overlays::themes::render(frame, area, app),
-        Mode::HelpOverlay => overlays::help::render(frame, area),
-        Mode::ConfirmQuit => overlays::modal::render_confirm_quit(frame, area),
-    }
+fn render_choose_preset_stub(frame: &mut Frame<'_>, area: ratatui::layout::Rect) {
+    let block = panel_block("Presets", false);
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    frame.render_widget(
+        Paragraph::new("No presets — see Task 5").style(Style::default().fg(Color::DarkGray)),
+        inner,
+    );
 }
 
 fn render_status_bar(frame: &mut Frame<'_>, area: ratatui::layout::Rect, app: &App) {

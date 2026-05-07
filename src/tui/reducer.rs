@@ -8,23 +8,84 @@
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::tui::app::{App, ColorField, EditField, Mode, Pane, PaletteMode, SettingsField};
+use crate::tui::app::{App, ColorField, EditField, Mode, Pane, PaletteMode, Screen, SettingsField};
 use crate::tui::effects::ReducerEffect;
 use crate::tui::widget_meta::{ALL_KINDS, WidgetMeta};
 use crate::types::config::{Line, WidgetItem, WidgetStyleOverride};
 
 /// Pure key dispatcher. Возвращает effect для event loop.
-#[allow(clippy::too_many_lines)]
 pub fn handle_key(app: &mut App, key: KeyEvent) -> ReducerEffect {
-    // Overlays перехватывают первыми.
+    // Modals — ConfirmQuit/ConfirmReturnHome/PresetNamePrompt — обрабатываются
+    // независимо от screen. Overlays (Help/Themes) — только в EditLines.
     match app.mode {
-        Mode::HelpOverlay => return handle_help(app, key),
-        Mode::ThemesOverlay => return handle_themes(app, key),
         Mode::ConfirmQuit => return handle_confirm_quit(app, key),
-        Mode::ConfirmReturnHome | Mode::PresetNamePrompt => return ReducerEffect::None, // wired in T6/T7
-        Mode::Edit => {}
+        Mode::ConfirmReturnHome => return handle_confirm_return_home(app, key),
+        Mode::PresetNamePrompt => return handle_preset_name_prompt(app, key),
+        Mode::HelpOverlay if matches!(app.screen, Screen::EditLines) => {
+            return handle_help(app, key);
+        }
+        Mode::ThemesOverlay if matches!(app.screen, Screen::EditLines) => {
+            return handle_themes(app, key);
+        }
+        _ => {}
     }
 
+    match app.screen {
+        Screen::Home => handle_home(app, key),
+        Screen::EditLines => handle_edit_lines(app, key),
+        Screen::ChoosePreset => handle_choose_preset(app, key),
+    }
+}
+
+fn handle_home(app: &mut App, key: KeyEvent) -> ReducerEffect {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => {
+            app.home_cursor = app.home_cursor.saturating_sub(1);
+            ReducerEffect::None
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            app.home_cursor = (app.home_cursor + 1).min(3);
+            ReducerEffect::None
+        }
+        KeyCode::Enter => match app.home_cursor {
+            0 => {
+                app.screen = Screen::EditLines;
+                app.mode = Mode::Edit;
+                ReducerEffect::None
+            }
+            1 => {
+                app.screen = Screen::ChoosePreset;
+                app.preset_cursor = 0;
+                ReducerEffect::None
+            }
+            2 => ReducerEffect::RunInstall,
+            _ => quit_or_confirm(app),
+        },
+        KeyCode::Char('q') | KeyCode::Esc => quit_or_confirm(app),
+        _ => ReducerEffect::None,
+    }
+}
+
+#[allow(clippy::missing_const_for_fn)]
+fn handle_choose_preset(_app: &mut App, _key: KeyEvent) -> ReducerEffect {
+    // Wired in T5.
+    ReducerEffect::None
+}
+
+#[allow(clippy::missing_const_for_fn)]
+fn handle_confirm_return_home(_app: &mut App, _key: KeyEvent) -> ReducerEffect {
+    // Wired in T6.
+    ReducerEffect::None
+}
+
+#[allow(clippy::missing_const_for_fn)]
+fn handle_preset_name_prompt(_app: &mut App, _key: KeyEvent) -> ReducerEffect {
+    // Wired in T7.
+    ReducerEffect::None
+}
+
+#[allow(clippy::too_many_lines)]
+fn handle_edit_lines(app: &mut App, key: KeyEvent) -> ReducerEffect {
     // Edit-mode внутри poll-строки (PaletteFilter / Text / Number / ColorHex).
     if app.editing_field.is_some() {
         return handle_editing(app, key);
@@ -931,12 +992,22 @@ mod tests {
         // Один widget для удобства тестов.
         let json = r#"{"lines":[{"widgets":[{"type":"model"}]}]}"#;
         let s: Settings = serde_json::from_str(json).unwrap();
-        App::new(s, p, f)
+        let mut app = App::new(s, p, f);
+        // Legacy reducer tests assume EditLines screen; new screens are tested explicitly.
+        app.screen = Screen::EditLines;
+        app
+    }
+
+    fn home_app() -> App {
+        let (p, f) = sample::payload();
+        App::new(Settings::default(), p, f)
     }
 
     fn empty_app() -> App {
         let (p, f) = sample::payload();
-        App::new(Settings::default(), p, f)
+        let mut app = App::new(Settings::default(), p, f);
+        app.screen = Screen::EditLines;
+        app
     }
 
     #[test]
@@ -1071,6 +1142,7 @@ mod tests {
         let json = r#"{"lines":[{"widgets":[{"type":"context-length"}]}]}"#;
         let s: Settings = serde_json::from_str(json).unwrap();
         let mut app = App::new(s, p, f);
+        app.screen = Screen::EditLines;
         app.focus = Pane::Settings;
         // Raw row = settings_field_cursor 3 (after FG/BG/Bold).
         app.settings_field_cursor = 3;
@@ -1087,6 +1159,7 @@ mod tests {
         let json = r#"{"lines":[{"widgets":[{"type":"thinking-effort"}]}]}"#;
         let s: Settings = serde_json::from_str(json).unwrap();
         let mut app = App::new(s, p, f);
+        app.screen = Screen::EditLines;
         assert_eq!(app.focus, Pane::Lines);
         app.selected_widget = Some(0);
         assert!(!app.editable.lines[0].widgets[0].raw_value);
@@ -1418,5 +1491,73 @@ mod tests {
         app.focus = Pane::Settings;
         handle_key(&mut app, key(KeyCode::Esc));
         assert_eq!(app.focus, Pane::Lines);
+    }
+
+    // --- Home screen tests (T3) ---
+
+    #[test]
+    fn home_down_arrow_advances_cursor() {
+        let mut app = home_app();
+        handle_key(&mut app, key(KeyCode::Down));
+        assert_eq!(app.home_cursor, 1);
+    }
+
+    #[test]
+    fn home_up_arrow_at_zero_clamps() {
+        let mut app = home_app();
+        handle_key(&mut app, key(KeyCode::Up));
+        assert_eq!(app.home_cursor, 0);
+    }
+
+    #[test]
+    fn home_down_arrow_clamps_at_three() {
+        let mut app = home_app();
+        for _ in 0..10 {
+            handle_key(&mut app, key(KeyCode::Down));
+        }
+        assert_eq!(app.home_cursor, 3);
+    }
+
+    #[test]
+    fn home_enter_on_edit_lines_switches_screen() {
+        let mut app = home_app();
+        app.home_cursor = 0;
+        handle_key(&mut app, key(KeyCode::Enter));
+        assert_eq!(app.screen, Screen::EditLines);
+        assert_eq!(app.mode, Mode::Edit);
+    }
+
+    #[test]
+    fn home_enter_on_choose_preset_switches_screen() {
+        let mut app = home_app();
+        app.home_cursor = 1;
+        handle_key(&mut app, key(KeyCode::Enter));
+        assert_eq!(app.screen, Screen::ChoosePreset);
+    }
+
+    #[test]
+    fn home_enter_on_install_returns_run_install_effect() {
+        let mut app = home_app();
+        app.home_cursor = 2;
+        let eff = handle_key(&mut app, key(KeyCode::Enter));
+        assert_eq!(eff, ReducerEffect::RunInstall);
+        assert_eq!(app.screen, Screen::Home);
+    }
+
+    #[test]
+    fn home_enter_on_exit_quits_when_clean() {
+        let mut app = home_app();
+        app.home_cursor = 3;
+        let eff = handle_key(&mut app, key(KeyCode::Enter));
+        assert_eq!(eff, ReducerEffect::Quit);
+    }
+
+    #[test]
+    fn home_q_when_dirty_opens_confirm_quit() {
+        let mut app = home_app();
+        app.editable.lines.push(Line::default());
+        let eff = handle_key(&mut app, key(KeyCode::Char('q')));
+        assert_eq!(eff, ReducerEffect::None);
+        assert_eq!(app.mode, Mode::ConfirmQuit);
     }
 }

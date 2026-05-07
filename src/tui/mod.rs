@@ -13,6 +13,7 @@ pub mod panels;
 pub mod presets;
 pub mod reducer;
 pub mod sample;
+pub mod screens;
 pub mod save;
 pub mod style_map;
 pub mod ui;

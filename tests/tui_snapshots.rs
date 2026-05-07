@@ -6,7 +6,7 @@
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 
-use cchud::tui::app::{App, ColorField, EditField, Mode, Pane};
+use cchud::tui::app::{App, ColorField, EditField, Mode, Pane, Screen};
 use cchud::tui::sample;
 use cchud::tui::ui;
 use cchud::types::config::{Line, Settings};
@@ -15,7 +15,10 @@ fn fresh_app() -> App {
     let (p, f) = sample::payload();
     let json = r#"{"lines":[{"widgets":[{"type":"model"}]}]}"#;
     let s: Settings = serde_json::from_str(json).unwrap();
-    App::new(s, p, f)
+    let mut app = App::new(s, p, f);
+    // Legacy snapshots assume EditLines screen; Home/ChoosePreset get new explicit tests.
+    app.screen = Screen::EditLines;
+    app
 }
 
 fn render_to_buffer(app: &App) -> String {
@@ -103,6 +106,7 @@ fn settings_scrolls_when_custom_command_has_many_args() {
     }"#;
     let s: Settings = serde_json::from_str(json).unwrap();
     let mut app = App::new(s, p, f);
+    app.screen = Screen::EditLines;
     app.focus = Pane::Settings;
     // Курсор на последнем arg — должен прокрутиться.
     app.settings_field_cursor = 5 + 11;
