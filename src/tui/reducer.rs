@@ -103,9 +103,16 @@ fn handle_choose_preset(app: &mut App, key: KeyEvent) -> ReducerEffect {
 }
 
 #[allow(clippy::missing_const_for_fn)]
-fn handle_confirm_return_home(_app: &mut App, _key: KeyEvent) -> ReducerEffect {
-    // Wired in T6.
-    ReducerEffect::None
+fn handle_confirm_return_home(app: &mut App, key: KeyEvent) -> ReducerEffect {
+    match key.code {
+        KeyCode::Char('s' | 'S') => ReducerEffect::RequestSaveAndReturnHome,
+        KeyCode::Char('d' | 'D') => ReducerEffect::RequestDiscardAndReturnHome,
+        KeyCode::Char('c' | 'C') | KeyCode::Esc => {
+            app.mode = Mode::Edit;
+            ReducerEffect::None
+        }
+        _ => ReducerEffect::None,
+    }
 }
 
 #[allow(clippy::missing_const_for_fn)]
@@ -314,6 +321,15 @@ fn handle_lines(app: &mut App, key: KeyEvent) -> ReducerEffect {
                 sync_selected_widget(app);
             }
             ReducerEffect::RebuildPreview
+        }
+        // Esc на Lines pane → возврат на Home (или модал, если есть unsaved).
+        (KeyCode::Esc, _) => {
+            if app.dirty() {
+                app.mode = Mode::ConfirmReturnHome;
+            } else {
+                app.screen = Screen::Home;
+            }
+            ReducerEffect::None
         }
         _ => ReducerEffect::None,
     }
@@ -1642,5 +1658,52 @@ mod tests {
         handle_key(&mut app, key(KeyCode::Esc));
         assert_eq!(app.screen, Screen::Home);
         assert_eq!(app.editable.lines, lines_before);
+    }
+
+    // --- ConfirmReturnHome / Esc-routing tests (T6) ---
+
+    #[test]
+    fn edit_lines_esc_when_clean_returns_home() {
+        let mut app = make_app();
+        app.mode = Mode::Edit;
+        app.focus = Pane::Lines;
+        handle_key(&mut app, key(KeyCode::Esc));
+        assert_eq!(app.screen, Screen::Home);
+    }
+
+    #[test]
+    fn edit_lines_esc_when_dirty_opens_confirm_return_home() {
+        let mut app = make_app();
+        app.mode = Mode::Edit;
+        app.focus = Pane::Lines;
+        app.editable.lines.push(Line::default());
+        handle_key(&mut app, key(KeyCode::Esc));
+        assert_eq!(app.mode, Mode::ConfirmReturnHome);
+        assert_eq!(app.screen, Screen::EditLines);
+    }
+
+    #[test]
+    fn confirm_return_home_save_returns_save_effect() {
+        let mut app = make_app();
+        app.mode = Mode::ConfirmReturnHome;
+        let eff = handle_key(&mut app, key(KeyCode::Char('s')));
+        assert_eq!(eff, ReducerEffect::RequestSaveAndReturnHome);
+    }
+
+    #[test]
+    fn confirm_return_home_discard_returns_discard_effect() {
+        let mut app = make_app();
+        app.mode = Mode::ConfirmReturnHome;
+        let eff = handle_key(&mut app, key(KeyCode::Char('d')));
+        assert_eq!(eff, ReducerEffect::RequestDiscardAndReturnHome);
+    }
+
+    #[test]
+    fn confirm_return_home_cancel_stays_in_edit_lines() {
+        let mut app = make_app();
+        app.mode = Mode::ConfirmReturnHome;
+        handle_key(&mut app, key(KeyCode::Char('c')));
+        assert_eq!(app.mode, Mode::Edit);
+        assert_eq!(app.screen, Screen::EditLines);
     }
 }

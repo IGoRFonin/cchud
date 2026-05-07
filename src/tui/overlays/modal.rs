@@ -50,3 +50,27 @@ pub fn render_confirm_quit(frame: &mut Frame<'_>, area: Rect) {
     let block = overlay_block("Unsaved changes");
     frame.render_widget(Paragraph::new(lines).block(block), popup);
 }
+
+/// Confirm-return-home modal — `[s] Save · [d] Discard · [c] Cancel`,
+/// возвращает на Home (НЕ выходит из приложения).
+pub fn render_confirm_return_home(frame: &mut Frame<'_>, area: Rect) {
+    let popup = centered(50, 20, area);
+    frame.render_widget(Clear, popup);
+    let yellow_bold = Style::default()
+        .fg(Color::Yellow)
+        .add_modifier(Modifier::BOLD);
+    let lines = vec![
+        Line::from(Span::styled("Return to Home?", yellow_bold)),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("[s]", yellow_bold),
+            Span::raw(" save  "),
+            Span::styled("[d]", yellow_bold),
+            Span::raw(" discard  "),
+            Span::styled("[c]", yellow_bold),
+            Span::raw(" cancel"),
+        ]),
+    ];
+    let block = overlay_block("Unsaved changes");
+    frame.render_widget(Paragraph::new(lines).block(block), popup);
+}

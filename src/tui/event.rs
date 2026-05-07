@@ -14,7 +14,7 @@ use crossterm::terminal::{
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 
-use crate::tui::app::{App, MessageKind, Mode};
+use crate::tui::app::{App, MessageKind, Mode, Screen};
 use crate::tui::effects::ReducerEffect;
 use crate::tui::{reducer, save, ui};
 
@@ -62,11 +62,7 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
             continue;
         };
         match reducer::handle_key(&mut app, key) {
-            // RequestSaveAndReturnHome / RequestDiscardAndReturnHome wired in T6.
-            ReducerEffect::None
-            | ReducerEffect::RebuildPreview
-            | ReducerEffect::RequestSaveAndReturnHome
-            | ReducerEffect::RequestDiscardAndReturnHome => {}
+            ReducerEffect::None | ReducerEffect::RebuildPreview => {}
             ReducerEffect::Quit => return Ok(false),
             ReducerEffect::RequestSaveAndQuit => {
                 if perform_save(&mut app) {
@@ -79,6 +75,18 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
                 return Ok(false);
             }
             ReducerEffect::RunInstall => run_install_inline(&mut app),
+            ReducerEffect::RequestSaveAndReturnHome => {
+                if perform_save(&mut app) {
+                    app.screen = Screen::Home;
+                    app.mode = Mode::Edit;
+                }
+                // on failure: status_message already set, stay in EditLines/ConfirmReturnHome
+            }
+            ReducerEffect::RequestDiscardAndReturnHome => {
+                app.discard();
+                app.screen = Screen::Home;
+                app.mode = Mode::Edit;
+            }
         }
     }
 }
