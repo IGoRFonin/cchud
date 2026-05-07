@@ -1,6 +1,0 @@
----
-source: tests/snapshots.rs
-expression: stdout
-input_file: benches/samples/payload-cchud-opus-xlarge.json
----
-]8;;https://example.com\Docs]8;;\

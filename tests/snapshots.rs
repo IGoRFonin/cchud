@@ -46,8 +46,16 @@ fn render_default_line_for_phase0_samples() {
             return;
         }
         let payload = std::fs::read_to_string(path).unwrap();
+        let tmp = TempDir::new().unwrap();
+        let home = tmp.path();
         let output = Command::cargo_bin("cchud")
             .unwrap()
+            .env("HOME", home)
+            .env("USERPROFILE", home)
+            .env("XDG_CONFIG_HOME", home.join(".config"))
+            .env("CCHUD_CONFIG", home.join(".config/cchud/settings.json"))
+            .env("CCHUD_TEST_COLOR_LEVEL", "none")
+            .env("NO_HYPERLINKS", "1")
             .write_stdin(payload)
             .output()
             .unwrap();
@@ -174,6 +182,9 @@ fn phase4_powerline_glob() {
                 }
                 // OSC 8 config tested separately below — skip here.
                 let cfg_name = cfg_path.file_stem().unwrap().to_str().unwrap();
+                if cfg_name == "osc8-link" {
+                    continue;
+                }
 
                 let tmp = TempDir::new().unwrap();
                 let home = tmp.path().to_path_buf();

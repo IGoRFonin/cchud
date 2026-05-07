@@ -1,7 +1,6 @@
 ---
 source: tests/snapshots.rs
-assertion_line: 62
 expression: stdout
 input_file: benches/samples/payload-cchud-sonnet-xlarge.json
 ---
-Sonnet 4.6 | 25% | 07:58 | $0.72
+Sonnet 4.6

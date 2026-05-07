@@ -1,7 +1,6 @@
 ---
 source: tests/snapshots.rs
-assertion_line: 62
 expression: stdout
 input_file: benches/samples/payload-cchud-opus-xlarge.json
 ---
-Opus 4.7 (1M context) | 7% | 08:17:45 | $1.41
+Opus 4.7 (1M context)
