@@ -179,7 +179,11 @@ fn install_sh_idempotent_re_run() {
             .env("CCHUD_SETTINGS", work.path().join("settings.json"))
             .output()
             .unwrap();
-        assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
+        assert!(
+            out.status.success(),
+            "stderr: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
     }
 
     let _ = server.kill();
@@ -205,5 +209,8 @@ fn install_sh_unsupported_arch_exits_one() {
         .output()
         .unwrap();
 
-    assert!(!out.status.success(), "should fail when curl cannot reach base url");
+    assert!(
+        !out.status.success(),
+        "should fail when curl cannot reach base url"
+    );
 }

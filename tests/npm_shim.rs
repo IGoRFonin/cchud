@@ -33,7 +33,7 @@ fn copy_dir_all(src: &Path, dst: &Path) {
         if entry.file_type().unwrap().is_dir() {
             copy_dir_all(&entry.path(), &dst_path);
         } else {
-            fs::copy(&entry.path(), &dst_path).unwrap();
+            fs::copy(entry.path(), &dst_path).unwrap();
         }
     }
 }
@@ -67,8 +67,8 @@ fn shim_spawns_fixture_binary_with_argv() {
     // вернёт для текущей платформы.
     let pkg_subdir = match (std::env::consts::OS, std::env::consts::ARCH) {
         ("macos", "aarch64") => "cli-darwin-arm64",
-        ("macos", "x86_64")  => "cli-darwin-x64",
-        ("linux", "x86_64")  => "cli-linux-x64",
+        ("macos", "x86_64") => "cli-darwin-x64",
+        ("linux", "x86_64") => "cli-linux-x64",
         ("windows", "x86_64") => "cli-win32-x64",
         _ => {
             eprintln!("unsupported test host — skipping");
@@ -79,7 +79,11 @@ fn shim_spawns_fixture_binary_with_argv() {
     let shim = link_fixture_into(dir.path(), pkg_subdir);
 
     // Чтобы fixture бинарник был "cchud" (без .sh) — копируем .sh в bin/cchud.
-    let fixture_dir = dir.path().join("cchud/node_modules/@cchud").join(pkg_subdir).join("bin");
+    let fixture_dir = dir
+        .path()
+        .join("cchud/node_modules/@cchud")
+        .join(pkg_subdir)
+        .join("bin");
     let cchud_bin = fixture_dir.join(if cfg!(windows) { "cchud.exe" } else { "cchud" });
     let src = project_root().join("tests/fixtures/npm_shim/cli-fixture/bin/cchud-fixture.sh");
     fs::copy(&src, &cchud_bin).unwrap();
@@ -96,7 +100,11 @@ fn shim_spawns_fixture_binary_with_argv() {
         .args(["--version", "extra-arg"])
         .output()
         .unwrap();
-    assert!(out.status.success(), "stderr: {}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(stdout.contains("FIXTURE_OUTPUT"), "stdout: {stdout}");
     assert!(stdout.contains("--version"), "stdout: {stdout}");
@@ -128,7 +136,10 @@ fn shim_fails_gracefully_when_native_package_missing() {
         stderr.contains("native binary package") || stderr.contains("not installed"),
         "stderr: {stderr}"
     );
-    assert!(stderr.contains("npx --yes cchud"), "expected recovery hint; got: {stderr}");
+    assert!(
+        stderr.contains("npx --yes cchud"),
+        "expected recovery hint; got: {stderr}"
+    );
 }
 
 #[test]
