@@ -62,7 +62,12 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
             continue;
         };
         match reducer::handle_key(&mut app, key) {
-            ReducerEffect::None | ReducerEffect::RebuildPreview => {}
+            // RunInstall / RequestSaveAndReturnHome / RequestDiscardAndReturnHome wired in T3/T6.
+            ReducerEffect::None
+            | ReducerEffect::RebuildPreview
+            | ReducerEffect::RunInstall
+            | ReducerEffect::RequestSaveAndReturnHome
+            | ReducerEffect::RequestDiscardAndReturnHome => {}
             ReducerEffect::Quit => return Ok(false),
             ReducerEffect::RequestSaveAndQuit => {
                 if perform_save(&mut app) {
@@ -73,11 +78,6 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
             ReducerEffect::RequestDiscardAndQuit => {
                 app.discard();
                 return Ok(false);
-            }
-            ReducerEffect::RunInstall
-            | ReducerEffect::RequestSaveAndReturnHome
-            | ReducerEffect::RequestDiscardAndReturnHome => {
-                // wired in T3/T6
             }
         }
     }

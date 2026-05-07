@@ -15,75 +15,164 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::{fs, io};
 
+/// Outcome of `install_idempotent` — каждый вариант = другой UX/копирайт.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)] // used in T3 (event_loop), CLI not all variants
+pub enum InstallStatus {
+    /// settings.json не имел statusLine — записали свой.
+    Installed,
+    /// statusLine уже указывал на cchud — silent path-update.
+    AlreadyConfigured,
+    /// statusLine был занят сторонней командой и --force перезаписал.
+    OverwroteForce,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)] // settings_path/binary_path consumed by T3
+pub struct InstallReport {
+    pub status: InstallStatus,
+    pub settings_path: PathBuf,
+    pub backup_path: Option<PathBuf>,
+    pub binary_path: PathBuf,
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub enum InstallError {
+    /// statusLine занят чем-то ≠ cchud, --force не передан.
+    OccupiedByOther { existing: String },
+    Io(io::Error),
+    Other(String),
+}
+
+impl std::fmt::Display for InstallError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::OccupiedByOther { existing } => write!(f, "statusLine occupied by: {existing}"),
+            Self::Io(e) => write!(f, "io error: {e}"),
+            Self::Other(s) => f.write_str(s),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct InstallArgs {
+    pub force: bool,
+    pub no_relocate: bool,
+}
+
 #[must_use]
 pub fn run(args: &[String]) -> ExitCode {
-    let force = args.iter().any(|a| a == "--force");
-    let no_relocate = args.iter().any(|a| a == "--no-relocate");
-
-    let current_exe = match std::env::current_exe() {
-        Ok(p) => p,
-        Err(e) => {
-            eprintln!("cchud: cannot determine executable path: {e}");
-            return ExitCode::from(1);
-        }
+    let install_args = InstallArgs {
+        force: args.iter().any(|a| a == "--force"),
+        no_relocate: args.iter().any(|a| a == "--no-relocate"),
     };
 
+    match install_idempotent(&install_args) {
+        Ok(report) => {
+            let current = std::env::current_exe().unwrap_or_default();
+            if !same_file(&report.binary_path, &current).unwrap_or(true) {
+                println!("cchud: binary installed to {}", report.binary_path.display());
+            }
+            println!("cchud: wired into Claude Code");
+            check_path_or_warn(&report.binary_path);
+            ExitCode::SUCCESS
+        }
+        Err(InstallError::OccupiedByOther { existing }) => {
+            eprintln!("cchud: statusLine already set to: {existing}");
+            eprintln!("       use --force to overwrite, or remove it manually first.");
+            ExitCode::from(1)
+        }
+        Err(InstallError::Io(e)) => {
+            eprintln!("cchud install: cannot write settings.json: {e}");
+            ExitCode::from(1)
+        }
+        Err(InstallError::Other(s)) => {
+            eprintln!("cchud install: {s}");
+            ExitCode::from(1)
+        }
+    }
+}
+
+/// TUI-friendly install: pure result, no stdout/stderr side effects (caller decides).
+///
+/// # Errors
+/// Возвращает `InstallError::OccupiedByOther` если statusLine занят сторонней
+/// командой без `--force`, `InstallError::Io` если IO упал, `InstallError::Other`
+/// для прочих сбоев (не удалось определить путь к exe и т.д.).
+pub fn install_idempotent(args: &InstallArgs) -> Result<InstallReport, InstallError> {
+    let current_exe = std::env::current_exe()
+        .map_err(|e| InstallError::Other(format!("cannot determine executable path: {e}")))?;
+
     // Step 1: Self-relocate (если не --no-relocate).
-    let final_exe = if no_relocate {
+    let final_exe = if args.no_relocate {
         current_exe
     } else {
-        let target = match canonical_target_path() {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!("cchud install: cannot resolve target path: {e}");
-                return ExitCode::from(1);
-            }
-        };
-        if same_file(&current_exe, &target).unwrap_or(false) {
-            // Already at target — no-op. The same_file short-circuit also prevents
-            // ETXTBSY on Linux: writing to the running executable is rejected by the
-            // kernel, but we never reach fs::copy if src==dst.
-        } else if let Err(e) = relocate_to(&current_exe, &target) {
-            eprintln!("cchud install: relocation failed: {e}");
-            return ExitCode::from(1);
-        } else {
-            println!("cchud: binary installed to {}", target.display());
+        let target = canonical_target_path().map_err(InstallError::Io)?;
+        if !same_file(&current_exe, &target).unwrap_or(false) {
+            relocate_to(&current_exe, &target).map_err(InstallError::Io)?;
         }
         target
     };
 
-    // Step 2: Wire ~/.claude/settings.json.
-    if let Err(e) = write_settings_with_exe(&final_exe, force) {
-        eprintln!("cchud install: cannot write settings.json: {e}");
-        return ExitCode::from(1);
+    // Step 2: Determine status (pre-existing settings + statusLine).
+    let path = settings_path();
+    let pre_existed = path.exists();
+    let pre_status_line = if pre_existed {
+        read_or_empty(&path)
+            .pointer("/statusLine/command")
+            .and_then(serde_json::Value::as_str)
+            .map(String::from)
+    } else {
+        None
+    };
+
+    if let Some(ref existing) = pre_status_line {
+        if !existing.contains("cchud") && !args.force {
+            return Err(InstallError::OccupiedByOther {
+                existing: existing.clone(),
+            });
+        }
     }
-    println!("cchud: wired into Claude Code");
 
-    // Step 3: PATH check (warning не валит exit).
-    check_path_or_warn(&final_exe);
+    let status = match &pre_status_line {
+        Some(s) if s.contains("cchud") => InstallStatus::AlreadyConfigured,
+        Some(_) => InstallStatus::OverwroteForce,
+        None => InstallStatus::Installed,
+    };
 
-    ExitCode::SUCCESS
+    let backup_path = write_settings_with_exe_returning_backup(&final_exe, args.force)
+        .map_err(InstallError::Io)?;
+
+    Ok(InstallReport {
+        status,
+        settings_path: path,
+        backup_path,
+        binary_path: final_exe,
+    })
 }
 
-fn write_settings_with_exe(exe: &Path, force: bool) -> std::io::Result<()> {
+fn write_settings_with_exe_returning_backup(
+    exe: &Path,
+    force: bool,
+) -> std::io::Result<Option<PathBuf>> {
     let path = settings_path();
     let mut root = read_or_empty(&path);
 
-    if path.exists() {
+    let backup_path = if path.exists() {
         let unix_ms = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_millis())
             .unwrap_or(0);
-        // Include PID to avoid name collision if two `cchud install` run within the same ms.
-        // TOCTOU: path.exists() and fs::copy are not atomic; a concurrent write between
-        // them would result in a backup of the new content, not the original. For a
-        // single-user install tool this window is acceptable — backup is best-effort.
         let pid = std::process::id();
         let mut bak = path.as_os_str().to_owned();
         bak.push(format!(".bak.{unix_ms}-{pid}"));
-        let bak_path = std::path::PathBuf::from(bak);
-        let _ = std::fs::copy(&path, &bak_path); // best-effort
-    }
+        let bak_path = PathBuf::from(bak);
+        let copied = std::fs::copy(&path, &bak_path).is_ok();
+        copied.then_some(bak_path)
+    } else {
+        None
+    };
 
     if let Some(cmd) = root
         .get("statusLine")
@@ -91,8 +180,6 @@ fn write_settings_with_exe(exe: &Path, force: bool) -> std::io::Result<()> {
         .and_then(serde_json::Value::as_str)
     {
         if !cmd.contains("cchud") && !force {
-            eprintln!("cchud: statusLine already set to: {cmd}");
-            eprintln!("       use --force to overwrite, or remove it manually first.");
             return Err(std::io::Error::other("statusLine occupied"));
         }
     }
@@ -103,7 +190,8 @@ fn write_settings_with_exe(exe: &Path, force: bool) -> std::io::Result<()> {
         "padding": 0,
     });
 
-    write_atomic(&path, &root)
+    write_atomic(&path, &root)?;
+    Ok(backup_path)
 }
 
 fn settings_path() -> PathBuf {
@@ -245,4 +333,67 @@ pub fn check_path_or_warn(target: &Path) {
 #[allow(unused_imports)]
 pub mod testing {
     pub use super::{canonical_target_path, check_path_or_warn_capturing, relocate_to, same_file};
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests_idempotent {
+    use super::*;
+    use serial_test::serial;
+    use tempfile::TempDir;
+
+    fn override_settings(path: &Path) {
+        // SAFETY: serial_test gates these tests against parallel access to env.
+        unsafe { std::env::set_var("CCHUD_SETTINGS", path); }
+    }
+
+    #[test]
+    #[serial]
+    fn returns_installed_when_settings_missing() {
+        let tmp = TempDir::new().unwrap();
+        override_settings(&tmp.path().join("settings.json"));
+        let args = InstallArgs { force: false, no_relocate: true };
+        let report = install_idempotent(&args).expect("install");
+        assert_eq!(report.status, InstallStatus::Installed);
+        assert!(report.backup_path.is_none());
+    }
+
+    #[test]
+    #[serial]
+    fn returns_already_configured_when_pointed_at_cchud() {
+        let tmp = TempDir::new().unwrap();
+        let path = tmp.path().join("settings.json");
+        override_settings(&path);
+        // Pre-write settings already wired to cchud-like path.
+        std::fs::write(
+            &path,
+            r#"{"statusLine":{"type":"command","command":"/some/cchud/binary"}}"#,
+        )
+        .unwrap();
+        let report =
+            install_idempotent(&InstallArgs { no_relocate: true, ..Default::default() }).unwrap();
+        assert_eq!(report.status, InstallStatus::AlreadyConfigured);
+    }
+
+    #[test]
+    #[serial]
+    fn returns_occupied_when_pointed_at_other_without_force() {
+        let tmp = TempDir::new().unwrap();
+        let path = tmp.path().join("settings.json");
+        override_settings(&path);
+        std::fs::write(
+            &path,
+            r#"{"statusLine":{"type":"command","command":"some/other/tool"}}"#,
+        )
+        .unwrap();
+
+        let err =
+            install_idempotent(&InstallArgs { no_relocate: true, ..Default::default() }).unwrap_err();
+        match err {
+            InstallError::OccupiedByOther { existing } => {
+                assert!(existing.contains("some/other/tool"));
+            }
+            other => panic!("expected OccupiedByOther, got {other:?}"),
+        }
+    }
 }

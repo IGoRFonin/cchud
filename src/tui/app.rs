@@ -16,9 +16,9 @@ pub enum Mode {
     ThemesOverlay,
     HelpOverlay,
     ConfirmQuit,
-    /// Esc из EditLines с dirty-state — ждём s/d/c.
+    /// Esc из `EditLines` с dirty-state — ждём `s`/`d`/`c`.
     ConfirmReturnHome,
-    /// Ctrl+P в EditLines — input для имени пресета.
+    /// `Ctrl+P` в `EditLines` — input для имени пресета.
     PresetNamePrompt,
 }
 

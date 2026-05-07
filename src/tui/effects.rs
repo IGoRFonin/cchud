@@ -19,7 +19,7 @@ pub enum ReducerEffect {
     /// Home screen: Enter на "Install to Claude Code". Event loop вызывает
     /// `commands::install::install_idempotent` и сетит `app.status_message`.
     RunInstall,
-    /// Save и возврат на Home (НЕ exit). Из ConfirmReturnHome modal.
+    /// Save и возврат на Home (НЕ exit). Из `ConfirmReturnHome` modal.
     RequestSaveAndReturnHome,
     /// Discard editable и возврат на Home.
     RequestDiscardAndReturnHome,

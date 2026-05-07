@@ -45,10 +45,9 @@ pub trait Widget: Send + Sync {
     /// Default impl picks the ccstatusline upstream foreground color from
     /// the central map; widgets needing bold/dim override directly.
     fn default_style(&self) -> crate::render::Style {
-        match upstream_color_ansi(self.id()) {
-            Some(n) => crate::render::Style::none().fg(crate::render::Color::Ansi256(n)),
-            None => crate::render::Style::none(),
-        }
+        upstream_color_ansi(self.id()).map_or_else(crate::render::Style::none, |n| {
+            crate::render::Style::none().fg(crate::render::Color::Ansi256(n))
+        })
     }
     /// Optional URL to wrap the rendered text in OSC 8. Default: none.
     fn hyperlink(&self, _ctx: &RenderContext<'_>) -> Option<String> {

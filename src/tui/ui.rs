@@ -84,11 +84,11 @@ pub fn draw(frame: &mut Frame<'_>, app: &App) {
 
     // Overlays поверх всего.
     match app.mode {
-        Mode::Edit => {}
+        // ConfirmReturnHome / PresetNamePrompt wired in T6/T7.
+        Mode::Edit | Mode::ConfirmReturnHome | Mode::PresetNamePrompt => {}
         Mode::ThemesOverlay => overlays::themes::render(frame, area, app),
         Mode::HelpOverlay => overlays::help::render(frame, area),
         Mode::ConfirmQuit => overlays::modal::render_confirm_quit(frame, area),
-        Mode::ConfirmReturnHome | Mode::PresetNamePrompt => {} // wired in T6/T7
     }
 }
 
