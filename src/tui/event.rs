@@ -74,6 +74,11 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
                 app.discard();
                 return Ok(false);
             }
+            ReducerEffect::RunInstall
+            | ReducerEffect::RequestSaveAndReturnHome
+            | ReducerEffect::RequestDiscardAndReturnHome => {
+                // wired in T3/T6
+            }
         }
     }
 }

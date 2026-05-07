@@ -10,6 +10,7 @@ pub mod effects;
 pub mod event;
 pub mod overlays;
 pub mod panels;
+pub mod presets;
 pub mod reducer;
 pub mod sample;
 pub mod save;

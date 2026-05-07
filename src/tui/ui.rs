@@ -88,6 +88,7 @@ pub fn draw(frame: &mut Frame<'_>, app: &App) {
         Mode::ThemesOverlay => overlays::themes::render(frame, area, app),
         Mode::HelpOverlay => overlays::help::render(frame, area),
         Mode::ConfirmQuit => overlays::modal::render_confirm_quit(frame, area),
+        Mode::ConfirmReturnHome | Mode::PresetNamePrompt => {} // wired in T6/T7
     }
 }
 

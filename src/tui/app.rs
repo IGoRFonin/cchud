@@ -10,11 +10,25 @@ use crate::types::payload::StatusPayload;
 /// Top-level UI mode. Edit — нормальное редактирование, panel focused.
 /// Overlays open over Edit. `ConfirmQuit` — modal `[s/d/c]`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // wired in T6/T7
 pub enum Mode {
     Edit,
     ThemesOverlay,
     HelpOverlay,
     ConfirmQuit,
+    /// Esc из EditLines с dirty-state — ждём s/d/c.
+    ConfirmReturnHome,
+    /// Ctrl+P в EditLines — input для имени пресета.
+    PresetNamePrompt,
+}
+
+/// Top-level screen — определяет, какой root-render использовать.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)] // wired in T3/T5
+pub enum Screen {
+    Home,
+    EditLines,
+    ChoosePreset,
 }
 
 /// 4 видимые панели. `focus` field of App.
@@ -135,6 +149,22 @@ pub struct App {
     /// Палитра скрыта по умолчанию; открывается из Lines (`a` add / Enter replace).
     pub palette_visible: bool,
     pub palette_mode: PaletteMode,
+
+    /// Текущий top-level экран. Стартует на `Home`.
+    #[allow(dead_code)] // wired in T3
+    pub screen: Screen,
+    /// Курсор в Home-меню (0..3).
+    #[allow(dead_code)] // wired in T3
+    pub home_cursor: usize,
+    /// Курсор в Choose Preset списке (индекс в `presets`).
+    #[allow(dead_code)] // wired in T5
+    pub preset_cursor: usize,
+    /// Загружается лениво при входе в Choose Preset.
+    #[allow(dead_code)] // wired in T5
+    pub presets: Vec<crate::tui::presets::Preset>,
+    /// Буфер ввода в `Mode::PresetNamePrompt`.
+    #[allow(dead_code)] // wired in T7
+    pub preset_name_buffer: String,
 }
 
 impl App {
@@ -168,6 +198,11 @@ impl App {
             status_message: None,
             palette_visible: false,
             palette_mode: PaletteMode::Add,
+            screen: Screen::Home,
+            home_cursor: 0,
+            preset_cursor: 0,
+            presets: Vec::new(),
+            preset_name_buffer: String::new(),
         }
     }
 
@@ -279,5 +314,25 @@ mod tests {
     fn current_widget_handles_empty_state() {
         let app = empty_app();
         assert!(app.current_widget().is_none());
+    }
+
+    #[test]
+    fn new_sets_screen_to_home() {
+        let app = empty_app();
+        assert_eq!(app.screen, Screen::Home);
+    }
+
+    #[test]
+    fn new_initializes_home_cursor_at_zero() {
+        let app = empty_app();
+        assert_eq!(app.home_cursor, 0);
+    }
+
+    #[test]
+    fn new_initializes_preset_state_empty() {
+        let app = empty_app();
+        assert!(app.presets.is_empty());
+        assert_eq!(app.preset_cursor, 0);
+        assert!(app.preset_name_buffer.is_empty());
     }
 }

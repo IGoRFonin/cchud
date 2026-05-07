@@ -21,6 +21,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) -> ReducerEffect {
         Mode::HelpOverlay => return handle_help(app, key),
         Mode::ThemesOverlay => return handle_themes(app, key),
         Mode::ConfirmQuit => return handle_confirm_quit(app, key),
+        Mode::ConfirmReturnHome | Mode::PresetNamePrompt => return ReducerEffect::None, // wired in T6/T7
         Mode::Edit => {}
     }
 
