@@ -17,7 +17,7 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             name: cchud-darwin-arm64
-          - os: macos-13
+          - os: macos-latest
             target: x86_64-apple-darwin
             name: cchud-darwin-x64
           - os: ubuntu-latest
@@ -41,6 +41,10 @@ jobs:
       - name: Install musl-tools (musl target only)
         if: contains(matrix.target, 'musl')
         run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install Rosetta 2 (cross-build x86_64 on Apple Silicon runner)
+        if: matrix.target == 'x86_64-apple-darwin'
+        run: softwareupdate --install-rosetta --agree-to-license
 
       - name: Build release binary
         run: cargo build --release --locked --target ${{ matrix.target }}
