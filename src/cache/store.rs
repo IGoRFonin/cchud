@@ -96,8 +96,7 @@ pub fn cache_path_for(transcript: &Path) -> PathBuf {
     let mut h = siphasher::sip::SipHasher24::new();
     h.write(abs.to_string_lossy().as_bytes());
     let hex = format!("{:016x}", h.finish());
-    let dir = dirs::cache_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
-    dir.join("cchud").join(format!("transcript-{hex}.bincode"))
+    super::cache_root().join(format!("transcript-{hex}.bincode"))
 }
 
 fn read_cache(path: &Path) -> Option<CacheFile> {

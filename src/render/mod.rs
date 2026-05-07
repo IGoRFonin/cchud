@@ -29,7 +29,12 @@ pub mod color_parse;
 pub mod color_sanitize;
 
 impl ColorLevel {
-    /// Auto-detect via `supports-color` on stdout. Returns `None` on non-TTY.
+    /// Auto-detect color support.
+    ///
+    /// cchud is invoked by Claude Code with stdout piped back to the host
+    /// terminal — `supports-color`'s TTY check would always say "no colors",
+    /// which is wrong here. We default to `TrueColor` (the modern terminal
+    /// baseline) and respect the `NO_COLOR` opt-out per <https://no-color.org/>.
     #[must_use]
     pub fn detect() -> Self {
         if let Ok(forced) = std::env::var("CCHUD_TEST_COLOR_LEVEL") {
@@ -39,11 +44,10 @@ impl ColorLevel {
                 _ => Self::None,
             };
         }
-        match supports_color::on(supports_color::Stream::Stdout) {
-            None => Self::None,
-            Some(s) if s.has_16m => Self::TrueColor,
-            Some(_) => Self::Ansi256,
+        if std::env::var_os("NO_COLOR").is_some_and(|v| !v.is_empty()) {
+            return Self::None;
         }
+        Self::TrueColor
     }
 }
 

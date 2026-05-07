@@ -189,7 +189,7 @@ dependencies = [
 
 [[package]]
 name = "cchud"
-version = "1.0.0-rc.6"
+version = "1.0.0"
 dependencies = [
  "anstyle",
  "anstyle-parse",

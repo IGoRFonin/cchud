@@ -21,13 +21,13 @@ struct ListItem {
 }
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
-    let cols = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(0), Constraint::Length(10)])
         .split(area);
 
-    render_list(frame, cols[0], app);
-    render_preview(frame, cols[1], app);
+    render_list(frame, rows[0], app);
+    render_preview(frame, rows[1], app);
 }
 
 fn render_list(frame: &mut Frame<'_>, area: Rect, app: &App) {

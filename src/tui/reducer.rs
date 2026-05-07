@@ -675,6 +675,9 @@ fn enter_field_edit(app: &mut App) -> ReducerEffect {
     match cursor {
         0 => {
             sync_color_cursor(app, ColorField::Foreground);
+            app.color_picker_original = app
+                .current_widget()
+                .and_then(|i| i.style.color.clone());
             app.editing_field = Some(EditField::ColorPicker {
                 field: ColorField::Foreground,
             });
@@ -682,6 +685,9 @@ fn enter_field_edit(app: &mut App) -> ReducerEffect {
         }
         1 => {
             sync_color_cursor(app, ColorField::Background);
+            app.color_picker_original = app
+                .current_widget()
+                .and_then(|i| i.style.background_color.clone());
             app.editing_field = Some(EditField::ColorPicker {
                 field: ColorField::Background,
             });
@@ -827,7 +833,7 @@ fn start_text_edit(app: &mut App, field: SettingsField, buffer: String) {
 }
 
 fn sync_color_cursor(app: &mut App, field: ColorField) {
-    use crate::tui::widgets_ui::color_picker::NAMED_COLORS;
+    use crate::tui::widgets_ui::color_picker::{IDX_CUSTOM, IDX_DEFAULT, find_by_hex};
     let Some(item) = app.current_widget() else {
         return;
     };
@@ -835,15 +841,19 @@ fn sync_color_cursor(app: &mut App, field: ColorField) {
         ColorField::Foreground => item.style.color.as_deref(),
         ColorField::Background => item.style.background_color.as_deref(),
     };
-    let idx = current.map_or(0, |hex| {
-        NAMED_COLORS
-            .iter()
-            .position(|(_, h)| *h == hex)
-            .unwrap_or(NAMED_COLORS.len() - 1)
-    });
+    let (idx, shade) = match current {
+        None | Some("") => (IDX_DEFAULT, 4),
+        Some(hex) => find_by_hex(hex).map_or((IDX_CUSTOM, 4), |(e, s)| (e, s)),
+    };
     match field {
-        ColorField::Foreground => app.color_fg_cursor = idx,
-        ColorField::Background => app.color_bg_cursor = idx,
+        ColorField::Foreground => {
+            app.color_fg_cursor = idx;
+            app.color_fg_shade = shade;
+        }
+        ColorField::Background => {
+            app.color_bg_cursor = idx;
+            app.color_bg_shade = shade;
+        }
     }
 }
 
@@ -911,28 +921,67 @@ fn handle_editing(app: &mut App, key: KeyEvent) -> ReducerEffect {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn handle_color_picker(app: &mut App, key: KeyEvent, field: ColorField) -> ReducerEffect {
-    use crate::tui::widgets_ui::color_picker::NAMED_COLORS;
-    let last = NAMED_COLORS.len() - 1;
+    use crate::tui::widgets_ui::color_picker::{GRID_LEN, IDX_CUSTOM, IDX_DEFAULT};
     match key.code {
         KeyCode::Esc => {
+            // Восстанавливаем оригинальный цвет — стрелки могли его изменить
+            // в ходе live-preview.
+            let original = app.color_picker_original.take();
+            if let Some(item) = app.current_widget_mut() {
+                match field {
+                    ColorField::Foreground => item.style.color = original,
+                    ColorField::Background => item.style.background_color = original,
+                }
+            }
             app.editing_field = None;
-            ReducerEffect::None
+            ReducerEffect::RebuildPreview
         }
         KeyCode::Up => {
-            let cur = match field {
-                ColorField::Foreground => &mut app.color_fg_cursor,
-                ColorField::Background => &mut app.color_bg_cursor,
-            };
-            *cur = cur.saturating_sub(1);
-            ReducerEffect::None
+            move_picker_cursor(app, field, PickerMove::Up);
+            apply_picker_cursor(app, field);
+            ReducerEffect::RebuildPreview
         }
         KeyCode::Down => {
-            let cur = match field {
-                ColorField::Foreground => &mut app.color_fg_cursor,
-                ColorField::Background => &mut app.color_bg_cursor,
+            move_picker_cursor(app, field, PickerMove::Down);
+            apply_picker_cursor(app, field);
+            ReducerEffect::RebuildPreview
+        }
+        KeyCode::Left => {
+            move_picker_cursor(app, field, PickerMove::Left);
+            apply_picker_cursor(app, field);
+            ReducerEffect::RebuildPreview
+        }
+        KeyCode::Right => {
+            move_picker_cursor(app, field, PickerMove::Right);
+            apply_picker_cursor(app, field);
+            ReducerEffect::RebuildPreview
+        }
+        KeyCode::Char(c) => {
+            // 1..5 (или shifted symbols !@#$% — для разных раскладок) переключают
+            // shade у текущей grid-ячейки. Picker остаётся открыт — пользователь может
+            // листать оттенки и закрыть Enter'ом, либо отменить через Esc.
+            let shade = match c {
+                '1' | '!' => Some(0),
+                '2' | '@' => Some(1),
+                '3' | '#' => Some(2),
+                '4' | '$' => Some(3),
+                '5' | '%' => Some(4),
+                _ => None,
             };
-            *cur = (*cur + 1).min(last);
+            let cursor = match field {
+                ColorField::Foreground => app.color_fg_cursor,
+                ColorField::Background => app.color_bg_cursor,
+            };
+            if let (Some(s), true) = (shade, cursor < GRID_LEN) {
+                match field {
+                    ColorField::Foreground => app.color_fg_shade = s,
+                    ColorField::Background => app.color_bg_shade = s,
+                }
+                apply_picker_cursor(app, field);
+                return ReducerEffect::RebuildPreview;
+            }
             ReducerEffect::None
         }
         KeyCode::Enter => {
@@ -940,30 +989,128 @@ fn handle_color_picker(app: &mut App, key: KeyEvent, field: ColorField) -> Reduc
                 ColorField::Foreground => app.color_fg_cursor,
                 ColorField::Background => app.color_bg_cursor,
             };
-            if idx == last {
-                // "Custom hex…" → переход в hex-input.
+            if idx == IDX_CUSTOM {
+                // "Custom hex…" → переход в hex-input. Восстанавливаем
+                // оригинал — стрелочный live-preview не должен «утечь».
+                let original = app.color_picker_original.take();
+                if let Some(item) = app.current_widget_mut() {
+                    match field {
+                        ColorField::Foreground => item.style.color = original,
+                        ColorField::Background => item.style.background_color = original,
+                    }
+                }
                 app.editing_field = Some(EditField::ColorHex {
                     field,
                     buffer: String::new(),
                     cursor: 0,
                 });
-                return ReducerEffect::None;
+                return ReducerEffect::RebuildPreview;
             }
-            let value = if idx == 0 {
-                None
-            } else {
-                Some(NAMED_COLORS[idx].1.to_string())
-            };
-            if let Some(item) = app.current_widget_mut() {
-                match field {
-                    ColorField::Foreground => item.style.color = value,
-                    ColorField::Background => item.style.background_color = value,
+            if idx == IDX_DEFAULT {
+                if let Some(item) = app.current_widget_mut() {
+                    match field {
+                        ColorField::Foreground => item.style.color = None,
+                        ColorField::Background => item.style.background_color = None,
+                    }
                 }
             }
+            // Grid cell colors уже применены live-preview'ом; просто закрываем.
+            app.color_picker_original = None;
             app.editing_field = None;
             ReducerEffect::RebuildPreview
         }
         _ => ReducerEffect::None,
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum PickerMove {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+const fn move_picker_cursor(app: &mut App, field: ColorField, dir: PickerMove) {
+    use crate::tui::widgets_ui::color_picker::{GRID_COLS, GRID_LEN, IDX_CUSTOM, IDX_DEFAULT};
+    let cur = match field {
+        ColorField::Foreground => app.color_fg_cursor,
+        ColorField::Background => app.color_bg_cursor,
+    };
+    let next = match dir {
+        PickerMove::Up => {
+            if cur == IDX_CUSTOM {
+                IDX_DEFAULT
+            } else if cur == IDX_DEFAULT {
+                // Прыжок в нижний ряд сетки (последний ряд, столбец 0).
+                GRID_LEN - GRID_COLS
+            } else if cur < GRID_COLS {
+                cur // уже в верхнем ряду — стоим
+            } else if cur < GRID_LEN {
+                cur - GRID_COLS
+            } else {
+                cur
+            }
+        }
+        PickerMove::Down => {
+            if cur == IDX_DEFAULT {
+                IDX_CUSTOM
+            } else if cur == IDX_CUSTOM {
+                cur
+            } else if cur + GRID_COLS < GRID_LEN {
+                cur + GRID_COLS
+            } else if cur < GRID_LEN {
+                IDX_DEFAULT
+            } else {
+                cur
+            }
+        }
+        PickerMove::Left => {
+            if cur < GRID_LEN && cur % GRID_COLS != 0 {
+                cur - 1
+            } else {
+                cur
+            }
+        }
+        PickerMove::Right => {
+            if cur < GRID_LEN && cur % GRID_COLS != GRID_COLS - 1 {
+                cur + 1
+            } else {
+                cur
+            }
+        }
+    };
+    match field {
+        ColorField::Foreground => {
+            app.color_fg_cursor = next;
+            app.color_fg_shade = 4;
+        }
+        ColorField::Background => {
+            app.color_bg_cursor = next;
+            app.color_bg_shade = 4;
+        }
+    }
+}
+
+/// Применить цвет под текущим курсором picker'а к выбранному виджету.
+/// Используется live-preview'ом при Up/Down/Left/Right и Shift+1..5.
+fn apply_picker_cursor(app: &mut App, field: ColorField) {
+    use crate::tui::widgets_ui::color_picker::{EXCALIDRAW_PALETTE, GRID_LEN};
+    let (idx, shade) = match field {
+        ColorField::Foreground => (app.color_fg_cursor, app.color_fg_shade),
+        ColorField::Background => (app.color_bg_cursor, app.color_bg_shade),
+    };
+    let value = if idx < GRID_LEN {
+        let s = shade.min(4);
+        Some(EXCALIDRAW_PALETTE[idx].shades[s].to_string())
+    } else {
+        None
+    };
+    if let Some(item) = app.current_widget_mut() {
+        match field {
+            ColorField::Foreground => item.style.color = value,
+            ColorField::Background => item.style.background_color = value,
+        }
     }
 }
 
@@ -1525,7 +1672,7 @@ mod tests {
 
     #[test]
     fn color_picker_arrow_moves_cursor_and_enter_applies() {
-        use crate::tui::widgets_ui::color_picker::NAMED_COLORS;
+        use crate::tui::widgets_ui::color_picker::{EXCALIDRAW_PALETTE, IDX_DEFAULT};
         let mut app = make_app();
         app.focus = Pane::Settings;
         app.settings_field_cursor = 0;
@@ -1534,24 +1681,27 @@ mod tests {
             app.editing_field,
             Some(EditField::ColorPicker { .. })
         ));
-        // Двигаемся вниз на "Red" (idx=2).
-        handle_key(&mut app, key(KeyCode::Down));
-        handle_key(&mut app, key(KeyCode::Down));
-        assert_eq!(app.color_fg_cursor, 2);
+        // Стартовый курсор = IDX_DEFAULT (color is None). Up → ряд 2, col 0 (idx=10).
+        // Right → idx 11.
+        assert_eq!(app.color_fg_cursor, IDX_DEFAULT);
+        handle_key(&mut app, key(KeyCode::Up));
+        handle_key(&mut app, key(KeyCode::Right));
+        assert_eq!(app.color_fg_cursor, 11);
         handle_key(&mut app, key(KeyCode::Enter));
         assert!(app.editing_field.is_none());
-        let expected = NAMED_COLORS[2].1.to_string();
+        let expected = EXCALIDRAW_PALETTE[11].base().to_string();
         assert_eq!(app.editable.lines[0].widgets[0].style.color, Some(expected));
     }
 
     #[test]
     fn color_picker_custom_hex_transitions_to_hex_edit() {
+        use crate::tui::widgets_ui::color_picker::IDX_CUSTOM;
         let mut app = make_app();
         app.focus = Pane::Settings;
         app.settings_field_cursor = 1;
         handle_key(&mut app, key(KeyCode::Enter));
-        // Двигаем курсор на последнюю запись ("Custom hex…").
-        app.color_bg_cursor = 17;
+        // Двигаем курсор на "Custom hex…".
+        app.color_bg_cursor = IDX_CUSTOM;
         handle_key(&mut app, key(KeyCode::Enter));
         assert!(matches!(
             app.editing_field,
@@ -1560,6 +1710,38 @@ mod tests {
                 ..
             })
         ));
+    }
+
+    #[test]
+    fn color_picker_digit_previews_shade_without_closing() {
+        use crate::tui::widgets_ui::color_picker::EXCALIDRAW_PALETTE;
+        let mut app = make_app();
+        app.focus = Pane::Settings;
+        app.settings_field_cursor = 0;
+        handle_key(&mut app, key(KeyCode::Enter));
+        // Передвинемся на White (idx=0) — IDX_DEFAULT по умолчанию.
+        app.color_fg_cursor = 0;
+        handle_key(&mut app, key(KeyCode::Char('1')));
+        // Picker остаётся открытым — можно листать оттенки.
+        assert!(matches!(
+            app.editing_field,
+            Some(EditField::ColorPicker { .. })
+        ));
+        assert_eq!(app.color_fg_shade, 0);
+        let expected = EXCALIDRAW_PALETTE[0].shades[0].to_string();
+        assert_eq!(app.editable.lines[0].widgets[0].style.color, Some(expected));
+        // Переключение на shade 3 — цвет меняется live.
+        handle_key(&mut app, key(KeyCode::Char('3')));
+        assert_eq!(app.color_fg_shade, 2);
+        let expected3 = EXCALIDRAW_PALETTE[0].shades[2].to_string();
+        assert_eq!(
+            app.editable.lines[0].widgets[0].style.color,
+            Some(expected3.clone())
+        );
+        // Enter закрывает picker и фиксирует выбор.
+        handle_key(&mut app, key(KeyCode::Enter));
+        assert!(app.editing_field.is_none());
+        assert_eq!(app.editable.lines[0].widgets[0].style.color, Some(expected3));
     }
 
     #[test]

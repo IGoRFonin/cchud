@@ -16,12 +16,30 @@
 
 mod jsonl_types;
 mod parser;
+pub mod rate_limits;
 mod store;
 
 #[cfg(test)]
 pub mod fixture;
 
+use std::path::PathBuf;
+
 #[cfg(test)]
 pub use jsonl_types::BillingBlock;
 pub use jsonl_types::{MessageStats, TranscriptStats};
 pub use store::load_or_build_incremental;
+
+/// Корень cchud-кэша. Тесты могут переопределить через `CCHUD_CACHE_DIR`.
+///
+/// Production: `<dirs::cache_dir()>/cchud` (Linux: `~/.cache/cchud`,
+/// macOS: `~/Library/Caches/cchud`). Fallback `/tmp/cchud` если `cache_dir`
+/// недоступен.
+#[must_use]
+pub fn cache_root() -> PathBuf {
+    if let Ok(p) = std::env::var("CCHUD_CACHE_DIR") {
+        return PathBuf::from(p);
+    }
+    dirs::cache_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("cchud")
+}

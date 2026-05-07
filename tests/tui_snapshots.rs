@@ -90,7 +90,7 @@ fn settings_named_color_picker_open_shows_swatches() {
     let mut app = fresh_app();
     app.focus = Pane::Settings;
     app.settings_field_cursor = 0;
-    app.color_fg_cursor = 2; // Red
+    app.color_fg_cursor = 2; // Slate (row 0, col 2 in 5×3 Excalidraw grid)
     app.editing_field = Some(EditField::ColorPicker {
         field: ColorField::Foreground,
     });

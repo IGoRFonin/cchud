@@ -141,10 +141,16 @@ pub struct App {
     pub palette_filter: String,
     pub palette_cursor: usize,
     pub settings_field_cursor: usize,
-    /// Navigation cursor inside the FG color picker (index into `NAMED_COLORS`).
+    /// Navigation cursor inside the FG color picker (Excalidraw 5×3 grid + Default + Custom).
     pub color_fg_cursor: usize,
-    /// Navigation cursor inside the BG color picker (index into `NAMED_COLORS`).
+    /// Navigation cursor inside the BG color picker.
     pub color_bg_cursor: usize,
+    /// Selected shade index 0..=4 for FG palette cell (4 = base).
+    /// `Shift+1..5` (or plain `1..5`) sets this and live-previews the shade
+    /// without closing the picker; arrow keys reset it back to 4.
+    pub color_fg_shade: usize,
+    /// Selected shade index 0..=4 for BG palette cell.
+    pub color_bg_shade: usize,
     pub editing_field: Option<EditField>,
     pub theme_field_cursor: usize,
     pub status_message: Option<(String, MessageKind)>,
@@ -169,6 +175,10 @@ pub struct App {
     pub preset_name_buffer: String,
     /// Курсор в `ConfirmInstall` modal: 0 = Overwrite, 1 = Cancel.
     pub confirm_install_cursor: usize,
+    /// Оригинальный цвет виджета на момент входа в `ColorPicker` —
+    /// чтобы на Esc восстановить состояние, если пользователь успел
+    /// прокликать стрелками (live preview).
+    pub color_picker_original: Option<String>,
 }
 
 impl App {
@@ -197,6 +207,8 @@ impl App {
             settings_field_cursor: 0,
             color_fg_cursor: 0,
             color_bg_cursor: 0,
+            color_fg_shade: 4,
+            color_bg_shade: 4,
             editing_field: None,
             theme_field_cursor: 0,
             status_message: None,
@@ -208,6 +220,7 @@ impl App {
             presets: Vec::new(),
             preset_name_buffer: String::new(),
             confirm_install_cursor: 0,
+            color_picker_original: None,
         }
     }
 

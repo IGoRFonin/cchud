@@ -18,7 +18,9 @@ use crate::tui::ui::panel_block;
 
 const TIMEOUT_MIN_MS: u64 = 50;
 const TIMEOUT_MAX_MS: u64 = 5000;
-use crate::tui::widgets_ui::color_picker::NAMED_COLORS;
+use crate::tui::widgets_ui::color_picker::{
+    self, EXCALIDRAW_PALETTE, GRID_COLS, GRID_LEN, GRID_ROWS, IDX_CUSTOM, IDX_DEFAULT,
+};
 use crate::tui::widgets_ui::tri_bool;
 use crate::types::config::WidgetConfig;
 
@@ -127,6 +129,7 @@ fn build_lines<'a>(
         "Text color",
         style_color,
         app.color_fg_cursor,
+        app.color_fg_shade,
         fg_focused,
         fg_expanded,
         fg_hex_buf,
@@ -145,6 +148,7 @@ fn build_lines<'a>(
         "Background",
         style_bg,
         app.color_bg_cursor,
+        app.color_bg_shade,
         bg_focused,
         bg_expanded,
         bg_hex_buf,
@@ -214,20 +218,19 @@ fn describe_color(value: Option<&str>) -> (String, Option<Color>) {
         None | Some("") => return ("(default)".to_string(), None),
         Some(h) => h,
     };
-    let label = NAMED_COLORS
-        .iter()
-        .find(|(_, h)| *h == hex)
-        .map_or_else(|| hex.to_string(), |(n, _)| format!("{n} ({hex})"));
+    let label = color_picker::label_for_hex(hex)
+        .map_or_else(|| hex.to_string(), |n| format!("{n} ({hex})"));
     (label, parse_hex_to_color(hex))
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 fn push_color_section<'a>(
     lines: &mut Vec<Line<'a>>,
     cursor_row: &mut u16,
     label: &'a str,
     current: Option<&'a str>,
     picker_cursor: usize,
+    active_shade: usize,
     focused: bool,
     expanded: bool,
     hex_buffer: Option<&'a str>,
@@ -273,38 +276,121 @@ fn push_color_section<'a>(
     ));
     lines.push(Line::from(header));
 
-    // Picker entries.
-    for (i, (name, hex)) in NAMED_COLORS.iter().enumerate() {
-        let is_cursor = i == picker_cursor;
-        if is_cursor {
+    // 5×3 grid of round swatches with 2-char gap between cells.
+    for row in 0..GRID_ROWS {
+        let mut spans: Vec<Span<'a>> = vec![Span::raw("  ")];
+        let mut row_has_cursor = false;
+        for col in 0..GRID_COLS {
+            if col > 0 {
+                spans.push(Span::raw("  "));
+            }
+            let idx = row * GRID_COLS + col;
+            let is_sel = idx == picker_cursor;
+            if is_sel {
+                row_has_cursor = true;
+            }
+            let entry = &EXCALIDRAW_PALETTE[idx];
+            let swatch_color = parse_hex_to_color(entry.base());
+            let (l, r) = if is_sel { ("[", "]") } else { (" ", " ") };
+            let bracket_style = if is_sel {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+            spans.push(Span::styled(l, bracket_style));
+            if let Some(c) = swatch_color {
+                spans.push(Span::styled("●●", Style::default().fg(c)));
+            } else {
+                spans.push(Span::raw("●●"));
+            }
+            spans.push(Span::styled(r, bracket_style));
+        }
+        if row_has_cursor {
             *cursor_row = u16::try_from(lines.len()).unwrap_or(u16::MAX);
-        }
-        let mark = if is_cursor { "  ▶ " } else { "    " };
-        let mut spans: Vec<Span<'a>> = vec![Span::raw(mark)];
-        if hex.is_empty() {
-            // "Default (none)" or "Custom hex…" — no swatch.
-            spans.push(Span::raw("   "));
-        } else if let Some(c) = parse_hex_to_color(hex) {
-            spans.push(Span::styled("██ ", Style::default().fg(c)));
-        } else {
-            spans.push(Span::raw("   "));
-        }
-        let entry_style = if is_cursor {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default()
-        };
-        spans.push(Span::styled(*name, entry_style));
-        if !hex.is_empty() {
-            spans.push(Span::styled(
-                format!("  {hex}"),
-                Style::default().fg(Color::DarkGray),
-            ));
         }
         lines.push(Line::from(spans));
     }
+
+    // Shades row — only when cursor is on a grid cell. Подсветка активного shade'а.
+    if picker_cursor < GRID_LEN {
+        let entry = &EXCALIDRAW_PALETTE[picker_cursor];
+        let mut spans: Vec<Span<'a>> = vec![Span::styled(
+            " Shades ",
+            Style::default().fg(Color::DarkGray),
+        )];
+        for (n, hex) in entry.shades.iter().enumerate() {
+            if n > 0 {
+                spans.push(Span::raw(" "));
+            }
+            let is_active = n == active_shade;
+            let (l, r) = if is_active { ("[", "]") } else { (" ", " ") };
+            let bracket_style = if is_active {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+            spans.push(Span::styled(l, bracket_style));
+            if let Some(c) = parse_hex_to_color(hex) {
+                spans.push(Span::styled("●", Style::default().fg(c)));
+            } else {
+                spans.push(Span::raw("●"));
+            }
+            spans.push(Span::styled(
+                format!("{}", n + 1),
+                if is_active {
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::DarkGray)
+                },
+            ));
+            spans.push(Span::styled(r, bracket_style));
+        }
+        lines.push(Line::from(spans));
+    } else {
+        lines.push(Line::from(""));
+    }
+
+    // Default (none) row.
+    let default_sel = picker_cursor == IDX_DEFAULT;
+    if default_sel {
+        *cursor_row = u16::try_from(lines.len()).unwrap_or(u16::MAX);
+    }
+    let mark = if default_sel { "  ▶ " } else { "    " };
+    let style = if default_sel {
+        Style::default()
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    lines.push(Line::from(vec![
+        Span::raw(mark),
+        Span::styled("Default (none)", style),
+    ]));
+
+    // Custom hex row.
+    let custom_sel = picker_cursor == IDX_CUSTOM;
+    if custom_sel {
+        *cursor_row = u16::try_from(lines.len()).unwrap_or(u16::MAX);
+    }
+    let mark = if custom_sel { "  ▶ " } else { "    " };
+    let style = if custom_sel {
+        Style::default()
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    lines.push(Line::from(vec![
+        Span::raw(mark),
+        Span::styled("Custom hex…", style),
+    ]));
 }
 
 fn collapsed_color_line<'a>(label: &'a str, current: Option<&'a str>, focused: bool) -> Line<'a> {

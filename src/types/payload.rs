@@ -9,7 +9,7 @@
 
 #![allow(dead_code)]
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct StatusPayload {
@@ -140,7 +140,7 @@ pub struct OutputStyle {
     pub name: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct RateLimits {
     #[serde(default)]
     pub five_hour: Option<RateBucket>,
@@ -148,7 +148,7 @@ pub struct RateLimits {
     pub seven_day: Option<RateBucket>,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct RateBucket {
     #[serde(default)]
     pub used_percentage: Option<f64>,

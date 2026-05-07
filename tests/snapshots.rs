@@ -16,6 +16,7 @@ fn run_with_home_and_payload(home: &Path, payload: &str) -> String {
     let output = Command::cargo_bin("cchud")
         .unwrap()
         .env("CCHUD_CONFIG", config_path)
+        .env("CCHUD_TEST_COLOR_LEVEL", "none")
         .write_stdin(payload.to_string())
         .output()
         .unwrap();

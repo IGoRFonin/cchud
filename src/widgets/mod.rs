@@ -34,7 +34,7 @@ pub mod test_helpers;
 
 use crate::types::{
     config::{Settings, WidgetConfig, WidgetItem, WidgetStyleOverride},
-    payload::StatusPayload,
+    payload::{RateLimits, StatusPayload},
 };
 
 pub trait Widget: Send + Sync {
@@ -140,6 +140,10 @@ pub struct RenderContext<'a> {
     /// или транскрипт недоступен.
     #[allow(dead_code)]
     transcript: std::cell::OnceCell<Option<crate::cache::TranscriptStats>>,
+    /// Lazy effective rate-limits. На hit'е — из payload (и пишется в disk-cache);
+    /// на miss'е — читается из disk-cache, истёкшие buckets сдвигаются вперёд.
+    #[allow(dead_code)]
+    rate_limits: std::cell::OnceCell<Option<RateLimits>>,
     /// Текущее время в Unix-ms. Дефолт = `unix_now_ms()`.
     /// Тесты могут перезаписать через field-init синтаксис.
     #[allow(dead_code)]
@@ -154,6 +158,7 @@ impl<'a> RenderContext<'a> {
             settings,
             git: std::cell::OnceCell::new(),
             transcript: std::cell::OnceCell::new(),
+            rate_limits: std::cell::OnceCell::new(),
             now_ms: crate::util::now::unix_now_ms(),
         }
     }
@@ -189,6 +194,51 @@ impl<'a> RenderContext<'a> {
     pub fn set_transcript_for_tests(&self, stats: Option<crate::cache::TranscriptStats>) {
         let _ = self.transcript.set(stats);
     }
+
+    /// Lazy: возвращает «эффективные» `RateLimits` с fallback на disk-cache.
+    ///
+    /// 1. Если `payload.rate_limits.is_some()` — копируем, best-effort пишем
+    ///    в кеш по `claude_account_email` и возвращаем как есть.
+    /// 2. Иначе — читаем из кеша, истёкшие buckets сдвигаем вперёд через
+    ///    `roll_expired_buckets` (% сбрасывается в 0).
+    /// 3. Иначе — `None`.
+    #[allow(dead_code)]
+    pub fn effective_rate_limits(&self) -> Option<&RateLimits> {
+        self.rate_limits
+            .get_or_init(|| {
+                let key = rate_limits_cache_key();
+                if let Some(rl) = self.payload.rate_limits.as_ref() {
+                    crate::cache::rate_limits::write_cache_best_effort(&key, rl);
+                    return Some(rl.clone());
+                }
+                let mut cached = crate::cache::rate_limits::read_cached(&key)?;
+                #[allow(clippy::cast_possible_wrap)]
+                let now_unix_s = (self.now_ms / 1000) as i64;
+                crate::cache::rate_limits::roll_expired_buckets(&mut cached, now_unix_s);
+                Some(cached)
+            })
+            .as_ref()
+    }
+
+    /// Test-only: pre-populate `rate_limits` cell.
+    #[cfg(test)]
+    pub fn set_rate_limits_for_tests(&self, rl: Option<RateLimits>) {
+        let _ = self.rate_limits.set(rl);
+    }
+}
+
+/// Ключ disk-кеша `rate_limits`. Приоритет: `claude_account_email` (когда
+/// `~/.claude.json::oauth_account.email_address` доступен) → home-dir путь
+/// (per-user-per-machine fallback). Возвращает непустую строку всегда —
+/// последний резерв `"default"`.
+fn rate_limits_cache_key() -> String {
+    if let Some(email) = crate::commands::env_loader::claude_account_email() {
+        return email.to_string();
+    }
+    dirs::home_dir().map_or_else(
+        || "default".to_string(),
+        |p| p.to_string_lossy().into_owned(),
+    )
 }
 
 #[must_use]

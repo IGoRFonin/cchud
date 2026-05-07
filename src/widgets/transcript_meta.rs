@@ -18,16 +18,29 @@ impl Widget for ThinkingEffort {
         "ThinkingEffort"
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
-        let level = ctx.transcript()?.last_thinking_effort.as_deref()?;
-        if level.is_empty() {
-            return None;
-        }
+        let from_transcript = ctx
+            .transcript()
+            .and_then(|t| t.last_thinking_effort.clone())
+            .filter(|s| !s.is_empty());
+        let level = from_transcript.or_else(|| effort_from_payload(ctx))?;
         Some(if self.raw_value {
-            level.to_string()
+            level
         } else {
             format!("🧠 {level}")
         })
     }
+}
+
+/// Fallback to `payload.effort.level` when transcript has no thinking entry.
+/// On a fresh session the JSONL is empty, but Claude Code still ships the
+/// configured effort level in the envelope.
+fn effort_from_payload(ctx: &RenderContext<'_>) -> Option<String> {
+    let v = ctx.payload.effort.as_ref()?;
+    let level = v.get("level")?.as_str()?;
+    if level.is_empty() {
+        return None;
+    }
+    Some(level.to_string())
 }
 
 pub struct Skills;

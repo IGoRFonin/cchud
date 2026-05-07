@@ -55,7 +55,7 @@ fn render_inner(config_path: &str, color_level: Option<ColorLevel>) -> String {
 }
 
 fn render_with_fixture(config_path: &str) -> String {
-    render_inner(config_path, None)
+    render_inner(config_path, Some(ColorLevel::None))
 }
 
 /// Форсирует `TrueColor` через `settings.theme.color_level`.
