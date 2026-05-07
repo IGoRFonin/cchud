@@ -33,7 +33,7 @@ pub mod worktree;
 pub mod test_helpers;
 
 use crate::types::{
-    config::{Settings, WidgetConfig, WidgetStyleOverride},
+    config::{Settings, WidgetConfig, WidgetItem, WidgetStyleOverride},
     payload::StatusPayload,
 };
 
@@ -42,13 +42,83 @@ pub trait Widget: Send + Sync {
     fn id(&self) -> &'static str;
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String>;
     /// Default upstream style. Themes may override via `widget_styles[id]`.
+    /// Default impl picks the ccstatusline upstream foreground color from
+    /// the central map; widgets needing bold/dim override directly.
     fn default_style(&self) -> crate::render::Style {
-        crate::render::Style::none()
+        match upstream_color_ansi(self.id()) {
+            Some(n) => crate::render::Style::none().fg(crate::render::Color::Ansi256(n)),
+            None => crate::render::Style::none(),
+        }
     }
     /// Optional URL to wrap the rendered text in OSC 8. Default: none.
     fn hyperlink(&self, _ctx: &RenderContext<'_>) -> Option<String> {
         None
     }
+}
+
+/// True if the widget renders an inherent label/icon prefix that
+/// `WidgetItem.raw_value = true` strips (parity with ccstatusline `rawValue`).
+#[must_use]
+pub const fn widget_supports_raw_value(kind: &WidgetConfig) -> bool {
+    matches!(
+        kind,
+        WidgetConfig::ContextLength
+            | WidgetConfig::TokensInput
+            | WidgetConfig::TokensOutput
+            | WidgetConfig::TokensCached
+            | WidgetConfig::TokensTotal
+            | WidgetConfig::InputSpeed
+            | WidgetConfig::OutputSpeed
+            | WidgetConfig::TotalSpeed
+            | WidgetConfig::ThinkingEffort
+    )
+}
+
+/// ccstatusline upstream default foreground colors per widget id.
+/// Mirrors `getDefaultColor()` in upstream `src/widgets/*.ts`.
+/// Returns ANSI 0–15 code; consumers wrap as `Color::Ansi256(n)`.
+#[must_use]
+pub fn upstream_color_ansi(id: &str) -> Option<u8> {
+    Some(match id {
+        // ── cyan (6) — info & identifiers ───────────────────────
+        "Model" | "ClaudeSessionId" | "FreeMemory" | "GitAheadBehind"
+        | "GitOriginOwner" | "GitOriginRepo" | "GitOriginOwnerRepo"
+        | "GitPr" | "GitRootDir" | "InputSpeed" | "OutputSpeed"
+        | "TotalSpeed" | "OutputStyle" | "SessionName" | "TokensCached"
+        | "TokensTotal" => 6,
+
+        // ── blue (4) ─────────────────────────────────────────────
+        "ClaudeAccountEmail" | "ContextBar" | "ContextPercentage"
+        | "CurrentWorkingDir" | "TokensInput" | "Worktree" => 4,
+
+        // ── green (2) ────────────────────────────────────────────
+        "ContextPercentageUsable" | "GitInsertions" | "GitStaged"
+        | "SessionCost" | "VimMode" => 2,
+
+        // ── yellow (3) ───────────────────────────────────────────
+        "BlockTimer" | "GitChanges" | "GitIsFork" | "GitStatus"
+        | "GitUnstaged" | "SessionClock" | "WorktreeMode"
+        | "WorktreeName" | "WorktreeBranch" | "WorktreeOriginalBranch" => 3,
+
+        // ── red (1) ──────────────────────────────────────────────
+        "GitConflicts" | "GitDeletions" | "GitUntracked" => 1,
+
+        // ── magenta (5) ──────────────────────────────────────────
+        "GitBranch" | "GitUpstreamOwner" | "GitUpstreamRepo"
+        | "GitUpstreamOwnerRepo" | "ThinkingEffort" | "Skills" => 5,
+
+        // ── white (7) ────────────────────────────────────────────
+        "CustomCommand" | "TokensOutput" => 7,
+
+        // ── gray / brightBlack (8) ───────────────────────────────
+        "ContextLength" | "GitSha" | "TerminalWidth" | "Version" => 8,
+
+        // ── brightBlue (12) ──────────────────────────────────────
+        "BlockResetTimer" | "SessionUsage" | "WeeklyResetTimer"
+        | "WeeklyUsage" => 12,
+
+        _ => return None,
+    })
 }
 
 pub struct RenderContext<'a> {
@@ -121,7 +191,7 @@ pub fn build_widgets(settings: &Settings) -> Vec<Vec<(Box<dyn Widget>, WidgetSty
         .map(|line| {
             line.widgets
                 .iter()
-                .map(|item| (build_one(&item.kind), item.style.clone()))
+                .map(|item| (build_one(item), item.style.clone()))
                 .collect()
         })
         .collect()
@@ -159,41 +229,51 @@ mod build_widgets_tests {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod default_style_tests {
     use super::*;
-    use crate::render::Style;
 
     #[test]
-    fn model_default_style_is_bold() {
+    fn model_default_style_is_bold_cyan() {
         let s = model::Model.default_style();
         assert!(s.bold);
+        assert_eq!(s.fg, Some(crate::render::Color::Ansi256(6)));
     }
 
     #[test]
-    fn worktree_default_style_is_dim() {
+    fn worktree_default_style_uses_upstream_colors() {
+        // Upstream: GitWorktree = blue, mode/name/branches = yellow.
+        assert_eq!(
+            worktree::Worktree.default_style().fg,
+            Some(crate::render::Color::Ansi256(4))
+        );
         for w in [
-            &worktree::Worktree as &dyn Widget,
-            &worktree::WorktreeMode,
+            &worktree::WorktreeMode as &dyn Widget,
             &worktree::WorktreeName,
             &worktree::WorktreeBranch,
             &worktree::WorktreeOriginalBranch,
         ] {
-            assert!(w.default_style().dim, "{} should be dim", w.id());
+            assert_eq!(
+                w.default_style().fg,
+                Some(crate::render::Color::Ansi256(3)),
+                "{} should be yellow",
+                w.id()
+            );
         }
     }
 
     #[test]
     fn session_cost_has_green_fg() {
         let s = session::SessionCost.default_style();
-        assert!(s.fg.is_some());
+        assert_eq!(s.fg, Some(crate::render::Color::Ansi256(2)));
     }
 
     #[test]
-    fn unaffected_widgets_use_style_none() {
-        assert_eq!(model::Model.default_style().fg, None); // bold-only, no fg
-        assert_eq!(
-            session::SessionClock.default_style(),
-            Style::none(),
-            "SessionClock has no upstream style"
-        );
+    fn session_clock_has_yellow_fg() {
+        let s = session::SessionClock.default_style();
+        assert_eq!(s.fg, Some(crate::render::Color::Ansi256(3)));
+    }
+
+    #[test]
+    fn upstream_color_map_returns_none_for_unknown() {
+        assert_eq!(upstream_color_ansi("DoesNotExist"), None);
     }
 }
 
@@ -241,8 +321,9 @@ impl Widget for SeparatorWidget {
     }
 }
 
-fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
-    match cfg {
+fn build_one(item: &WidgetItem) -> Box<dyn Widget> {
+    let raw = item.raw_value;
+    match &item.kind {
         WidgetConfig::Model { .. } => Box::new(model::Model),
         WidgetConfig::Separator => Box::new(SeparatorWidget),
 
@@ -268,14 +349,14 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::SessionClock => Box::new(session::SessionClock),
         WidgetConfig::SessionCost => Box::new(session::SessionCost),
         // context cluster:
-        WidgetConfig::ContextLength => Box::new(context::ContextLength),
+        WidgetConfig::ContextLength => Box::new(context::ContextLength { raw_value: raw }),
         WidgetConfig::ContextPercentage => Box::new(context::ContextPercentage),
         WidgetConfig::ContextPercentageUsable => Box::new(context::ContextPercentageUsable),
         WidgetConfig::ContextBar { params } => Box::new(context::ContextBar {
             params: params.clone(),
         }),
-        WidgetConfig::TokensInput => Box::new(context::TokensInput),
-        WidgetConfig::TokensOutput => Box::new(context::TokensOutput),
+        WidgetConfig::TokensInput => Box::new(context::TokensInput { raw_value: raw }),
+        WidgetConfig::TokensOutput => Box::new(context::TokensOutput { raw_value: raw }),
         // worktree cluster:
         WidgetConfig::Worktree => Box::new(worktree::Worktree),
         WidgetConfig::WorktreeMode => Box::new(worktree::WorktreeMode),
@@ -315,16 +396,20 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         WidgetConfig::GitPr => Box::new(git_pr::GitPr),
 
         // transcript tokens cluster:
-        WidgetConfig::TokensCached => Box::new(transcript_tokens::TokensCached),
-        WidgetConfig::TokensTotal => Box::new(transcript_tokens::TokensTotal),
-        WidgetConfig::InputSpeed => Box::new(transcript_tokens::InputSpeed),
-        WidgetConfig::OutputSpeed => Box::new(transcript_tokens::OutputSpeed),
-        WidgetConfig::TotalSpeed => Box::new(transcript_tokens::TotalSpeed),
+        WidgetConfig::TokensCached => {
+            Box::new(transcript_tokens::TokensCached { raw_value: raw })
+        }
+        WidgetConfig::TokensTotal => Box::new(transcript_tokens::TokensTotal { raw_value: raw }),
+        WidgetConfig::InputSpeed => Box::new(transcript_tokens::InputSpeed { raw_value: raw }),
+        WidgetConfig::OutputSpeed => Box::new(transcript_tokens::OutputSpeed { raw_value: raw }),
+        WidgetConfig::TotalSpeed => Box::new(transcript_tokens::TotalSpeed { raw_value: raw }),
         // transcript timing cluster:
         WidgetConfig::BlockTimer => Box::new(transcript_timing::BlockTimer),
         WidgetConfig::SessionDuration => Box::new(transcript_timing::SessionDuration),
         // transcript meta cluster:
-        WidgetConfig::ThinkingEffort => Box::new(transcript_meta::ThinkingEffort),
+        WidgetConfig::ThinkingEffort => Box::new(transcript_meta::ThinkingEffort {
+            raw_value: raw,
+        }),
 
         // usage cluster:
         WidgetConfig::SessionUsage => Box::new(usage::SessionUsage),
@@ -335,6 +420,9 @@ fn build_one(cfg: &WidgetConfig) -> Box<dyn Widget> {
         // env cluster:
         WidgetConfig::ClaudeAccountEmail => Box::new(env::ClaudeAccountEmail),
         WidgetConfig::FreeMemory => Box::new(env::FreeMemory),
+        WidgetConfig::CurrentWorkingDir { params } => Box::new(env::CurrentWorkingDir {
+            params: params.clone(),
+        }),
 
         // transcript meta:
         WidgetConfig::Skills => Box::new(transcript_meta::Skills),

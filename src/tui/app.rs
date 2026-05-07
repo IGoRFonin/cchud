@@ -26,6 +26,15 @@ pub enum Pane {
     Preview,
 }
 
+/// Контекст открытия палитры виджетов.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PaletteMode {
+    /// Добавить новый виджет в текущую линию.
+    Add,
+    /// Заменить тип у `selected_widget`.
+    Replace,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
 pub enum MessageKind {
@@ -50,6 +59,10 @@ pub enum SettingsField {
     /// Index в `params.args` (`CustomCommand` only).
     CustomCommandArgs(usize),
     ContextBarWidth,
+    CurrentWorkingDirSegments,
+    CurrentWorkingDirAbbreviateHome,
+    CurrentWorkingDirFishStyle,
+    CurrentWorkingDirPrefix,
     /// Theme global (Themes overlay):
     ThemeGlobalBold,
     ThemeInheritSeparators,
@@ -75,6 +88,11 @@ pub enum ColorField {
 #[allow(dead_code)]
 pub enum EditField {
     PaletteFilter,
+    /// Named-color picker submode: ↑/↓ navigate `color_*_cursor`, Enter applies
+    /// hex (or transitions to `ColorHex` for "Custom hex…" entry), Esc cancels.
+    ColorPicker {
+        field: ColorField,
+    },
     Text {
         field: SettingsField,
         buffer: String,
@@ -114,6 +132,9 @@ pub struct App {
     pub editing_field: Option<EditField>,
     pub theme_field_cursor: usize,
     pub status_message: Option<(String, MessageKind)>,
+    /// Палитра скрыта по умолчанию; открывается из Lines (`a` add / Enter replace).
+    pub palette_visible: bool,
+    pub palette_mode: PaletteMode,
 }
 
 impl App {
@@ -145,6 +166,8 @@ impl App {
             editing_field: None,
             theme_field_cursor: 0,
             status_message: None,
+            palette_visible: false,
+            palette_mode: PaletteMode::Add,
         }
     }
 

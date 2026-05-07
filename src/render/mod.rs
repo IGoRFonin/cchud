@@ -96,6 +96,7 @@ impl Style {
     }
 
     #[must_use]
+    #[allow(dead_code)]
     pub const fn dim(mut self) -> Self {
         self.dim = true;
         self

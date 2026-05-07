@@ -28,3 +28,4 @@ npm/*/bin/cchud
 npm/*/bin/cchud.exe
 npm/*/node_modules/
 npm/*/package-lock.json
+.wolf

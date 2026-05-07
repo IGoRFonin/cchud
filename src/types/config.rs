@@ -27,6 +27,9 @@ pub struct WidgetItem {
     pub kind: WidgetConfig,
     #[serde(flatten, default)]
     pub style: WidgetStyleOverride,
+    /// Drop label/icon prefix when true (parity with ccstatusline `rawValue`).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub raw_value: bool,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -88,6 +91,10 @@ pub enum WidgetConfig {
     ContextBar {
         #[serde(flatten, default)]
         params: ContextBarParams,
+    },
+    CurrentWorkingDir {
+        #[serde(flatten, default)]
+        params: CurrentWorkingDirParams,
     },
 
     // head cluster:
@@ -186,6 +193,18 @@ pub struct ContextBarParams {
 }
 const fn default_context_bar_width() -> u32 {
     10
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CurrentWorkingDirParams {
+    #[serde(default)]
+    pub segments: Option<u32>,
+    #[serde(default)]
+    pub abbreviate_home: bool,
+    #[serde(default)]
+    pub fish_style: bool,
+    #[serde(default)]
+    pub prefix: Option<String>,
 }
 
 #[allow(clippy::struct_excessive_bools)]
@@ -338,6 +357,7 @@ mod tests {
                         params: ModelParams::default(),
                     },
                     style: WidgetStyleOverride::default(),
+                    raw_value: false,
                 }],
             }],
             theme: ThemeConfig::default(),
@@ -598,6 +618,40 @@ mod tests {
         let widgets: Vec<WidgetItem> = serde_json::from_str(json).unwrap();
         assert_eq!(widgets.len(), 7);
         assert!(matches!(widgets[6].kind, WidgetConfig::GitIsFork));
+    }
+
+    #[test]
+    fn parses_current_working_dir_with_params() {
+        let json = r#"{
+            "lines": [{"widgets": [
+                {"type": "current-working-dir", "segments": 3, "abbreviate_home": true, "prefix": "cwd: "}
+            ]}]
+        }"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        match &s.lines[0].widgets[0].kind {
+            WidgetConfig::CurrentWorkingDir { params } => {
+                assert_eq!(params.segments, Some(3));
+                assert!(params.abbreviate_home);
+                assert!(!params.fish_style);
+                assert_eq!(params.prefix.as_deref(), Some("cwd: "));
+            }
+            other => panic!("expected CurrentWorkingDir, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_current_working_dir_with_defaults() {
+        let json = r#"{"lines": [{"widgets": [{"type": "current-working-dir"}]}]}"#;
+        let s: Settings = serde_json::from_str(json).unwrap();
+        match &s.lines[0].widgets[0].kind {
+            WidgetConfig::CurrentWorkingDir { params } => {
+                assert_eq!(params.segments, None);
+                assert!(!params.abbreviate_home);
+                assert!(!params.fish_style);
+                assert_eq!(params.prefix, None);
+            }
+            other => panic!("expected CurrentWorkingDir, got {other:?}"),
+        }
     }
 
     #[test]

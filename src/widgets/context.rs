@@ -11,10 +11,13 @@ use crate::types::{
     config::ContextBarParams,
     payload::{ContextWindowInfo, CurrentUsage},
 };
-use crate::util::{ascii_bar, model_context_size};
+use crate::util::{ascii_bar, format_tokens::format_tokens, model_context_size};
 use crate::widgets::{RenderContext, Widget};
 
-pub struct ContextLength;
+#[derive(Default)]
+pub struct ContextLength {
+    pub raw_value: bool,
+}
 
 impl Widget for ContextLength {
     fn id(&self) -> &'static str {
@@ -23,7 +26,12 @@ impl Widget for ContextLength {
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
         let cw = ctx.payload.context_window.as_ref()?;
         let total = total_tokens(cw)?;
-        Some(format!("{total}"))
+        let formatted = format_tokens(total);
+        Some(if self.raw_value {
+            formatted
+        } else {
+            format!("Ctx: {formatted}")
+        })
     }
 }
 
@@ -76,12 +84,12 @@ impl Widget for ContextBar {
         let pct = cw.used_percentage?;
         Some(ascii_bar::render(pct, self.params.width))
     }
-    fn default_style(&self) -> crate::render::Style {
-        crate::render::Style::none().fg(crate::render::Color::Rgb(80, 200, 220))
-    }
 }
 
-pub struct TokensInput;
+#[derive(Default)]
+pub struct TokensInput {
+    pub raw_value: bool,
+}
 
 impl Widget for TokensInput {
     fn id(&self) -> &'static str {
@@ -93,14 +101,22 @@ impl Widget for TokensInput {
         match usage {
             CurrentUsage::Detailed { input_tokens, .. } => {
                 let v = input_tokens.as_ref()?;
-                Some(format!("inT: {v}"))
+                let formatted = format_tokens(*v);
+                Some(if self.raw_value {
+                    formatted
+                } else {
+                    format!("In: {formatted}")
+                })
             }
             CurrentUsage::Total(_) => None,
         }
     }
 }
 
-pub struct TokensOutput;
+#[derive(Default)]
+pub struct TokensOutput {
+    pub raw_value: bool,
+}
 
 impl Widget for TokensOutput {
     fn id(&self) -> &'static str {
@@ -112,7 +128,12 @@ impl Widget for TokensOutput {
         match usage {
             CurrentUsage::Detailed { output_tokens, .. } => {
                 let v = output_tokens.as_ref()?;
-                Some(format!("outT: {v}"))
+                let formatted = format_tokens(*v);
+                Some(if self.raw_value {
+                    formatted
+                } else {
+                    format!("Out: {formatted}")
+                })
             }
             CurrentUsage::Total(_) => None,
         }
@@ -186,18 +207,29 @@ mod tests {
     // ─── ContextLength ──────────────────────────────────────────
 
     #[test]
-    fn context_length_sums_input_output() {
+    fn context_length_renders_with_prefix_and_compact_format() {
         let p = payload_with_cw(Some(cw_full()), "claude-sonnet-4-6");
         let s = default_line();
-        // 399 + 7062 = 7461
-        assert_eq!(ContextLength.render(&ctx_with(&p, &s)), Some("7461".into()));
+        // 399 + 7062 = 7461 → "7.5k"
+        assert_eq!(
+            ContextLength::default().render(&ctx_with(&p, &s)),
+            Some("Ctx: 7.5k".into())
+        );
+    }
+
+    #[test]
+    fn context_length_raw_drops_prefix() {
+        let p = payload_with_cw(Some(cw_full()), "claude-sonnet-4-6");
+        let s = default_line();
+        let w = ContextLength { raw_value: true };
+        assert_eq!(w.render(&ctx_with(&p, &s)), Some("7.5k".into()));
     }
 
     #[test]
     fn context_length_returns_none_without_cw() {
         let p = payload_with_cw(None, "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(ContextLength.render(&ctx_with(&p, &s)), None);
+        assert_eq!(ContextLength::default().render(&ctx_with(&p, &s)), None);
     }
 
     #[test]
@@ -206,7 +238,7 @@ mod tests {
         cw.total_output_tokens = None;
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(ContextLength.render(&ctx_with(&p, &s)), None);
+        assert_eq!(ContextLength::default().render(&ctx_with(&p, &s)), None);
     }
 
     // ─── ContextPercentage ──────────────────────────────────────
@@ -309,7 +341,18 @@ mod tests {
     fn tokens_input_renders_detailed() {
         let p = payload_with_cw(Some(cw_full()), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(TokensInput.render(&ctx_with(&p, &s)), Some("inT: 1".into()));
+        assert_eq!(
+            TokensInput::default().render(&ctx_with(&p, &s)),
+            Some("In: 1".into())
+        );
+    }
+
+    #[test]
+    fn tokens_input_raw_drops_prefix() {
+        let p = payload_with_cw(Some(cw_full()), "claude-sonnet-4-6");
+        let s = default_line();
+        let w = TokensInput { raw_value: true };
+        assert_eq!(w.render(&ctx_with(&p, &s)), Some("1".into()));
     }
 
     #[test]
@@ -318,7 +361,7 @@ mod tests {
         cw.current_usage = Some(CurrentUsage::Total(12345));
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(TokensInput.render(&ctx_with(&p, &s)), None);
+        assert_eq!(TokensInput::default().render(&ctx_with(&p, &s)), None);
     }
 
     #[test]
@@ -326,9 +369,17 @@ mod tests {
         let p = payload_with_cw(Some(cw_full()), "claude-sonnet-4-6");
         let s = default_line();
         assert_eq!(
-            TokensOutput.render(&ctx_with(&p, &s)),
-            Some("outT: 232".into())
+            TokensOutput::default().render(&ctx_with(&p, &s)),
+            Some("Out: 232".into())
         );
+    }
+
+    #[test]
+    fn tokens_output_raw_drops_prefix() {
+        let p = payload_with_cw(Some(cw_full()), "claude-sonnet-4-6");
+        let s = default_line();
+        let w = TokensOutput { raw_value: true };
+        assert_eq!(w.render(&ctx_with(&p, &s)), Some("232".into()));
     }
 
     #[test]
@@ -337,7 +388,7 @@ mod tests {
         cw.current_usage = Some(CurrentUsage::Total(12345));
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(TokensOutput.render(&ctx_with(&p, &s)), None);
+        assert_eq!(TokensOutput::default().render(&ctx_with(&p, &s)), None);
     }
 
     #[test]
@@ -351,6 +402,6 @@ mod tests {
         });
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(TokensInput.render(&ctx_with(&p, &s)), None);
+        assert_eq!(TokensInput::default().render(&ctx_with(&p, &s)), None);
     }
 }

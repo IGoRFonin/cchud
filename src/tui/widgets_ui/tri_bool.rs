@@ -2,11 +2,6 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
-use ratatui::Frame;
-use ratatui::layout::Rect;
-use ratatui::style::Style;
-use ratatui::widgets::Paragraph;
-
 #[must_use]
 pub const fn glyph(value: Option<bool>) -> &'static str {
     match value {
@@ -14,16 +9,6 @@ pub const fn glyph(value: Option<bool>) -> &'static str {
         Some(true) => "[✓]",
         Some(false) => "[✗]",
     }
-}
-
-pub fn render(frame: &mut Frame<'_>, area: Rect, label: &str, value: Option<bool>, focused: bool) {
-    let style = if focused {
-        Style::default().fg(ratatui::style::Color::Yellow)
-    } else {
-        Style::default()
-    };
-    let text = format!("{label} {}", glyph(value));
-    frame.render_widget(Paragraph::new(text).style(style), area);
 }
 
 #[cfg(test)]

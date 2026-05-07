@@ -1,6 +1,5 @@
 ---
 source: tests/snapshots_transcript.rs
-assertion_line: 104
 expression: rendered
 ---
-cT: 1.8k | totT: 2.7k | ↓204 t/s | ↑30 t/s | ⇅234 t/s | ⏰ 11:00:00 | 10:00:05 | <none>
+Cache: 1.8k | Total: 2.7k | ↓204 t/s | ↑30 t/s | ⇅234 t/s | ⏰ 11:00:00 | 10:00:05 | <none>

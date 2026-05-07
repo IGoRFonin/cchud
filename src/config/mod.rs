@@ -68,6 +68,7 @@ pub fn default_line() -> Settings {
                     params: ModelParams::default(),
                 },
                 style: WidgetStyleOverride::default(),
+                raw_value: false,
             }],
         }],
         theme: ThemeConfig::default(),

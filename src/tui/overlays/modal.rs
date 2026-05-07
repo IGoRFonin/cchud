@@ -6,7 +6,9 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::widgets::{Clear, Paragraph};
+
+use crate::tui::ui::overlay_block;
 
 #[must_use]
 pub fn centered(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
@@ -45,8 +47,6 @@ pub fn render_confirm_quit(frame: &mut Frame<'_>, area: Rect) {
         Line::from("[d] Discard and quit"),
         Line::from("[c] Cancel (Esc)"),
     ];
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title("Unsaved changes");
+    let block = overlay_block("Unsaved changes");
     frame.render_widget(Paragraph::new(lines).block(block), popup);
 }

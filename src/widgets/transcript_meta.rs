@@ -8,7 +8,10 @@
 
 use crate::widgets::{RenderContext, Widget};
 
-pub struct ThinkingEffort;
+#[derive(Default)]
+pub struct ThinkingEffort {
+    pub raw_value: bool,
+}
 
 impl Widget for ThinkingEffort {
     fn id(&self) -> &'static str {
@@ -19,7 +22,11 @@ impl Widget for ThinkingEffort {
         if level.is_empty() {
             return None;
         }
-        Some(format!("🧠 {level}"))
+        Some(if self.raw_value {
+            level.to_string()
+        } else {
+            format!("🧠 {level}")
+        })
     }
 }
 
@@ -62,7 +69,7 @@ mod tests {
         let p = payload_no_transcript();
         let s = default_line();
         let ctx = RenderContext::new(&p, &s);
-        assert!(ThinkingEffort.render(&ctx).is_none());
+        assert!(ThinkingEffort::default().render(&ctx).is_none());
     }
 
     #[test]
@@ -70,7 +77,7 @@ mod tests {
         let p = payload_no_transcript();
         let s = default_line();
         let ctx = ctx_with(&p, &s, TranscriptStats::default());
-        assert!(ThinkingEffort.render(&ctx).is_none());
+        assert!(ThinkingEffort::default().render(&ctx).is_none());
     }
 
     #[test]
@@ -82,7 +89,10 @@ mod tests {
             ..TranscriptStats::default()
         };
         let ctx = ctx_with(&p, &s, stats);
-        assert_eq!(ThinkingEffort.render(&ctx).as_deref(), Some("🧠 high"));
+        assert_eq!(
+            ThinkingEffort::default().render(&ctx).as_deref(),
+            Some("🧠 high")
+        );
     }
 
     #[test]
@@ -94,7 +104,10 @@ mod tests {
             ..TranscriptStats::default()
         };
         let ctx = ctx_with(&p, &s, stats);
-        assert_eq!(ThinkingEffort.render(&ctx).as_deref(), Some("🧠 ultra"));
+        assert_eq!(
+            ThinkingEffort::default().render(&ctx).as_deref(),
+            Some("🧠 ultra")
+        );
     }
 
     #[test]
@@ -106,7 +119,22 @@ mod tests {
             ..TranscriptStats::default()
         };
         let ctx = ctx_with(&p, &s, stats);
-        assert!(ThinkingEffort.render(&ctx).is_none());
+        assert!(ThinkingEffort::default().render(&ctx).is_none());
+    }
+
+    #[test]
+    fn raw_value_strips_brain_prefix() {
+        let p = payload_no_transcript();
+        let s = default_line();
+        let stats = TranscriptStats {
+            last_thinking_effort: Some("high".into()),
+            ..TranscriptStats::default()
+        };
+        let ctx = ctx_with(&p, &s, stats);
+        assert_eq!(
+            ThinkingEffort { raw_value: true }.render(&ctx).as_deref(),
+            Some("high")
+        );
     }
 
     #[test]

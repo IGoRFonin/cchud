@@ -1,13 +1,13 @@
 //! Static widget palette registry.
 //!
-//! 60 виджетов из `WidgetConfig` (без `AlignRight` — sentinel, не показывается в палитре).
+//! 61 виджет из `WidgetConfig` (без `AlignRight` — sentinel, не показывается в палитре).
 //! Категории отвечают «бакету» в UI (Model / Static / Trivial / Session / Context / ...).
 
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 use crate::types::config::{
-    ContextBarParams, CustomCommandParams, CustomSymbolParams, CustomTextParams, LinkParams,
-    ModelParams, WidgetConfig,
+    ContextBarParams, CurrentWorkingDirParams, CustomCommandParams, CustomSymbolParams,
+    CustomTextParams, LinkParams, ModelParams, WidgetConfig,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -49,7 +49,7 @@ pub struct WidgetMeta {
     pub factory: fn() -> WidgetConfig,
 }
 
-/// 60 widgets — match `WidgetConfig` enum minus `AlignRight`. Order реализует
+/// 61 widgets — match `WidgetConfig` enum minus `AlignRight`. Order реализует
 /// natural grouping: каждая категория contiguous → palette по группам.
 #[allow(clippy::too_many_lines)]
 pub static ALL_KINDS: &[WidgetMeta] = &[
@@ -433,7 +433,7 @@ pub static ALL_KINDS: &[WidgetMeta] = &[
         category: WidgetCategory::Usage,
         factory: || WidgetConfig::WeeklyResetTimer,
     },
-    // Env (2)
+    // Env (3)
     WidgetMeta {
         display: "Claude Account Email",
         kebab_type: "claude-account-email",
@@ -445,6 +445,14 @@ pub static ALL_KINDS: &[WidgetMeta] = &[
         kebab_type: "free-memory",
         category: WidgetCategory::Env,
         factory: || WidgetConfig::FreeMemory,
+    },
+    WidgetMeta {
+        display: "Current Working Dir",
+        kebab_type: "current-working-dir",
+        category: WidgetCategory::Env,
+        factory: || WidgetConfig::CurrentWorkingDir {
+            params: CurrentWorkingDirParams::default(),
+        },
     },
 ];
 
@@ -461,8 +469,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn all_kinds_has_60_entries() {
-        assert_eq!(ALL_KINDS.len(), 60, "palette registry must have 60 widgets");
+    fn all_kinds_has_61_entries() {
+        assert_eq!(ALL_KINDS.len(), 61, "palette registry must have 61 widgets");
     }
 
     #[test]
@@ -476,7 +484,7 @@ mod tests {
                 m.kebab_type
             );
         }
-        assert_eq!(seen.len(), 60);
+        assert_eq!(seen.len(), 61);
     }
 
     #[test]
@@ -487,6 +495,7 @@ mod tests {
             let item = WidgetItem {
                 kind: cfg,
                 style: WidgetStyleOverride::default(),
+                raw_value: false,
             };
             let json = serde_json::to_value(&item).unwrap();
             let actual = json.get("type").and_then(|v| v.as_str()).unwrap();

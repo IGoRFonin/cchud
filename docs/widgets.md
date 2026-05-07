@@ -1,10 +1,10 @@
-# Реестр виджетов cchud (паритет с ccstatusline 2.2.8)
+# Реестр виджетов cchud (паритет с ccstatusline 2.2.8 + расширения)
 
 > **Источник:** `src/widgets/index.ts` upstream snapshot (см. `upstream-map.md`)
-> **Всего:** 60 (59 экспортируемых + встроенный `separator`)
-> **Дата:** 2026-04-26
+> **Всего:** 61 (60 паритетных + `current-working-dir` из upstream 2.2.x)
+> **Дата:** 2026-05-07
 >
-> **60 widgets supported (60/60 upstream parity)**
+> **61 widgets supported**
 
 ## Колонки
 
@@ -78,6 +78,7 @@
 | `weekly-usage` | 7 | http | high | DONE | usageData HTTP API |
 | `block-reset-timer` | 7 | http | high | DONE | usageData + blockMetrics |
 | `weekly-reset-timer` | 7 | http | high | DONE | usageData |
+| `current-working-dir` | post-1.0 | payload | low | DONE | payload.cwd, fish-style/segments/abbreviate-home/prefix |
 
 ## Сводка по фазам
 
@@ -88,7 +89,8 @@
 | 4 | 0 (рендер-слой, не виджеты) | 25 |
 | 5 | 20 (git + git-pr) | 45 |
 | 6 | 8 (transcript + thinking-effort; skills → 7) | 53 |
-| 7 | 7 (env/http + skills) | **60** |
+| 7 | 7 (env/http + skills) | 60 |
+| post-1.0 | 1 (current-working-dir) | **61** |
 
 ## Замечания
 

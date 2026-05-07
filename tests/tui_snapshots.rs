@@ -34,6 +34,7 @@ fn initial_state() {
 #[test]
 fn palette_filtered_by_git() {
     let mut app = fresh_app();
+    app.palette_visible = true;
     app.focus = Pane::Palette;
     app.palette_filter = "git".into();
     insta::assert_snapshot!(render_to_buffer(&app));
@@ -72,5 +73,38 @@ fn confirm_quit_modal_when_dirty() {
     let mut app = fresh_app();
     app.editable.lines.push(Line::default());
     app.mode = Mode::ConfirmQuit;
+    insta::assert_snapshot!(render_to_buffer(&app));
+}
+
+#[test]
+fn settings_named_color_picker_open_shows_swatches() {
+    use cchud::tui::app::EditField;
+    let mut app = fresh_app();
+    app.focus = Pane::Settings;
+    app.settings_field_cursor = 0;
+    app.color_fg_cursor = 2; // Red
+    app.editing_field = Some(EditField::ColorPicker {
+        field: ColorField::Foreground,
+    });
+    insta::assert_snapshot!(render_to_buffer(&app));
+}
+
+#[test]
+fn settings_scrolls_when_custom_command_has_many_args() {
+    let (p, f) = sample::payload();
+    // CustomCommand с 12-ю args — не помещается в высоту панели.
+    let json = r#"{
+        "lines":[{"widgets":[{
+            "type":"custom-command",
+            "command":"echo",
+            "timeoutMs":1000,
+            "args":["a","b","c","d","e","f","g","h","i","j","k","l"]
+        }]}]
+    }"#;
+    let s: Settings = serde_json::from_str(json).unwrap();
+    let mut app = App::new(s, p, f);
+    app.focus = Pane::Settings;
+    // Курсор на последнем arg — должен прокрутиться.
+    app.settings_field_cursor = 5 + 11;
     insta::assert_snapshot!(render_to_buffer(&app));
 }

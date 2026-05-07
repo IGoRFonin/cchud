@@ -17,6 +17,7 @@ mod widgets;
 #[cfg(feature = "tui")]
 mod tui;
 
+use std::io::IsTerminal;
 use std::process::ExitCode;
 
 use crate::render::{Renderer, Segment};
@@ -43,7 +44,21 @@ fn main() -> ExitCode {
             eprintln!("       run 'cchud --help' for usage");
             ExitCode::from(2)
         }
-        _ => render_pipeline(),
+        _ => default_action(),
+    }
+}
+
+/// `cchud` без аргументов:
+/// - stdin — TTY → интерактивный режим: idempotent install + TUI configurator.
+/// - stdin — pipe → render statusline (Claude Code путь).
+fn default_action() -> ExitCode {
+    if std::io::stdin().is_terminal() {
+        // Best-effort install: stderr-warnings on failure (occupied statusLine, etc.)
+        // не блокируют запуск TUI — пользователь увидит сообщение и решит сам.
+        let _ = commands::install::run(&[]);
+        configure_command(&[])
+    } else {
+        render_pipeline()
     }
 }
 
@@ -54,7 +69,8 @@ fn print_help() {
     );
     println!();
     println!("USAGE:");
-    println!("  cchud                       read JSON payload from stdin, render statusline");
+    println!("  cchud                       interactive: install + open TUI (when stdin is a tty)");
+    println!("  cchud                       render statusline from stdin JSON (when piped)");
     println!("  cchud install               wire cchud + self-relocate to ~/.local/bin/");
     println!("  cchud install --force       overwrite existing statusLine");
     println!("  cchud install --no-relocate skip self-copy (dev-only)");

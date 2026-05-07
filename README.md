@@ -21,27 +21,29 @@ Claude Code invokes the statusline up to 3 times per second. For 4 parallel sess
 
 ## Install
 
-Pick one:
+One command — wires Claude Code and opens the TUI configurator:
 
 ```bash
-# Recommended (one-liner via Node):
-npx --yes @cchud/cchud@1.0.0 install
+npx -y @cchud/cchud
+```
 
-# Without Node (macOS / Linux gnu/musl):
+Without Node (macOS / Linux gnu/musl):
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/IGoRFonin/cchud/main/install.sh | sh
+cchud
 ```
 
 Both methods install the binary at `~/.local/bin/cchud` (or
-`%LOCALAPPDATA%\cchud\cchud.exe` on Windows) and wire Claude Code via
-`cchud install`. The path is stable across `nvm use` and Node-version
-switches.
+`%LOCALAPPDATA%\cchud\cchud.exe` on Windows). The path is stable across
+`nvm use` and Node-version switches.
 
-After install:
+Other entry-points:
 
 ```bash
 cchud doctor       # 9-check health report
-cchud configure    # interactive TUI configurator
 cchud import       # migrate from ccstatusline (if applicable)
+cchud install      # re-wire (idempotent; --force to overwrite a non-cchud statusLine)
 ```
 
 ## Verify install (security-conscious users)
@@ -81,7 +83,7 @@ See [`docs/widgets.md`](docs/widgets.md) for the full widget reference.
 See [MIGRATION.md](./MIGRATION.md) for a step-by-step guide. Quick path:
 
 ```bash
-npx --yes @cchud/cchud@1.0.0 install
+npx -y @cchud/cchud
 cchud import      # auto-detects ccstatusline section in ~/.claude/settings.json
 ```
 

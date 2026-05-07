@@ -32,6 +32,7 @@ fn settings_8w() -> Settings {
             .map(|kind| WidgetItem {
                 kind,
                 style: WidgetStyleOverride::default(),
+                raw_value: false,
             })
             .collect(),
         }],

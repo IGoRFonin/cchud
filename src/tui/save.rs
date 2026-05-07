@@ -68,6 +68,7 @@ mod tests {
                         params: ModelParams {},
                     },
                     style: WidgetStyleOverride::default(),
+                    raw_value: false,
                 }],
             }],
             theme: ThemeConfig::default(),

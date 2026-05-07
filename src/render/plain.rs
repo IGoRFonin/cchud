@@ -40,7 +40,14 @@ impl Plain {
         let mut out = Vec::with_capacity(visible.len() * 2);
         for (i, seg) in visible.iter().enumerate() {
             if i > 0 {
-                out.push(super::StyledSegment::plain(self.separator.clone()));
+                let prev_fg = visible[i - 1].style.fg;
+                let mut sep_style = super::Style::none();
+                sep_style.fg = prev_fg;
+                out.push(super::StyledSegment {
+                    text: self.separator.clone(),
+                    style: sep_style,
+                    hyperlink: None,
+                });
             }
             out.push(super::StyledSegment {
                 text: seg.text.clone(),
@@ -161,6 +168,31 @@ mod tests {
         assert_eq!(
             p(ColorLevel::None, false).render_line(&segs, &mut state, &t),
             "x"
+        );
+    }
+
+    #[test]
+    fn separator_inherits_fg_from_left_segment() {
+        let p = Plain {
+            separator: " | ".into(),
+            level: ColorLevel::TrueColor,
+            hyperlinks: false,
+        };
+        let mut state = RenderState::default();
+        let t = theme();
+        let red = Color::Rgb(255, 0, 0);
+        let blue = Color::Rgb(0, 0, 255);
+        let segs = [
+            Segment::styled("a", Style::none().fg(red)),
+            Segment::styled("b", Style::none().fg(blue)),
+        ];
+        let composed = p.compose_inner(&segs, &mut state, &t);
+        assert_eq!(composed.len(), 3);
+        assert_eq!(composed[1].text, " | ");
+        assert_eq!(
+            composed[1].style.fg,
+            Some(red),
+            "separator must take fg of segment to its left"
         );
     }
 

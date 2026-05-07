@@ -6,10 +6,11 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::widgets::{Clear, Paragraph};
 
 use crate::tui::app::App;
 use crate::tui::overlays::modal::centered;
+use crate::tui::ui::overlay_block;
 
 pub static BUILTIN_THEMES: &[&str] = &[
     "default",
@@ -44,7 +45,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
         };
         left_lines.push(Line::from(format!("{mark}{name}")).style(highlight));
     }
-    let left_block = Block::default().borders(Borders::ALL).title("Themes");
+    let left_block = overlay_block("Themes");
     frame.render_widget(Paragraph::new(left_lines).block(left_block), chunks[0]);
 
     let mut right_lines: Vec<Line<'_>> = vec![Line::from("Global theme settings")];
@@ -86,7 +87,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
         };
         right_lines.push(Line::from(format!("{mark}{k:<28}: {v}")));
     }
-    let right_block = Block::default().borders(Borders::ALL).title("Globals");
+    let right_block = overlay_block("Globals");
     frame.render_widget(Paragraph::new(right_lines).block(right_block), chunks[1]);
 }
 

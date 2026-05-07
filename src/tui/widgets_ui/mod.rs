@@ -3,6 +3,4 @@
 
 pub mod color_picker;
 pub mod input;
-pub mod list_editor;
-pub mod number_input;
 pub mod tri_bool;

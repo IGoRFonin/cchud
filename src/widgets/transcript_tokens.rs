@@ -4,11 +4,26 @@ use crate::cache::{MessageStats, TranscriptStats};
 use crate::util::format_tokens::format_tokens;
 use crate::widgets::{RenderContext, Widget};
 
-pub struct TokensCached;
-pub struct TokensTotal;
-pub struct InputSpeed;
-pub struct OutputSpeed;
-pub struct TotalSpeed;
+#[derive(Default)]
+pub struct TokensCached {
+    pub raw_value: bool,
+}
+#[derive(Default)]
+pub struct TokensTotal {
+    pub raw_value: bool,
+}
+#[derive(Default)]
+pub struct InputSpeed {
+    pub raw_value: bool,
+}
+#[derive(Default)]
+pub struct OutputSpeed {
+    pub raw_value: bool,
+}
+#[derive(Default)]
+pub struct TotalSpeed {
+    pub raw_value: bool,
+}
 
 impl Widget for TokensCached {
     fn id(&self) -> &'static str {
@@ -22,7 +37,12 @@ impl Widget for TokensCached {
         if cached == 0 {
             return None;
         }
-        Some(format!("cT: {}", format_tokens(cached)))
+        let formatted = format_tokens(cached);
+        Some(if self.raw_value {
+            formatted
+        } else {
+            format!("Cache: {formatted}")
+        })
     }
 }
 
@@ -36,7 +56,12 @@ impl Widget for TokensTotal {
         if total == 0 {
             return None;
         }
-        Some(format!("totT: {}", format_tokens(total)))
+        let formatted = format_tokens(total);
+        Some(if self.raw_value {
+            formatted
+        } else {
+            format!("Total: {formatted}")
+        })
     }
 }
 
@@ -46,7 +71,12 @@ impl Widget for InputSpeed {
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
         let last = ctx.transcript()?.last_assistant?;
-        Some(format!("↓{} t/s", speed(last.tokens_in, &last)))
+        let s = speed(last.tokens_in, &last);
+        Some(if self.raw_value {
+            format!("{s} t/s")
+        } else {
+            format!("↓{s} t/s")
+        })
     }
 }
 
@@ -56,7 +86,12 @@ impl Widget for OutputSpeed {
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
         let last = ctx.transcript()?.last_assistant?;
-        Some(format!("↑{} t/s", speed(last.tokens_out, &last)))
+        let s = speed(last.tokens_out, &last);
+        Some(if self.raw_value {
+            format!("{s} t/s")
+        } else {
+            format!("↑{s} t/s")
+        })
     }
 }
 
@@ -67,7 +102,12 @@ impl Widget for TotalSpeed {
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
         let last = ctx.transcript()?.last_assistant?;
         let total = last.tokens_in.saturating_add(last.tokens_out);
-        Some(format!("⇅{} t/s", speed(total, &last)))
+        let s = speed(total, &last);
+        Some(if self.raw_value {
+            format!("{s} t/s")
+        } else {
+            format!("⇅{s} t/s")
+        })
     }
 }
 
@@ -109,7 +149,7 @@ mod tests {
         let p = payload_no_transcript();
         let s = default_line();
         let ctx = RenderContext::new(&p, &s);
-        assert!(TokensCached.render(&ctx).is_none());
+        assert!(TokensCached::default().render(&ctx).is_none());
     }
 
     #[test]
@@ -118,7 +158,7 @@ mod tests {
         let s = default_line();
         let stats = TranscriptStats::default();
         let ctx = ctx_with_stats(&p, &s, stats);
-        assert!(TokensCached.render(&ctx).is_none());
+        assert!(TokensCached::default().render(&ctx).is_none());
     }
 
     #[test]
@@ -131,7 +171,10 @@ mod tests {
             ..TranscriptStats::default()
         };
         let ctx = ctx_with_stats(&p, &s, stats);
-        assert_eq!(TokensCached.render(&ctx).as_deref(), Some("cT: 1k"));
+        assert_eq!(
+            TokensCached::default().render(&ctx).as_deref(),
+            Some("Cache: 1k")
+        );
     }
 
     #[test]
@@ -140,7 +183,7 @@ mod tests {
         let s = default_line();
         let stats = TranscriptStats::default();
         let ctx = ctx_with_stats(&p, &s, stats);
-        assert!(TokensTotal.render(&ctx).is_none());
+        assert!(TokensTotal::default().render(&ctx).is_none());
     }
 
     #[test]
@@ -156,7 +199,10 @@ mod tests {
         };
         let ctx = ctx_with_stats(&p, &s, stats);
         // 1000 + 500 + 2000 + 1000 = 4500 → "4.5k"
-        assert_eq!(TokensTotal.render(&ctx).as_deref(), Some("totT: 4.5k"));
+        assert_eq!(
+            TokensTotal::default().render(&ctx).as_deref(),
+            Some("Total: 4.5k")
+        );
     }
 
     #[test]
@@ -164,7 +210,7 @@ mod tests {
         let p = payload_no_transcript();
         let s = default_line();
         let ctx = ctx_with_stats(&p, &s, TranscriptStats::default());
-        assert!(InputSpeed.render(&ctx).is_none());
+        assert!(InputSpeed::default().render(&ctx).is_none());
     }
 
     #[test]
@@ -181,7 +227,10 @@ mod tests {
             ..TranscriptStats::default()
         };
         let ctx = ctx_with_stats(&p, &s, stats);
-        assert_eq!(InputSpeed.render(&ctx).as_deref(), Some("↓1500 t/s"));
+        assert_eq!(
+            InputSpeed::default().render(&ctx).as_deref(),
+            Some("↓1500 t/s")
+        );
     }
 
     #[test]
@@ -198,7 +247,10 @@ mod tests {
             ..TranscriptStats::default()
         };
         let ctx = ctx_with_stats(&p, &s, stats);
-        assert_eq!(OutputSpeed.render(&ctx).as_deref(), Some("↑50 t/s"));
+        assert_eq!(
+            OutputSpeed::default().render(&ctx).as_deref(),
+            Some("↑50 t/s")
+        );
     }
 
     #[test]
@@ -216,6 +268,9 @@ mod tests {
         };
         let ctx = ctx_with_stats(&p, &s, stats);
         // (100 + 100) / 2 = 100
-        assert_eq!(TotalSpeed.render(&ctx).as_deref(), Some("⇅100 t/s"));
+        assert_eq!(
+            TotalSpeed::default().render(&ctx).as_deref(),
+            Some("⇅100 t/s")
+        );
     }
 }

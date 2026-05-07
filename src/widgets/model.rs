@@ -19,7 +19,9 @@ impl Widget for Model {
     }
 
     fn default_style(&self) -> crate::render::Style {
-        crate::render::Style::none().bold()
+        crate::render::Style::none()
+            .bold()
+            .fg(crate::render::Color::Ansi256(6))
     }
 }
 

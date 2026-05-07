@@ -2,4 +2,4 @@
 source: tests/snapshots.rs
 expression: stdout
 ---
-inT: 1 | outT: 232 | 7461 | 25% | 4% | [███░░░░░░░]
+In: 1 | Out: 232 | Ctx: 7.5k | 25% | 4% | [███░░░░░░░]

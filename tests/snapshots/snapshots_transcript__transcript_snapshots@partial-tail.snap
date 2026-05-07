@@ -2,4 +2,4 @@
 source: tests/snapshots_transcript.rs
 expression: rendered
 ---
-cT: 500 | totT: 650 | ↓120 t/s | ↑10 t/s | ⇅130 t/s | ⏰ 01:00:00 | 01:00 | <none>
+Cache: 500 | Total: 650 | ↓120 t/s | ↑10 t/s | ⇅130 t/s | ⏰ 01:00:00 | 01:00 | <none>

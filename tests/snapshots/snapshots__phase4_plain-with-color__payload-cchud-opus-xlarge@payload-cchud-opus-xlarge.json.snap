@@ -3,4 +3,4 @@ source: tests/snapshots.rs
 expression: stdout
 input_file: benches/samples/payload-cchud-opus-xlarge.json
 ---
-[1mOpus 4.7 (1M context)[0m | [38;2;80;200;80m$1.41[0m
+[1m[38;5;6mOpus 4.7 (1M context)[0m[38;5;6m | [0m[38;5;2m$1.41[0m

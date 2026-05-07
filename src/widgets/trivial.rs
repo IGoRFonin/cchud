@@ -67,7 +67,9 @@ impl Widget for OutputStyle {
         }
     }
     fn default_style(&self) -> crate::render::Style {
-        crate::render::Style::none().italic()
+        crate::render::Style::none()
+            .italic()
+            .fg(crate::render::Color::Ansi256(6))
     }
 }
 
@@ -86,7 +88,9 @@ impl Widget for VimMode {
         }
     }
     fn default_style(&self) -> crate::render::Style {
-        crate::render::Style::none().bold()
+        crate::render::Style::none()
+            .bold()
+            .fg(crate::render::Color::Ansi256(2))
     }
 }
 

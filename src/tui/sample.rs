@@ -18,11 +18,14 @@ use crate::types::payload::{
 /// 5-строчный JSONL транскрипт; покрывает tokens/timing/thinking/skills.
 /// Timestamps относительные к now — но детерминированный фикс-набор offset'ов
 /// (preview не обязан показывать «свежие» миллисекунды).
+///
+/// Top-level `"thinking":{"effort":"high"}` на assistant-entry — `ThinkingEffort`
+/// widget читает именно это поле (не content-block).
 const TRANSCRIPT_JSONL: &str = "\
 {\"type\":\"user\",\"timestamp\":\"2026-04-29T12:00:00.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"hello\"}]}}
 {\"type\":\"assistant\",\"timestamp\":\"2026-04-29T12:00:01.500Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"hi there\"}],\"usage\":{\"input_tokens\":12,\"output_tokens\":8,\"cache_read_input_tokens\":4096,\"cache_creation_input_tokens\":1024}}}
 {\"type\":\"user\",\"timestamp\":\"2026-04-29T12:00:05.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Skill\",\"input\":{\"skill\":\"using-superpowers\"}}]}}
-{\"type\":\"assistant\",\"timestamp\":\"2026-04-29T12:00:07.250Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Reasoning briefly...\"},{\"type\":\"text\",\"text\":\"done\"}],\"usage\":{\"input_tokens\":256,\"output_tokens\":128}}}
+{\"type\":\"assistant\",\"timestamp\":\"2026-04-29T12:00:07.250Z\",\"thinking\":{\"effort\":\"high\"},\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"Reasoning briefly...\"},{\"type\":\"text\",\"text\":\"done\"}],\"usage\":{\"input_tokens\":256,\"output_tokens\":128}}}
 {\"type\":\"user\",\"timestamp\":\"2026-04-29T12:00:10.000Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"tool_use\",\"name\":\"Skill\",\"input\":{\"skill\":\"writing-plans\"}}]}}
 ";
 
@@ -40,6 +43,14 @@ pub fn payload() -> (StatusPayload, Option<NamedTempFile>) {
         .as_ref()
         .map(|f| f.path().to_string_lossy().into_owned());
 
+    // Реальная cwd процесса — чтобы preview демонстрировал `current-working-dir`
+    // (fish_style → `~/m/s/cchud`, segments → `.../mp/startup/cchud`) и `git-branch`
+    // на живых данных пользователя. Если cwd нечитаема — fallback к фикстурному пути.
+    let real_cwd = std::env::current_dir()
+        .ok()
+        .and_then(|p| p.to_str().map(str::to_string))
+        .unwrap_or_else(|| "/Users/sample/project".into());
+
     let p = StatusPayload {
         session_id: "s_demo_abc123".into(),
         model: ModelInfo {
@@ -47,12 +58,12 @@ pub fn payload() -> (StatusPayload, Option<NamedTempFile>) {
             display_name: "Sonnet 4.7".into(),
         },
         workspace: Workspace {
-            current_dir: "/Users/sample/project".into(),
-            project_dir: Some("/Users/sample/project".into()),
+            current_dir: real_cwd.clone(),
+            project_dir: Some(real_cwd.clone()),
             added_dirs: None,
         },
         transcript_path,
-        cwd: Some("/Users/sample/project".into()),
+        cwd: Some(real_cwd),
         version: Some("2.1.119".into()),
         fast_mode: Some(false),
         exceeds_200k_tokens: Some(false),
