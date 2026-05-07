@@ -64,10 +64,7 @@ pub fn render_preset_name_prompt(frame: &mut Frame<'_>, area: Rect, buffer: &str
         Line::from(""),
         Line::from(vec![
             Span::raw("Name: "),
-            Span::styled(
-                buffer.to_string(),
-                Style::default().fg(Color::Yellow),
-            ),
+            Span::styled(buffer.to_string(), Style::default().fg(Color::Yellow)),
             Span::styled(
                 "_",
                 Style::default()

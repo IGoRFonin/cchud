@@ -21,6 +21,11 @@ fn fresh_app() -> App {
     app
 }
 
+fn home_app() -> App {
+    let (p, f) = sample::payload();
+    App::new(Settings::default(), p, f)
+}
+
 fn render_to_buffer(app: &App) -> String {
     let backend = TestBackend::new(80, 24);
     let mut term = Terminal::new(backend).unwrap();
@@ -89,6 +94,36 @@ fn settings_named_color_picker_open_shows_swatches() {
     app.editing_field = Some(EditField::ColorPicker {
         field: ColorField::Foreground,
     });
+    insta::assert_snapshot!(render_to_buffer(&app));
+}
+
+#[test]
+fn home_initial() {
+    let app = home_app();
+    insta::assert_snapshot!(render_to_buffer(&app));
+}
+
+#[test]
+fn choose_preset_first_builtin_selected() {
+    let mut app = home_app();
+    app.presets = cchud::tui::presets::list_all();
+    app.screen = Screen::ChoosePreset;
+    app.preset_cursor = 0;
+    insta::assert_snapshot!(render_to_buffer(&app));
+}
+
+#[test]
+fn confirm_return_home_modal() {
+    let mut app = fresh_app();
+    app.mode = Mode::ConfirmReturnHome;
+    insta::assert_snapshot!(render_to_buffer(&app));
+}
+
+#[test]
+fn preset_name_prompt_with_partial_input() {
+    let mut app = fresh_app();
+    app.mode = Mode::PresetNamePrompt;
+    app.preset_name_buffer = "my-laptop".to_string();
     insta::assert_snapshot!(render_to_buffer(&app));
 }
 

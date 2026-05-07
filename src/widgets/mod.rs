@@ -58,6 +58,7 @@ pub trait Widget: Send + Sync {
 /// True if the widget renders an inherent label/icon prefix that
 /// `WidgetItem.raw_value = true` strips (parity with ccstatusline `rawValue`).
 #[must_use]
+#[cfg_attr(not(feature = "tui"), allow(dead_code))]
 pub const fn widget_supports_raw_value(kind: &WidgetConfig) -> bool {
     matches!(
         kind,
@@ -80,31 +81,40 @@ pub const fn widget_supports_raw_value(kind: &WidgetConfig) -> bool {
 pub fn upstream_color_ansi(id: &str) -> Option<u8> {
     Some(match id {
         // ── cyan (6) — info & identifiers ───────────────────────
-        "Model" | "ClaudeSessionId" | "FreeMemory" | "GitAheadBehind"
-        | "GitOriginOwner" | "GitOriginRepo" | "GitOriginOwnerRepo"
-        | "GitPr" | "GitRootDir" | "InputSpeed" | "OutputSpeed"
-        | "TotalSpeed" | "OutputStyle" | "SessionName" | "TokensCached"
+        "Model" | "ClaudeSessionId" | "FreeMemory" | "GitAheadBehind" | "GitOriginOwner"
+        | "GitOriginRepo" | "GitOriginOwnerRepo" | "GitPr" | "GitRootDir" | "InputSpeed"
+        | "OutputSpeed" | "TotalSpeed" | "OutputStyle" | "SessionName" | "TokensCached"
         | "TokensTotal" => 6,
 
         // ── blue (4) ─────────────────────────────────────────────
-        "ClaudeAccountEmail" | "ContextBar" | "ContextPercentage"
-        | "CurrentWorkingDir" | "TokensInput" | "Worktree" => 4,
+        "ClaudeAccountEmail" | "ContextBar" | "ContextPercentage" | "CurrentWorkingDir"
+        | "TokensInput" | "Worktree" => 4,
 
         // ── green (2) ────────────────────────────────────────────
-        "ContextPercentageUsable" | "GitInsertions" | "GitStaged"
-        | "SessionCost" | "VimMode" => 2,
+        "ContextPercentageUsable" | "GitInsertions" | "GitStaged" | "SessionCost" | "VimMode" => 2,
 
         // ── yellow (3) ───────────────────────────────────────────
-        "BlockTimer" | "GitChanges" | "GitIsFork" | "GitStatus"
-        | "GitUnstaged" | "SessionClock" | "WorktreeMode"
-        | "WorktreeName" | "WorktreeBranch" | "WorktreeOriginalBranch" => 3,
+        "BlockTimer"
+        | "GitChanges"
+        | "GitIsFork"
+        | "GitStatus"
+        | "GitUnstaged"
+        | "SessionClock"
+        | "WorktreeMode"
+        | "WorktreeName"
+        | "WorktreeBranch"
+        | "WorktreeOriginalBranch" => 3,
 
         // ── red (1) ──────────────────────────────────────────────
         "GitConflicts" | "GitDeletions" | "GitUntracked" => 1,
 
         // ── magenta (5) ──────────────────────────────────────────
-        "GitBranch" | "GitUpstreamOwner" | "GitUpstreamRepo"
-        | "GitUpstreamOwnerRepo" | "ThinkingEffort" | "Skills" => 5,
+        "GitBranch"
+        | "GitUpstreamOwner"
+        | "GitUpstreamRepo"
+        | "GitUpstreamOwnerRepo"
+        | "ThinkingEffort"
+        | "Skills" => 5,
 
         // ── white (7) ────────────────────────────────────────────
         "CustomCommand" | "TokensOutput" => 7,
@@ -113,8 +123,7 @@ pub fn upstream_color_ansi(id: &str) -> Option<u8> {
         "ContextLength" | "GitSha" | "TerminalWidth" | "Version" => 8,
 
         // ── brightBlue (12) ──────────────────────────────────────
-        "BlockResetTimer" | "SessionUsage" | "WeeklyResetTimer"
-        | "WeeklyUsage" => 12,
+        "BlockResetTimer" | "SessionUsage" | "WeeklyResetTimer" | "WeeklyUsage" => 12,
 
         _ => return None,
     })
@@ -395,9 +404,7 @@ fn build_one(item: &WidgetItem) -> Box<dyn Widget> {
         WidgetConfig::GitPr => Box::new(git_pr::GitPr),
 
         // transcript tokens cluster:
-        WidgetConfig::TokensCached => {
-            Box::new(transcript_tokens::TokensCached { raw_value: raw })
-        }
+        WidgetConfig::TokensCached => Box::new(transcript_tokens::TokensCached { raw_value: raw }),
         WidgetConfig::TokensTotal => Box::new(transcript_tokens::TokensTotal { raw_value: raw }),
         WidgetConfig::InputSpeed => Box::new(transcript_tokens::InputSpeed { raw_value: raw }),
         WidgetConfig::OutputSpeed => Box::new(transcript_tokens::OutputSpeed { raw_value: raw }),
@@ -406,9 +413,9 @@ fn build_one(item: &WidgetItem) -> Box<dyn Widget> {
         WidgetConfig::BlockTimer => Box::new(transcript_timing::BlockTimer),
         WidgetConfig::SessionDuration => Box::new(transcript_timing::SessionDuration),
         // transcript meta cluster:
-        WidgetConfig::ThinkingEffort => Box::new(transcript_meta::ThinkingEffort {
-            raw_value: raw,
-        }),
+        WidgetConfig::ThinkingEffort => {
+            Box::new(transcript_meta::ThinkingEffort { raw_value: raw })
+        }
 
         // usage cluster:
         WidgetConfig::SessionUsage => Box::new(usage::SessionUsage),

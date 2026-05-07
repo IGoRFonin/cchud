@@ -88,7 +88,9 @@ fn compute_scroll(cursor_row: u16, total: u16, visible: u16) -> u16 {
     }
     let max = total.saturating_sub(visible);
     if cursor_row >= visible {
-        cursor_row.saturating_sub(visible.saturating_sub(1)).min(max)
+        cursor_row
+            .saturating_sub(visible.saturating_sub(1))
+            .min(max)
     } else {
         0
     }
@@ -169,14 +171,7 @@ fn build_lines<'a>(
     // Spacer before kind-specific params.
     lines.push(Line::from(""));
 
-    push_kind_params(
-        &mut lines,
-        &mut cursor_row,
-        app,
-        kind,
-        cursor,
-        focused,
-    );
+    push_kind_params(&mut lines, &mut cursor_row, app, kind, cursor, focused);
 
     (lines, cursor_row)
 }
@@ -219,10 +214,10 @@ fn describe_color(value: Option<&str>) -> (String, Option<Color>) {
         None | Some("") => return ("(default)".to_string(), None),
         Some(h) => h,
     };
-    let label = NAMED_COLORS.iter().find(|(_, h)| *h == hex).map_or_else(
-        || hex.to_string(),
-        |(n, _)| format!("{n} ({hex})"),
-    );
+    let label = NAMED_COLORS
+        .iter()
+        .find(|(_, h)| *h == hex)
+        .map_or_else(|| hex.to_string(), |(n, _)| format!("{n} ({hex})"));
     (label, parse_hex_to_color(hex))
 }
 

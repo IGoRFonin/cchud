@@ -175,7 +175,11 @@ mod tests {
         override_presets_dir(tmp.path());
         let presets = list_all();
         assert_eq!(presets.len(), 5);
-        assert!(presets.iter().all(|p| matches!(p.source, PresetSource::Builtin)));
+        assert!(
+            presets
+                .iter()
+                .all(|p| matches!(p.source, PresetSource::Builtin))
+        );
     }
 
     #[test]
@@ -207,7 +211,10 @@ mod tests {
         use crate::tui::sample;
         let (payload, fixture) = sample::payload();
         let mut app = App::new(Settings::default(), payload, fixture);
-        let preset = list_all().into_iter().find(|p| p.name == "minimal").unwrap();
+        let preset = list_all()
+            .into_iter()
+            .find(|p| p.name == "minimal")
+            .unwrap();
         apply(&mut app, &preset);
         assert!(!app.editable.lines.is_empty());
         assert_eq!(app.editable.version, Settings::default().version);

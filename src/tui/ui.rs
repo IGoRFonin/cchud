@@ -107,7 +107,6 @@ fn render_edit_lines(frame: &mut Frame<'_>, main: ratatui::layout::Rect, app: &A
     panels::preview::render(frame, bottom[1], app);
 }
 
-
 fn render_status_bar(frame: &mut Frame<'_>, area: ratatui::layout::Rect, app: &App) {
     let cols = Layout::default()
         .direction(Direction::Horizontal)

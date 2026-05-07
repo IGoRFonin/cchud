@@ -77,7 +77,9 @@ fn compute_scroll(cursor_row: u16, total: u16, visible: u16) -> u16 {
     }
     let max = total.saturating_sub(visible);
     if cursor_row >= visible {
-        cursor_row.saturating_sub(visible.saturating_sub(1)).min(max)
+        cursor_row
+            .saturating_sub(visible.saturating_sub(1))
+            .min(max)
     } else {
         0
     }

@@ -9,7 +9,7 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::tui::app::{
-    App, ColorField, EditField, MessageKind, Mode, Pane, PaletteMode, Screen, SettingsField,
+    App, ColorField, EditField, MessageKind, Mode, PaletteMode, Pane, Screen, SettingsField,
 };
 use crate::tui::effects::ReducerEffect;
 use crate::tui::widget_meta::{ALL_KINDS, WidgetMeta};
@@ -86,10 +86,7 @@ fn handle_choose_preset(app: &mut App, key: KeyEvent) -> ReducerEffect {
         KeyCode::Enter => {
             if let Some(preset) = app.presets.get(app.preset_cursor).cloned() {
                 crate::tui::presets::apply(app, &preset);
-                app.status_message = Some((
-                    format!("Applied: {}", preset.name),
-                    MessageKind::Info,
-                ));
+                app.status_message = Some((format!("Applied: {}", preset.name), MessageKind::Info));
             }
             app.screen = Screen::Home;
             ReducerEffect::None
@@ -138,10 +135,8 @@ fn handle_preset_name_prompt(app: &mut App, key: KeyEvent) -> ReducerEffect {
                     app.presets = crate::tui::presets::list_all();
                 }
                 Err(e) => {
-                    app.status_message = Some((
-                        format!("Save preset failed: {e}"),
-                        MessageKind::Error,
-                    ));
+                    app.status_message =
+                        Some((format!("Save preset failed: {e}"), MessageKind::Error));
                 }
             }
             app.mode = Mode::Edit;
@@ -213,10 +208,7 @@ fn cycle_focus(app: &mut App, backward: bool) {
         order.insert(1, Pane::Palette);
     }
     // If we somehow are on Preview, treat as Lines.
-    let idx = order
-        .iter()
-        .position(|p| *p == app.focus)
-        .unwrap_or(0);
+    let idx = order.iter().position(|p| *p == app.focus).unwrap_or(0);
     let next = if backward {
         (idx + order.len() - 1) % order.len()
     } else {
@@ -991,7 +983,11 @@ fn apply_text(app: &mut App, field: SettingsField, buffer: String) {
             }
         }
         (SettingsField::CurrentWorkingDirPrefix, WidgetConfig::CurrentWorkingDir { params }) => {
-            params.prefix = if buffer.is_empty() { None } else { Some(buffer) };
+            params.prefix = if buffer.is_empty() {
+                None
+            } else {
+                Some(buffer)
+            };
         }
         _ => {}
     }
@@ -1026,10 +1022,7 @@ fn apply_number(app: &mut App, field: SettingsField, buffer: &str) {
                 }
             }
         }
-        (
-            SettingsField::CurrentWorkingDirSegments,
-            WidgetConfig::CurrentWorkingDir { params },
-        ) => {
+        (SettingsField::CurrentWorkingDirSegments, WidgetConfig::CurrentWorkingDir { params }) => {
             if n == 0 {
                 params.segments = None;
             } else if (1..=10).contains(&n) {
@@ -1519,10 +1512,7 @@ mod tests {
         handle_key(&mut app, key(KeyCode::Enter));
         assert!(app.editing_field.is_none());
         let expected = NAMED_COLORS[2].1.to_string();
-        assert_eq!(
-            app.editable.lines[0].widgets[0].style.color,
-            Some(expected)
-        );
+        assert_eq!(app.editable.lines[0].widgets[0].style.color, Some(expected));
     }
 
     #[test]
@@ -1753,10 +1743,7 @@ mod tests {
     #[test]
     fn ctrl_p_in_edit_lines_opens_preset_name_prompt() {
         let mut app = make_app();
-        handle_key(
-            &mut app,
-            key_mod(KeyCode::Char('p'), KeyModifiers::CONTROL),
-        );
+        handle_key(&mut app, key_mod(KeyCode::Char('p'), KeyModifiers::CONTROL));
         assert_eq!(app.mode, Mode::PresetNamePrompt);
         assert!(app.preset_name_buffer.is_empty());
     }

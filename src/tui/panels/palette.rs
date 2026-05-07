@@ -8,7 +8,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
-use crate::tui::app::{App, Pane, PaletteMode};
+use crate::tui::app::{App, PaletteMode, Pane};
 use crate::tui::ui::panel_block;
 use crate::tui::widget_meta::{ALL_KINDS, WidgetCategory, WidgetMeta};
 
@@ -74,10 +74,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
         PaletteMode::Replace => format!("Widgets ({}/61) · replace", filtered.len()),
     };
     let block = panel_block(title, focused);
-    frame.render_widget(
-        Paragraph::new(lines).block(block).scroll((scroll, 0)),
-        area,
-    );
+    frame.render_widget(Paragraph::new(lines).block(block).scroll((scroll, 0)), area);
 }
 
 /// Returns vertical scroll offset that keeps `cursor_row` visible.

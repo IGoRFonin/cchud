@@ -181,7 +181,11 @@ mod tests {
     #[test]
     fn cwd_full_path_when_no_options_set() {
         let params = CurrentWorkingDirParams::default();
-        let out = render_cwd("/Users/me/proj/cchud", Some(Path::new("/Users/other")), &params);
+        let out = render_cwd(
+            "/Users/me/proj/cchud",
+            Some(Path::new("/Users/other")),
+            &params,
+        );
         assert_eq!(out, "/Users/me/proj/cchud");
     }
 
@@ -212,7 +216,11 @@ mod tests {
             abbreviate_home: true,
             ..Default::default()
         };
-        let out = render_cwd("/Users/me/proj/cchud", Some(Path::new("/Users/me")), &params);
+        let out = render_cwd(
+            "/Users/me/proj/cchud",
+            Some(Path::new("/Users/me")),
+            &params,
+        );
         assert_eq!(out, "~/.../proj/cchud");
     }
 
@@ -257,7 +265,11 @@ mod tests {
             fish_style: true,
             ..Default::default()
         };
-        let out = render_cwd("/Users/me/projects/cchud", Some(Path::new("/Users/me")), &params);
+        let out = render_cwd(
+            "/Users/me/projects/cchud",
+            Some(Path::new("/Users/me")),
+            &params,
+        );
         assert_eq!(out, "~/p/cchud");
     }
 

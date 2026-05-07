@@ -40,7 +40,9 @@ pub struct InstallReport {
 #[allow(dead_code)]
 pub enum InstallError {
     /// statusLine занят чем-то ≠ cchud, --force не передан.
-    OccupiedByOther { existing: String },
+    OccupiedByOther {
+        existing: String,
+    },
     Io(io::Error),
     Other(String),
 }
@@ -72,7 +74,10 @@ pub fn run(args: &[String]) -> ExitCode {
         Ok(report) => {
             let current = std::env::current_exe().unwrap_or_default();
             if !same_file(&report.binary_path, &current).unwrap_or(true) {
-                println!("cchud: binary installed to {}", report.binary_path.display());
+                println!(
+                    "cchud: binary installed to {}",
+                    report.binary_path.display()
+                );
             }
             println!("cchud: wired into Claude Code");
             check_path_or_warn(&report.binary_path);
@@ -344,7 +349,9 @@ mod tests_idempotent {
 
     fn override_settings(path: &Path) {
         // SAFETY: serial_test gates these tests against parallel access to env.
-        unsafe { std::env::set_var("CCHUD_SETTINGS", path); }
+        unsafe {
+            std::env::set_var("CCHUD_SETTINGS", path);
+        }
     }
 
     #[test]
@@ -352,7 +359,10 @@ mod tests_idempotent {
     fn returns_installed_when_settings_missing() {
         let tmp = TempDir::new().unwrap();
         override_settings(&tmp.path().join("settings.json"));
-        let args = InstallArgs { force: false, no_relocate: true };
+        let args = InstallArgs {
+            force: false,
+            no_relocate: true,
+        };
         let report = install_idempotent(&args).expect("install");
         assert_eq!(report.status, InstallStatus::Installed);
         assert!(report.backup_path.is_none());
@@ -370,8 +380,11 @@ mod tests_idempotent {
             r#"{"statusLine":{"type":"command","command":"/some/cchud/binary"}}"#,
         )
         .unwrap();
-        let report =
-            install_idempotent(&InstallArgs { no_relocate: true, ..Default::default() }).unwrap();
+        let report = install_idempotent(&InstallArgs {
+            no_relocate: true,
+            ..Default::default()
+        })
+        .unwrap();
         assert_eq!(report.status, InstallStatus::AlreadyConfigured);
     }
 
@@ -387,8 +400,11 @@ mod tests_idempotent {
         )
         .unwrap();
 
-        let err =
-            install_idempotent(&InstallArgs { no_relocate: true, ..Default::default() }).unwrap_err();
+        let err = install_idempotent(&InstallArgs {
+            no_relocate: true,
+            ..Default::default()
+        })
+        .unwrap_err();
         match err {
             InstallError::OccupiedByOther { existing } => {
                 assert!(existing.contains("some/other/tool"));
