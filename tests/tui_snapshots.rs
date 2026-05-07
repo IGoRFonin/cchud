@@ -120,6 +120,14 @@ fn confirm_return_home_modal() {
 }
 
 #[test]
+fn confirm_install_modal_over_home() {
+    let mut app = home_app();
+    app.home_cursor = 2;
+    app.mode = Mode::ConfirmInstall;
+    insta::assert_snapshot!(render_to_buffer(&app));
+}
+
+#[test]
 fn preset_name_prompt_with_partial_input() {
     let mut app = fresh_app();
     app.mode = Mode::PresetNamePrompt;

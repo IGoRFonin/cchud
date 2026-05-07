@@ -77,6 +77,9 @@ pub fn draw(frame: &mut Frame<'_>, app: &App) {
         Mode::HelpOverlay => overlays::help::render(frame, area),
         Mode::ConfirmQuit => overlays::modal::render_confirm_quit(frame, area),
         Mode::ConfirmReturnHome => overlays::modal::render_confirm_return_home(frame, area),
+        Mode::ConfirmInstall => {
+            overlays::modal::render_confirm_install(frame, area, app.confirm_install_cursor);
+        }
         Mode::PresetNamePrompt => {
             overlays::modal::render_preset_name_prompt(frame, area, &app.preset_name_buffer);
         }

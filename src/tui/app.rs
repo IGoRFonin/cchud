@@ -20,6 +20,8 @@ pub enum Mode {
     ConfirmReturnHome,
     /// `Ctrl+P` в `EditLines` — input для имени пресета.
     PresetNamePrompt,
+    /// Home → Enter на "Install to Claude Code" — ждём `o`/`c`.
+    ConfirmInstall,
 }
 
 /// Top-level screen — определяет, какой root-render использовать.
@@ -165,6 +167,8 @@ pub struct App {
     /// Буфер ввода в `Mode::PresetNamePrompt`.
     #[allow(dead_code)] // wired in T7
     pub preset_name_buffer: String,
+    /// Курсор в `ConfirmInstall` modal: 0 = Overwrite, 1 = Cancel.
+    pub confirm_install_cursor: usize,
 }
 
 impl App {
@@ -203,6 +207,7 @@ impl App {
             preset_cursor: 0,
             presets: Vec::new(),
             preset_name_buffer: String::new(),
+            confirm_install_cursor: 0,
         }
     }
 

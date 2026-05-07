@@ -84,6 +84,39 @@ pub fn render_preset_name_prompt(frame: &mut Frame<'_>, area: Rect, buffer: &str
     frame.render_widget(Paragraph::new(lines).block(block), popup);
 }
 
+/// Confirm-install modal — `[o] Overwrite · [c] Cancel`. Показывается всегда
+/// перед записью statusLine — даже когда settings.json пустой.
+pub fn render_confirm_install(frame: &mut Frame<'_>, area: Rect, cursor: usize) {
+    let popup = centered(70, 55, area);
+    frame.render_widget(Clear, popup);
+    let yellow_bold = Style::default()
+        .fg(Color::Yellow)
+        .add_modifier(Modifier::BOLD);
+    let dim = Style::default().fg(Color::DarkGray);
+    let item = |idx: usize, label: &str| -> Line<'static> {
+        let prefix = if cursor == idx { "▶ " } else { "  " };
+        let style = if cursor == idx {
+            yellow_bold
+        } else {
+            Style::default()
+        };
+        Line::from(Span::styled(format!("{prefix}{label}"), style))
+    };
+    let lines = vec![
+        Line::from(Span::styled("Install to Claude Code?", yellow_bold)),
+        Line::from(""),
+        Line::from("Will write cchud into ~/.claude/settings.json,"),
+        Line::from("overwriting any existing statusLine."),
+        Line::from(""),
+        item(0, "Overwrite"),
+        item(1, "Cancel"),
+        Line::from(""),
+        Line::from(Span::styled("↑/↓ select  Enter confirm  Esc cancel", dim)),
+    ];
+    let block = overlay_block("Install to Claude Code");
+    frame.render_widget(Paragraph::new(lines).block(block), popup);
+}
+
 /// Confirm-return-home modal — `[s] Save · [d] Discard · [c] Cancel`,
 /// возвращает на Home (НЕ выходит из приложения).
 pub fn render_confirm_return_home(frame: &mut Frame<'_>, area: Rect) {

@@ -93,7 +93,11 @@ pub fn run_event_loop(mut app: App) -> io::Result<bool> {
 
 fn run_install_inline(app: &mut App) {
     use crate::commands::install::{InstallArgs, InstallError, InstallStatus, install_idempotent};
-    let args = InstallArgs::default();
+    // User уже подтвердил перезапись через ConfirmInstall modal.
+    let args = InstallArgs {
+        force: true,
+        ..InstallArgs::default()
+    };
     match install_idempotent(&args) {
         Ok(report) => {
             let msg = match report.status {

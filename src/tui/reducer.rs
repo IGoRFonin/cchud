@@ -22,6 +22,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) -> ReducerEffect {
     match app.mode {
         Mode::ConfirmQuit => return handle_confirm_quit(app, key),
         Mode::ConfirmReturnHome => return handle_confirm_return_home(app, key),
+        Mode::ConfirmInstall => return handle_confirm_install(app, key),
         Mode::PresetNamePrompt => return handle_preset_name_prompt(app, key),
         Mode::HelpOverlay if matches!(app.screen, Screen::EditLines) => {
             return handle_help(app, key);
@@ -63,7 +64,11 @@ fn handle_home(app: &mut App, key: KeyEvent) -> ReducerEffect {
                 app.screen = Screen::ChoosePreset;
                 ReducerEffect::None
             }
-            2 => ReducerEffect::RunInstall,
+            2 => {
+                app.mode = Mode::ConfirmInstall;
+                app.confirm_install_cursor = 0;
+                ReducerEffect::None
+            }
             _ => quit_or_confirm(app),
         },
         KeyCode::Char('q') | KeyCode::Esc => quit_or_confirm(app),
@@ -231,6 +236,30 @@ fn handle_help(app: &mut App, _key: KeyEvent) -> ReducerEffect {
     // Любая клавиша закрывает help.
     app.mode = Mode::Edit;
     ReducerEffect::None
+}
+
+#[allow(clippy::missing_const_for_fn)]
+fn handle_confirm_install(app: &mut App, key: KeyEvent) -> ReducerEffect {
+    match key.code {
+        KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right
+        | KeyCode::Char('h' | 'j' | 'k' | 'l') | KeyCode::Tab => {
+            app.confirm_install_cursor = 1 - app.confirm_install_cursor.min(1);
+            ReducerEffect::None
+        }
+        KeyCode::Enter => {
+            app.mode = Mode::Edit;
+            if app.confirm_install_cursor == 0 {
+                ReducerEffect::RunInstall
+            } else {
+                ReducerEffect::None
+            }
+        }
+        KeyCode::Esc => {
+            app.mode = Mode::Edit;
+            ReducerEffect::None
+        }
+        _ => ReducerEffect::None,
+    }
 }
 
 #[allow(clippy::missing_const_for_fn)]
@@ -1613,12 +1642,70 @@ mod tests {
     }
 
     #[test]
-    fn home_enter_on_install_returns_run_install_effect() {
+    fn home_enter_on_install_opens_confirm_modal() {
         let mut app = home_app();
         app.home_cursor = 2;
         let eff = handle_key(&mut app, key(KeyCode::Enter));
-        assert_eq!(eff, ReducerEffect::RunInstall);
+        assert_eq!(eff, ReducerEffect::None);
+        assert_eq!(app.mode, Mode::ConfirmInstall);
         assert_eq!(app.screen, Screen::Home);
+    }
+
+    #[test]
+    fn confirm_install_enter_on_overwrite_runs_install() {
+        let mut app = home_app();
+        app.mode = Mode::ConfirmInstall;
+        app.confirm_install_cursor = 0;
+        let eff = handle_key(&mut app, key(KeyCode::Enter));
+        assert_eq!(eff, ReducerEffect::RunInstall);
+        assert_eq!(app.mode, Mode::Edit);
+    }
+
+    #[test]
+    fn confirm_install_down_arrow_moves_to_cancel() {
+        let mut app = home_app();
+        app.mode = Mode::ConfirmInstall;
+        app.confirm_install_cursor = 0;
+        handle_key(&mut app, key(KeyCode::Down));
+        assert_eq!(app.confirm_install_cursor, 1);
+    }
+
+    #[test]
+    fn confirm_install_up_arrow_moves_back_to_overwrite() {
+        let mut app = home_app();
+        app.mode = Mode::ConfirmInstall;
+        app.confirm_install_cursor = 1;
+        handle_key(&mut app, key(KeyCode::Up));
+        assert_eq!(app.confirm_install_cursor, 0);
+    }
+
+    #[test]
+    fn confirm_install_enter_on_cancel_does_nothing() {
+        let mut app = home_app();
+        app.mode = Mode::ConfirmInstall;
+        app.confirm_install_cursor = 1;
+        let eff = handle_key(&mut app, key(KeyCode::Enter));
+        assert_eq!(eff, ReducerEffect::None);
+        assert_eq!(app.mode, Mode::Edit);
+    }
+
+    #[test]
+    fn confirm_install_esc_cancels_modal() {
+        let mut app = home_app();
+        app.mode = Mode::ConfirmInstall;
+        let eff = handle_key(&mut app, key(KeyCode::Esc));
+        assert_eq!(eff, ReducerEffect::None);
+        assert_eq!(app.mode, Mode::Edit);
+    }
+
+    #[test]
+    fn home_enter_on_install_resets_cursor_to_overwrite() {
+        let mut app = home_app();
+        app.home_cursor = 2;
+        app.confirm_install_cursor = 1;
+        handle_key(&mut app, key(KeyCode::Enter));
+        assert_eq!(app.mode, Mode::ConfirmInstall);
+        assert_eq!(app.confirm_install_cursor, 0);
     }
 
     #[test]
