@@ -115,10 +115,46 @@ fn handle_confirm_return_home(app: &mut App, key: KeyEvent) -> ReducerEffect {
     }
 }
 
-#[allow(clippy::missing_const_for_fn)]
-fn handle_preset_name_prompt(_app: &mut App, _key: KeyEvent) -> ReducerEffect {
-    // Wired in T7.
-    ReducerEffect::None
+fn handle_preset_name_prompt(app: &mut App, key: KeyEvent) -> ReducerEffect {
+    match key.code {
+        KeyCode::Esc => {
+            app.preset_name_buffer.clear();
+            app.mode = Mode::Edit;
+            ReducerEffect::None
+        }
+        KeyCode::Backspace => {
+            app.preset_name_buffer.pop();
+            ReducerEffect::None
+        }
+        KeyCode::Enter => {
+            let name = std::mem::take(&mut app.preset_name_buffer);
+            match crate::tui::presets::save_as(&name, &app.editable) {
+                Ok(path) => {
+                    app.status_message = Some((
+                        format!("Saved preset · {}", path.display()),
+                        MessageKind::Info,
+                    ));
+                    // Перезагружаем presets чтобы новый сразу появился в Choose Preset.
+                    app.presets = crate::tui::presets::list_all();
+                }
+                Err(e) => {
+                    app.status_message = Some((
+                        format!("Save preset failed: {e}"),
+                        MessageKind::Error,
+                    ));
+                }
+            }
+            app.mode = Mode::Edit;
+            ReducerEffect::None
+        }
+        KeyCode::Char(c) if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+            if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                app.preset_name_buffer.push(c);
+            }
+            ReducerEffect::None
+        }
+        _ => ReducerEffect::None,
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -136,6 +172,11 @@ fn handle_edit_lines(app: &mut App, key: KeyEvent) -> ReducerEffect {
         }
         (KeyCode::Char('s'), m) if m.contains(KeyModifiers::CONTROL) => {
             return ReducerEffect::RequestSaveAndQuit;
+        }
+        (KeyCode::Char('p'), m) if m.contains(KeyModifiers::CONTROL) => {
+            app.preset_name_buffer.clear();
+            app.mode = Mode::PresetNamePrompt;
+            return ReducerEffect::None;
         }
         (KeyCode::Char('?'), _) => {
             app.mode = Mode::HelpOverlay;
@@ -1705,5 +1746,80 @@ mod tests {
         handle_key(&mut app, key(KeyCode::Char('c')));
         assert_eq!(app.mode, Mode::Edit);
         assert_eq!(app.screen, Screen::EditLines);
+    }
+
+    // --- PresetNamePrompt tests (T7) ---
+
+    #[test]
+    fn ctrl_p_in_edit_lines_opens_preset_name_prompt() {
+        let mut app = make_app();
+        handle_key(
+            &mut app,
+            key_mod(KeyCode::Char('p'), KeyModifiers::CONTROL),
+        );
+        assert_eq!(app.mode, Mode::PresetNamePrompt);
+        assert!(app.preset_name_buffer.is_empty());
+    }
+
+    #[test]
+    fn preset_name_prompt_appends_alphanumeric() {
+        let mut app = make_app();
+        app.mode = Mode::PresetNamePrompt;
+        handle_key(&mut app, key(KeyCode::Char('a')));
+        handle_key(&mut app, key(KeyCode::Char('B')));
+        handle_key(&mut app, key(KeyCode::Char('1')));
+        assert_eq!(app.preset_name_buffer, "aB1");
+    }
+
+    #[test]
+    fn preset_name_prompt_rejects_special_chars() {
+        let mut app = make_app();
+        app.mode = Mode::PresetNamePrompt;
+        handle_key(&mut app, key(KeyCode::Char('a')));
+        handle_key(&mut app, key(KeyCode::Char(' ')));
+        handle_key(&mut app, key(KeyCode::Char('!')));
+        handle_key(&mut app, key(KeyCode::Char('b')));
+        assert_eq!(app.preset_name_buffer, "ab");
+    }
+
+    #[test]
+    fn preset_name_prompt_backspace_pops() {
+        let mut app = make_app();
+        app.mode = Mode::PresetNamePrompt;
+        app.preset_name_buffer = "abc".to_string();
+        handle_key(&mut app, key(KeyCode::Backspace));
+        assert_eq!(app.preset_name_buffer, "ab");
+    }
+
+    #[test]
+    fn preset_name_prompt_esc_cancels() {
+        let mut app = make_app();
+        app.mode = Mode::PresetNamePrompt;
+        app.preset_name_buffer = "abc".to_string();
+        handle_key(&mut app, key(KeyCode::Esc));
+        assert_eq!(app.mode, Mode::Edit);
+        assert!(app.preset_name_buffer.is_empty());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn preset_name_prompt_enter_with_temp_dir_saves() {
+        use tempfile::TempDir;
+        let tmp = TempDir::new().unwrap();
+        // SAFETY: serial_test gates parallel access to env in this module.
+        unsafe {
+            std::env::set_var("CCHUD_PRESETS_DIR", tmp.path());
+        }
+
+        let mut app = make_app();
+        app.editable.lines.push(Line::default());
+        app.mode = Mode::PresetNamePrompt;
+        app.preset_name_buffer = "mytest".to_string();
+        handle_key(&mut app, key(KeyCode::Enter));
+
+        assert_eq!(app.mode, Mode::Edit);
+        assert!(app.status_message.is_some());
+        let saved = tmp.path().join("mytest.json");
+        assert!(saved.exists());
     }
 }

@@ -51,6 +51,42 @@ pub fn render_confirm_quit(frame: &mut Frame<'_>, area: Rect) {
     frame.render_widget(Paragraph::new(lines).block(block), popup);
 }
 
+/// Inline-prompt for "save current settings as preset". `Enter` сохраняет,
+/// `Esc` отменяет. Принимает только `[a-zA-Z0-9_-]` — UI фильтрует на ввод.
+pub fn render_preset_name_prompt(frame: &mut Frame<'_>, area: Rect, buffer: &str) {
+    let popup = centered(50, 28, area);
+    frame.render_widget(Clear, popup);
+    let yellow_bold = Style::default()
+        .fg(Color::Yellow)
+        .add_modifier(Modifier::BOLD);
+    let lines = vec![
+        Line::from(Span::styled("Save preset", yellow_bold)),
+        Line::from(""),
+        Line::from(vec![
+            Span::raw("Name: "),
+            Span::styled(
+                buffer.to_string(),
+                Style::default().fg(Color::Yellow),
+            ),
+            Span::styled(
+                "_",
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::SLOW_BLINK),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Enter", yellow_bold),
+            Span::raw(" save  "),
+            Span::styled("Esc", yellow_bold),
+            Span::raw(" cancel"),
+        ]),
+    ];
+    let block = overlay_block("Save preset");
+    frame.render_widget(Paragraph::new(lines).block(block), popup);
+}
+
 /// Confirm-return-home modal — `[s] Save · [d] Discard · [c] Cancel`,
 /// возвращает на Home (НЕ выходит из приложения).
 pub fn render_confirm_return_home(frame: &mut Frame<'_>, area: Rect) {

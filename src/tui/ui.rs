@@ -68,12 +68,14 @@ pub fn draw(frame: &mut Frame<'_>, app: &App) {
 
     // Overlays поверх всего.
     match app.mode {
-        // PresetNamePrompt wired in T7.
-        Mode::Edit | Mode::PresetNamePrompt => {}
+        Mode::Edit => {}
         Mode::ThemesOverlay => overlays::themes::render(frame, area, app),
         Mode::HelpOverlay => overlays::help::render(frame, area),
         Mode::ConfirmQuit => overlays::modal::render_confirm_quit(frame, area),
         Mode::ConfirmReturnHome => overlays::modal::render_confirm_return_home(frame, area),
+        Mode::PresetNamePrompt => {
+            overlays::modal::render_preset_name_prompt(frame, area, &app.preset_name_buffer);
+        }
     }
 }
 
