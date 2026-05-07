@@ -3,7 +3,6 @@
   "lines": [{
     "widgets": [
       {"type": "claude-account-email"},
-      {"type": "free-memory"},
       {"type": "skills"}
     ]
   }],

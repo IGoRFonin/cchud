@@ -69,11 +69,13 @@ fn usage_cluster() {
     insta::assert_snapshot!(render_with_fixture("tests/configs/usage-cluster.json"));
 }
 
-// NOTE: этот тест проверяет только `free-memory`, так как `claude-account-email`
-// требует живой ~/.claude.json (OnceLock, недоступен из integration test),
-// а `skills` требует заполненный transcript (set_transcript_for_tests — #[cfg(test)]
-// в lib, не экспортируется в integration binary). Регрессии email/skills покрыты
-// юнит-тестами в src/widgets/env.rs и src/widgets/transcript_meta.rs.
+// NOTE: env-cluster snapshot пустой — `claude-account-email` требует живой
+// ~/.claude.json (OnceLock, недоступен из integration test), `skills` —
+// заполненный transcript (set_transcript_for_tests — #[cfg(test)] в lib,
+// не экспортируется в integration binary). Тест проверяет только что виджеты
+// не падают на render. `free-memory` исключён: читает реальную RAM хоста
+// (host-зависимый flake). Регрессии покрыты юнит-тестами в src/widgets/env.rs
+// и src/widgets/transcript_meta.rs.
 #[test]
 fn env_cluster() {
     insta::assert_snapshot!(render_with_fixture("tests/configs/env-cluster.json"));
