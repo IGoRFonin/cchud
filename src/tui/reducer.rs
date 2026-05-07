@@ -8,7 +8,9 @@
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::tui::app::{App, ColorField, EditField, Mode, Pane, PaletteMode, Screen, SettingsField};
+use crate::tui::app::{
+    App, ColorField, EditField, MessageKind, Mode, Pane, PaletteMode, Screen, SettingsField,
+};
 use crate::tui::effects::ReducerEffect;
 use crate::tui::widget_meta::{ALL_KINDS, WidgetMeta};
 use crate::types::config::{Line, WidgetItem, WidgetStyleOverride};
@@ -54,8 +56,11 @@ fn handle_home(app: &mut App, key: KeyEvent) -> ReducerEffect {
                 ReducerEffect::None
             }
             1 => {
-                app.screen = Screen::ChoosePreset;
+                if app.presets.is_empty() {
+                    app.presets = crate::tui::presets::list_all();
+                }
                 app.preset_cursor = 0;
+                app.screen = Screen::ChoosePreset;
                 ReducerEffect::None
             }
             2 => ReducerEffect::RunInstall,
@@ -66,10 +71,35 @@ fn handle_home(app: &mut App, key: KeyEvent) -> ReducerEffect {
     }
 }
 
-#[allow(clippy::missing_const_for_fn)]
-fn handle_choose_preset(_app: &mut App, _key: KeyEvent) -> ReducerEffect {
-    // Wired in T5.
-    ReducerEffect::None
+fn handle_choose_preset(app: &mut App, key: KeyEvent) -> ReducerEffect {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => {
+            app.preset_cursor = app.preset_cursor.saturating_sub(1);
+            ReducerEffect::None
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.preset_cursor + 1 < app.presets.len() {
+                app.preset_cursor += 1;
+            }
+            ReducerEffect::None
+        }
+        KeyCode::Enter => {
+            if let Some(preset) = app.presets.get(app.preset_cursor).cloned() {
+                crate::tui::presets::apply(app, &preset);
+                app.status_message = Some((
+                    format!("Applied: {}", preset.name),
+                    MessageKind::Info,
+                ));
+            }
+            app.screen = Screen::Home;
+            ReducerEffect::None
+        }
+        KeyCode::Esc | KeyCode::Char('q') => {
+            app.screen = Screen::Home;
+            ReducerEffect::None
+        }
+        _ => ReducerEffect::None,
+    }
 }
 
 #[allow(clippy::missing_const_for_fn)]
@@ -1559,5 +1589,58 @@ mod tests {
         let eff = handle_key(&mut app, key(KeyCode::Char('q')));
         assert_eq!(eff, ReducerEffect::None);
         assert_eq!(app.mode, Mode::ConfirmQuit);
+    }
+
+    // --- Choose Preset tests (T5) ---
+
+    #[test]
+    fn home_enter_on_choose_preset_loads_presets() {
+        let mut app = home_app();
+        app.home_cursor = 1;
+        handle_key(&mut app, key(KeyCode::Enter));
+        assert_eq!(app.screen, Screen::ChoosePreset);
+        assert_eq!(app.presets.len(), 5);
+    }
+
+    #[test]
+    fn choose_preset_down_advances_within_bounds() {
+        let mut app = home_app();
+        app.presets = crate::tui::presets::list_all();
+        app.screen = Screen::ChoosePreset;
+        handle_key(&mut app, key(KeyCode::Down));
+        assert_eq!(app.preset_cursor, 1);
+    }
+
+    #[test]
+    fn choose_preset_down_clamps_at_last() {
+        let mut app = home_app();
+        app.presets = crate::tui::presets::list_all();
+        app.screen = Screen::ChoosePreset;
+        app.preset_cursor = app.presets.len() - 1;
+        handle_key(&mut app, key(KeyCode::Down));
+        assert_eq!(app.preset_cursor, app.presets.len() - 1);
+    }
+
+    #[test]
+    fn choose_preset_enter_applies_and_returns_home() {
+        let mut app = home_app();
+        app.presets = crate::tui::presets::list_all();
+        app.screen = Screen::ChoosePreset;
+        app.preset_cursor = 0; // "minimal"
+        handle_key(&mut app, key(KeyCode::Enter));
+        assert_eq!(app.screen, Screen::Home);
+        assert!(!app.editable.lines.is_empty());
+        assert!(app.status_message.is_some());
+    }
+
+    #[test]
+    fn choose_preset_esc_returns_home_without_apply() {
+        let mut app = home_app();
+        app.presets = crate::tui::presets::list_all();
+        app.screen = Screen::ChoosePreset;
+        let lines_before = app.editable.lines.clone();
+        handle_key(&mut app, key(KeyCode::Esc));
+        assert_eq!(app.screen, Screen::Home);
+        assert_eq!(app.editable.lines, lines_before);
     }
 }

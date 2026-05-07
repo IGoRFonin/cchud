@@ -19,12 +19,24 @@ use crate::widgets::{RenderContext, build_widgets};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let focused = app.focus == Pane::Preview;
+    render_with_settings(frame, area, &app.editable, &app.sample_payload, focused);
+}
+
+/// Public helper for screens that need a preview but don't have an `App` context.
+///
+/// Renders the same mock CC input + statusline stack as `render`, but on
+/// caller-provided `Settings` + `StatusPayload`. Used by Choose Preset.
+pub fn render_with_settings(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    settings: &crate::types::config::Settings,
+    payload: &crate::types::payload::StatusPayload,
+    focused: bool,
+) {
     let block = panel_block("Preview", focused);
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    // Split inner area: mock CC input box (3 rows) + blank gap (1 row) + statusline (rest).
-    // Если высоты не хватает — input всё равно занимает 3 строки, statusline схлопывается.
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -35,7 +47,7 @@ pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
         .split(inner);
 
     render_mock_input(frame, chunks[0]);
-    render_statusline(frame, chunks[2], app);
+    render_statusline_with(frame, chunks[2], settings, payload);
 }
 
 /// Mock Claude Code text-input prompt — rounded box + `>` prompt + dim hint.
@@ -57,10 +69,15 @@ fn render_mock_input(frame: &mut Frame<'_>, area: Rect) {
 }
 
 /// Render the actual configured statusline на sample payload.
-fn render_statusline(frame: &mut Frame<'_>, area: Rect, app: &App) {
-    let ctx = RenderContext::new(&app.sample_payload, &app.editable);
-    let renderer = Renderer::for_preview(&app.editable);
-    let lines = build_widgets(&app.editable);
+fn render_statusline_with(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    settings: &crate::types::config::Settings,
+    payload: &crate::types::payload::StatusPayload,
+) {
+    let ctx = RenderContext::new(payload, settings);
+    let renderer = Renderer::for_preview(settings);
+    let lines = build_widgets(settings);
     let mut state = RenderState::default();
 
     let mut tui_lines: Vec<Line<'_>> = Vec::with_capacity(lines.len().max(1));
@@ -78,7 +95,7 @@ fn render_statusline(frame: &mut Frame<'_>, area: Rect, app: &App) {
                         w.default_style(),
                         None,
                         ovr,
-                        &app.editable.theme,
+                        &settings.theme,
                     );
                     Some(Segment {
                         text,
@@ -88,10 +105,10 @@ fn render_statusline(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     })
                 })
                 .collect();
-            let composed = renderer.compose_line(&segments, &mut state, &app.editable.theme);
+            let composed = renderer.compose_line(&segments, &mut state, &settings.theme);
             let spans: Vec<_> = composed.iter().map(style_map::to_span).collect();
             tui_lines.push(Line::from(spans));
-            if !app.editable.theme.continue_theme_across_lines {
+            if !settings.theme.continue_theme_across_lines {
                 state.reset();
             }
         }

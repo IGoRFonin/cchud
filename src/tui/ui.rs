@@ -60,7 +60,7 @@ pub fn draw(frame: &mut Frame<'_>, app: &App) {
     match app.screen {
         Screen::Home => screens::home::render(frame, main, app),
         Screen::EditLines => render_edit_lines(frame, main, app),
-        Screen::ChoosePreset => render_choose_preset_stub(frame, main),
+        Screen::ChoosePreset => screens::choose_preset::render(frame, main, app),
     }
 
     // Status bar.
@@ -100,15 +100,6 @@ fn render_edit_lines(frame: &mut Frame<'_>, main: ratatui::layout::Rect, app: &A
     panels::preview::render(frame, bottom[1], app);
 }
 
-fn render_choose_preset_stub(frame: &mut Frame<'_>, area: ratatui::layout::Rect) {
-    let block = panel_block("Presets", false);
-    let inner = block.inner(area);
-    frame.render_widget(block, area);
-    frame.render_widget(
-        Paragraph::new("No presets — see Task 5").style(Style::default().fg(Color::DarkGray)),
-        inner,
-    );
-}
 
 fn render_status_bar(frame: &mut Frame<'_>, area: ratatui::layout::Rect, app: &App) {
     let dirty_glyph = if app.dirty() { "● " } else { "" };
