@@ -13,6 +13,10 @@ use crate::tui::overlays;
 use crate::tui::panels;
 use crate::tui::screens;
 
+/// Левый отступ для status bar и Preview-панели — единый визуальный gutter
+/// который выравнивает читаемые тексты с границей панелей.
+pub const LEFT_GUTTER: u16 = 2;
+
 /// Стандартная рамка панели — rounded углы, dim-серая обводка
 /// (yellow + bold когда `focused`), боковые отступы 1 col, заголовок
 /// в формате ` {title} ` слева. Используется во всех 4 panel'ах.
@@ -105,6 +109,12 @@ fn render_edit_lines(frame: &mut Frame<'_>, main: ratatui::layout::Rect, app: &A
 
 
 fn render_status_bar(frame: &mut Frame<'_>, area: ratatui::layout::Rect, app: &App) {
+    let cols = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Length(LEFT_GUTTER), Constraint::Min(0)])
+        .split(area);
+    let inner = cols[1];
+
     let dirty_glyph = if app.dirty() { "● " } else { "" };
     let msg = match &app.status_message {
         Some((m, MessageKind::Info)) => {
@@ -138,5 +148,5 @@ fn render_status_bar(frame: &mut Frame<'_>, area: ratatui::layout::Rect, app: &A
             ])
         }
     };
-    frame.render_widget(Paragraph::new(msg), area);
+    frame.render_widget(Paragraph::new(msg), inner);
 }

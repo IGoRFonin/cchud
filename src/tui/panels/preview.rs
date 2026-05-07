@@ -14,7 +14,7 @@ use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph};
 use crate::render::{RenderState, Renderer, Segment};
 use crate::tui::app::{App, Pane};
 use crate::tui::style_map;
-use crate::tui::ui::panel_block;
+use crate::tui::ui::LEFT_GUTTER;
 use crate::widgets::{RenderContext, build_widgets};
 
 pub fn render(frame: &mut Frame<'_>, area: Rect, app: &App) {
@@ -33,7 +33,18 @@ pub fn render_with_settings(
     payload: &crate::types::payload::StatusPayload,
     focused: bool,
 ) {
-    let block = panel_block("Preview", focused);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .padding(Padding::new(LEFT_GUTTER, 1, 0, 0))
+        .title(" Preview ")
+        .border_style(if focused {
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::DarkGray)
+        });
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
