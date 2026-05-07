@@ -1,0 +1,27 @@
+{
+  "lines": [
+    {
+      "widgets": [
+        { "type": "current-working-dir" },
+        { "type": "separator" },
+        { "type": "git-branch" },
+        { "type": "separator" },
+        { "type": "git-status" },
+        { "type": "separator" },
+        { "type": "model" }
+      ]
+    },
+    {
+      "widgets": [
+        { "type": "tokens-total" },
+        { "type": "separator" },
+        { "type": "session-cost" },
+        { "type": "separator" },
+        { "type": "context-bar", "width": 16 }
+      ]
+    }
+  ],
+  "theme": {
+    "kind": "plain"
+  }
+}

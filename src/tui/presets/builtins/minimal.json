@@ -1,0 +1,16 @@
+{
+  "lines": [
+    {
+      "widgets": [
+        { "type": "current-working-dir" },
+        { "type": "separator" },
+        { "type": "git-branch" },
+        { "type": "separator" },
+        { "type": "model" }
+      ]
+    }
+  ],
+  "theme": {
+    "kind": "plain"
+  }
+}

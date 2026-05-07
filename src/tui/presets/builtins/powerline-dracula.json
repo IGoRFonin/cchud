@@ -1,0 +1,17 @@
+{
+  "lines": [
+    {
+      "widgets": [
+        { "type": "current-working-dir" },
+        { "type": "git-branch" },
+        { "type": "git-status" },
+        { "type": "model" },
+        { "type": "session-cost" }
+      ]
+    }
+  ],
+  "theme": {
+    "kind": "powerline",
+    "theme_name": "dracula"
+  }
+}

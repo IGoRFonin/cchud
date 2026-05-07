@@ -1,0 +1,22 @@
+{
+  "lines": [
+    {
+      "widgets": [
+        { "type": "git-branch" },
+        { "type": "separator" },
+        { "type": "git-sha" },
+        { "type": "separator" },
+        { "type": "git-status" },
+        { "type": "separator" },
+        { "type": "git-ahead-behind" },
+        { "type": "separator" },
+        { "type": "git-pr" },
+        { "type": "separator" },
+        { "type": "model" }
+      ]
+    }
+  ],
+  "theme": {
+    "kind": "plain"
+  }
+}
