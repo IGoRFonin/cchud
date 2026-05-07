@@ -1,5 +1,5 @@
 {
-  "name": "cchud",
+  "name": "@cchud/cchud",
   "version": "0.0.0-PLACEHOLDER",
   "description": "Fast Rust statusline for Claude Code CLI",
   "bin": { "cchud": "bin/cchud.js" },

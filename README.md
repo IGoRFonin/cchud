@@ -25,7 +25,7 @@ Pick one:
 
 ```bash
 # Recommended (one-liner via Node):
-npx --yes cchud@1.0.0 install
+npx --yes @cchud/cchud@1.0.0 install
 
 # Without Node (macOS / Linux gnu/musl):
 curl -fsSL https://raw.githubusercontent.com/IGoRFonin/cchud/main/install.sh | sh
@@ -49,7 +49,7 @@ cchud import       # migrate from ccstatusline (if applicable)
 Each npm package is published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements):
 
 ```bash
-npm view cchud@1.0.0 --json | jq .dist.attestations
+npm view @cchud/cchud@1.0.0 --json | jq .dist.attestations
 ```
 
 GitHub Releases tarballs include `.sha256` checksums alongside each tarball:
@@ -81,7 +81,7 @@ See [`docs/widgets.md`](docs/widgets.md) for the full widget reference.
 See [MIGRATION.md](./MIGRATION.md) for a step-by-step guide. Quick path:
 
 ```bash
-npx --yes cchud@1.0.0 install
+npx --yes @cchud/cchud@1.0.0 install
 cchud import      # auto-detects ccstatusline section in ~/.claude/settings.json
 ```
 

@@ -208,7 +208,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          npx --yes cchud@${{ needs.release.outputs.version }} install
+          npx --yes @cchud/cchud@${{ needs.release.outputs.version }} install
 
       - name: Verify binary at canonical target
         shell: bash
@@ -281,12 +281,12 @@ jobs:
           echo "Smoke install failed for stable release $FAILED."
           # Find the most recent stable version before the failed one and restore latest to it.
           # If none exists (first ever release), remove the tag entirely.
-          PREV=$(npm view cchud versions --json 2>/dev/null \
+          PREV=$(npm view @cchud/cchud versions --json 2>/dev/null \
             | node -e "const v=require('fs').readFileSync('/dev/stdin','utf8');const a=JSON.parse(v);const prev=a.filter(x=>!x.includes('-')&&x!=='$FAILED').pop();process.stdout.write(prev||'')")
           if [ -n "$PREV" ]; then
             echo "Restoring latest -> $PREV"
-            npm dist-tag add "cchud@$PREV" latest
+            npm dist-tag add "@cchud/cchud@$PREV" latest
           else
             echo "No previous stable release; removing latest tag."
-            npm dist-tag rm cchud latest || true
+            npm dist-tag rm @cchud/cchud latest || true
           fi

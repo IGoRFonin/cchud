@@ -3,7 +3,7 @@
 ## TL;DR
 
 ```bash
-npx --yes cchud@1.0.0 install   # 1. install (self-relocates to ~/.local/bin/cchud)
+npx --yes @cchud/cchud@1.0.0 install   # 1. install (self-relocates to ~/.local/bin/cchud)
 cchud import                    # 2. migrate ccstatusline config
 ```
 
@@ -68,6 +68,6 @@ rm ~/.local/bin/cchud
 
 ## Known limitations
 
-- Windows: native binary works; install via `npx --yes cchud@1.0.0 install`. install.sh is macOS/Linux only.
+- Windows: native binary works; install via `npx --yes @cchud/cchud@1.0.0 install`. install.sh is macOS/Linux only.
 - ARM Linux: not yet supported (Phase 10 backlog). Use `cargo install --git https://github.com/IGoRFonin/cchud` until then.
 - Backup of `~/.claude/settings.json` is best-effort (`.bak.<unix-ms>`); we never delete previous backups so they accumulate over time. Periodic cleanup is up to you.
