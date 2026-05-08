@@ -1,6 +1,5 @@
 ---
 source: tests/tui_snapshots.rs
-assertion_line: 112
 expression: render_to_buffer(&app)
 ---
 Buffer {
@@ -24,7 +23,7 @@ Buffer {
         "│  │ > ctrl+s saves config                                                   │ │",
         "│  ╰─────────────────────────────────────────────────────────────────────────╯ │",
         "│                                                                              │",
-        "│  /Users/igor/mp/startup/cchud | main | Sonnet 4.7                            │",
+        "│  /sample/project | Sonnet 4.7                                                │",
         "│                                                                              │",
         "│                                                                              │",
         "│                                                                              │",
@@ -79,9 +78,8 @@ Buffer {
         x: 1, y: 17, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 79, y: 17, fg: DarkGray, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
-        x: 34, y: 18, fg: Indexed(5), bg: Reset, underline: Reset, modifier: NONE,
-        x: 41, y: 18, fg: Indexed(6), bg: Reset, underline: Reset, modifier: BOLD,
-        x: 51, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+        x: 21, y: 18, fg: Indexed(6), bg: Reset, underline: Reset, modifier: BOLD,
+        x: 31, y: 18, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 79, y: 18, fg: DarkGray, bg: Reset, underline: Reset, modifier: NONE,
         x: 1, y: 19, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
         x: 79, y: 19, fg: DarkGray, bg: Reset, underline: Reset, modifier: NONE,

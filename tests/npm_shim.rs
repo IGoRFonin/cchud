@@ -61,6 +61,14 @@ fn shim_spawns_fixture_binary_with_argv() {
         eprintln!("node not available — skipping");
         return;
     }
+    // The fixture is a POSIX shell script; Windows cannot execute it as a `.exe`,
+    // so `spawnSync` would fail with UNKNOWN. The shim's argv-passing behavior is
+    // covered on Unix; Windows-specific paths are exercised by the other shim
+    // tests (missing-package + unsupported-platform).
+    if cfg!(windows) {
+        eprintln!("skipping on Windows: shell-script fixture cannot run as .exe");
+        return;
+    }
     let dir = tempdir().unwrap();
 
     // Fixture binary register'нется как именно тот пакет, который detectPackage()

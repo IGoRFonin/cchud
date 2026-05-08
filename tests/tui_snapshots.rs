@@ -22,7 +22,13 @@ fn fresh_app() -> App {
 }
 
 fn home_app() -> App {
-    let (p, f) = sample::payload();
+    let (mut p, f) = sample::payload();
+    // Host-independent overrides: sample::payload() uses real cwd, which leaks
+    // into preview-rendered snapshots. Pin to a stable fixture path with no
+    // real git repo so `current-working-dir` and `git-branch` are deterministic.
+    p.workspace.current_dir = "/sample/project".into();
+    p.workspace.project_dir = Some("/sample/project".into());
+    p.cwd = Some("/sample/project".into());
     App::new(Settings::default(), p, f)
 }
 
