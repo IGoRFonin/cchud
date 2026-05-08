@@ -374,10 +374,7 @@ mod tests {
         let w = ContextBar {
             params: ContextBarParams { width: 10 },
         };
-        assert_eq!(
-            w.render(&ctx_with(&p, &s)),
-            Some("[░░░░░░░░░░]".into())
-        );
+        assert_eq!(w.render(&ctx_with(&p, &s)), Some("[░░░░░░░░░░]".into()));
     }
 
     // ─── TokensInput / TokensOutput ─────────────────────────────

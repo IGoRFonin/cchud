@@ -196,6 +196,9 @@ fn phase4_powerline_glob() {
                     .unwrap()
                     .env("HOME", &home)
                     .env("USERPROFILE", &home)
+                    // dirs::home_dir() on Windows uses SHGetKnownFolderPath and
+                    // ignores USERPROFILE — point cchud at the temp config explicitly.
+                    .env("CCHUD_CONFIG", home.join(".config/cchud/settings.json"))
                     .env("CCHUD_TEST_COLOR_LEVEL", "true-color")
                     .env("NO_HYPERLINKS", "1") // keep OSC 8 out of generic configs
                     .write_stdin(payload.clone())
@@ -227,6 +230,9 @@ fn phase4_osc8_link() {
         .unwrap()
         .env("HOME", &home)
         .env("USERPROFILE", &home)
+        // dirs::home_dir() on Windows uses SHGetKnownFolderPath and ignores
+        // USERPROFILE — point cchud at the temp config explicitly.
+        .env("CCHUD_CONFIG", home.join(".config/cchud/settings.json"))
         .env("CCHUD_TEST_COLOR_LEVEL", "none") // colors off, only OSC 8 wrapping
         .env("FORCE_HYPERLINK", "1") // supports_hyperlinks honors this
         .write_stdin(payload.to_string())
