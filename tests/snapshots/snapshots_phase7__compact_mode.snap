@@ -1,6 +1,5 @@
 ---
 source: tests/snapshots_phase7.rs
-assertion_line: 81
 expression: "render_with_fixture(\"tests/configs/compact-mode.json\")"
 ---
-Sonnet 4.6 | $0.72 | main
+Sonnet 4.6 | $0.72

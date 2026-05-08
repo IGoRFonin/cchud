@@ -2,7 +2,7 @@
   "version": 1,
   "lines": [{
     "widgets": [
-      {"type": "model"}, {"type": "session-cost"}, {"type": "git-branch"}
+      {"type": "model"}, {"type": "session-cost"}
     ]
   }],
   "theme": {

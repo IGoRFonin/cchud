@@ -241,8 +241,12 @@ fn handle_help(app: &mut App, _key: KeyEvent) -> ReducerEffect {
 #[allow(clippy::missing_const_for_fn)]
 fn handle_confirm_install(app: &mut App, key: KeyEvent) -> ReducerEffect {
     match key.code {
-        KeyCode::Up | KeyCode::Down | KeyCode::Left | KeyCode::Right
-        | KeyCode::Char('h' | 'j' | 'k' | 'l') | KeyCode::Tab => {
+        KeyCode::Up
+        | KeyCode::Down
+        | KeyCode::Left
+        | KeyCode::Right
+        | KeyCode::Char('h' | 'j' | 'k' | 'l')
+        | KeyCode::Tab => {
             app.confirm_install_cursor = 1 - app.confirm_install_cursor.min(1);
             ReducerEffect::None
         }
@@ -675,9 +679,7 @@ fn enter_field_edit(app: &mut App) -> ReducerEffect {
     match cursor {
         0 => {
             sync_color_cursor(app, ColorField::Foreground);
-            app.color_picker_original = app
-                .current_widget()
-                .and_then(|i| i.style.color.clone());
+            app.color_picker_original = app.current_widget().and_then(|i| i.style.color.clone());
             app.editing_field = Some(EditField::ColorPicker {
                 field: ColorField::Foreground,
             });
@@ -1741,7 +1743,10 @@ mod tests {
         // Enter закрывает picker и фиксирует выбор.
         handle_key(&mut app, key(KeyCode::Enter));
         assert!(app.editing_field.is_none());
-        assert_eq!(app.editable.lines[0].widgets[0].style.color, Some(expected3));
+        assert_eq!(
+            app.editable.lines[0].widgets[0].style.color,
+            Some(expected3)
+        );
     }
 
     #[test]

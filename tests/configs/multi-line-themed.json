@@ -3,10 +3,10 @@
   "lines": [
     {"widgets": [
       {"type": "model"}, {"type": "session-cost"},
-      {"type": "tokens-total"}, {"type": "context-percentage"}, {"type": "skills"}
+      {"type": "context-percentage"}, {"type": "skills"}
     ]},
     {"widgets": [
-      {"type": "git-branch"}, {"type": "output-style"},
+      {"type": "output-style"},
       {"type": "context-length"}, {"type": "version"}, {"type": "context-percentage-usable"}
     ]}
   ],

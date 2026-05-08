@@ -212,7 +212,10 @@ mod tests {
         assert_eq!(five.used_percentage, Some(0.0));
         let resets = five.resets_at.unwrap();
         assert!(resets >= now, "resets_at must be in future");
-        assert!(resets < now + FIVE_HOUR_SECS, "resets_at must be within next window");
+        assert!(
+            resets < now + FIVE_HOUR_SECS,
+            "resets_at must be within next window"
+        );
     }
 
     #[test]

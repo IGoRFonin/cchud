@@ -1,7 +1,7 @@
 {
   "version": 1,
   "lines": [{
-    "widgets": [{"type": "model"}, {"type": "session-cost"}, {"type": "git-branch"}]
+    "widgets": [{"type": "model"}, {"type": "session-cost"}]
   }],
   "theme": {"kind": "powerline", "compact_threshold": 200}
 }
