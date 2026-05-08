@@ -17,7 +17,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Текущая версия on-disk схемы. При mismatch делается full rebuild.
-pub const FORMAT_VERSION: u32 = 2;
+pub const FORMAT_VERSION: u32 = 3;
 
 // ───────────────────── Wire types (read JSONL) ─────────────────────
 
@@ -70,6 +70,17 @@ pub struct TranscriptStats {
     pub blocks: Vec<BillingBlock>,
     pub last_thinking_effort: Option<String>,
     pub skill_names: Vec<String>,
+
+    /// Число пауз > 300s между соседними записями транскрипта (любого kind).
+    /// Сбрасывается на /clear (контекст пуст → prior misses нерелевантны).
+    pub cache_misses: u32,
+    /// Первый ts любого entry в текущем chunk (для boundary-gap при merge).
+    pub first_event_ts_ms: Option<u64>,
+    /// Последний ts любого entry (regardless of kind) — для boundary-gap при merge.
+    pub last_event_ts_ms: Option<u64>,
+    /// ts последнего /clear, обнаруженного в этом chunk; None если clear не было.
+    /// При merge: если `tail.last_clear_ts_ms.is_some()` → `prev.cache_misses` отбрасывается.
+    pub last_clear_ts_ms: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -109,8 +120,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn format_version_constant_is_two() {
-        assert_eq!(FORMAT_VERSION, 2);
+    fn format_version_constant_is_three() {
+        assert_eq!(FORMAT_VERSION, 3);
     }
 
     #[test]
@@ -162,6 +173,10 @@ mod tests {
             }],
             last_thinking_effort: Some("high".into()),
             skill_names: vec!["tdd".into()],
+            cache_misses: 7,
+            first_event_ts_ms: Some(1_000),
+            last_event_ts_ms: Some(5_000),
+            last_clear_ts_ms: Some(2_500),
         };
         let bytes = bincode::serialize(&original).unwrap();
         let back: TranscriptStats = bincode::deserialize(&bytes).unwrap();

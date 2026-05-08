@@ -33,6 +33,7 @@
 | `tokens-input` | 3 | payload | low | DONE | current_usage.input_tokens |
 | `tokens-output` | 3 | payload | low | DONE | current_usage.output_tokens |
 | `thinking-effort` | 6 | transcript | mid | DONE | 🧠 {level} из последнего assistant |
+| `cache-misses` | — | transcript | low | DONE | счётчик пауз > 300s, сбрасывается на /clear |
 | `worktree` | 3 | payload | low | DONE | data.worktree объект |
 | `worktree-mode` | 3 | payload | low | DONE | data.worktree != null |
 | `worktree-name` | 3 | payload | low | DONE | data.worktree.name |

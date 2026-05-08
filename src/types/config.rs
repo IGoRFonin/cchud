@@ -135,6 +135,7 @@ pub enum WidgetConfig {
     SessionDuration,
     // transcript meta cluster:
     ThinkingEffort,
+    CacheMisses,
 
     // usage cluster (payload.rate_limits):
     SessionUsage,

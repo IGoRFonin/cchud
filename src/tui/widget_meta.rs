@@ -49,7 +49,7 @@ pub struct WidgetMeta {
     pub factory: fn() -> WidgetConfig,
 }
 
-/// 61 widgets — match `WidgetConfig` enum minus `AlignRight`. Order реализует
+/// 62 widgets — match `WidgetConfig` enum minus `AlignRight`. Order реализует
 /// natural grouping: каждая категория contiguous → palette по группам.
 #[allow(clippy::too_many_lines)]
 pub static ALL_KINDS: &[WidgetMeta] = &[
@@ -403,6 +403,12 @@ pub static ALL_KINDS: &[WidgetMeta] = &[
         factory: || WidgetConfig::ThinkingEffort,
     },
     WidgetMeta {
+        display: "Cache Misses",
+        kebab_type: "cache-misses",
+        category: WidgetCategory::Transcript,
+        factory: || WidgetConfig::CacheMisses,
+    },
+    WidgetMeta {
         display: "Skills",
         kebab_type: "skills",
         category: WidgetCategory::Transcript,
@@ -469,8 +475,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn all_kinds_has_61_entries() {
-        assert_eq!(ALL_KINDS.len(), 61, "palette registry must have 61 widgets");
+    fn all_kinds_has_62_entries() {
+        assert_eq!(ALL_KINDS.len(), 62, "palette registry must have 62 widgets");
     }
 
     #[test]
@@ -484,7 +490,7 @@ mod tests {
                 m.kebab_type
             );
         }
-        assert_eq!(seen.len(), 61);
+        assert_eq!(seen.len(), 62);
     }
 
     #[test]

@@ -43,6 +43,28 @@ fn effort_from_payload(ctx: &RenderContext<'_>) -> Option<String> {
     Some(level.to_string())
 }
 
+/// Cache miss counter — сколько пауз > 300s (TTL prompt-cache) было в transcript.
+/// Сбрасывается при `/clear`. `raw_value=true` → выводит только число без префикса.
+#[derive(Default)]
+pub struct CacheMisses {
+    pub raw_value: bool,
+}
+
+impl Widget for CacheMisses {
+    fn id(&self) -> &'static str {
+        "CacheMisses"
+    }
+    fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
+        let stats = ctx.transcript()?;
+        let n = stats.cache_misses;
+        Some(if self.raw_value {
+            n.to_string()
+        } else {
+            format!("cache miss: {n}")
+        })
+    }
+}
+
 pub struct Skills;
 
 impl Widget for Skills {
@@ -182,5 +204,57 @@ mod tests {
         let s = crate::config::default_line();
         let ctx = RenderContext::new(&p, &s);
         assert!(Skills.render(&ctx).is_none());
+    }
+
+    // ───────────────── CacheMisses ─────────────────
+
+    #[test]
+    fn cache_misses_renders_count_with_label() {
+        let p = payload_no_transcript();
+        let s = default_line();
+        let stats = TranscriptStats {
+            cache_misses: 3,
+            ..TranscriptStats::default()
+        };
+        let ctx = ctx_with(&p, &s, stats);
+        assert_eq!(
+            CacheMisses::default().render(&ctx).as_deref(),
+            Some("cache miss: 3")
+        );
+    }
+
+    #[test]
+    fn cache_misses_zero_still_renders() {
+        let p = payload_no_transcript();
+        let s = default_line();
+        let stats = TranscriptStats::default();
+        let ctx = ctx_with(&p, &s, stats);
+        assert_eq!(
+            CacheMisses::default().render(&ctx).as_deref(),
+            Some("cache miss: 0")
+        );
+    }
+
+    #[test]
+    fn cache_misses_raw_value_strips_label() {
+        let p = payload_no_transcript();
+        let s = default_line();
+        let stats = TranscriptStats {
+            cache_misses: 5,
+            ..TranscriptStats::default()
+        };
+        let ctx = ctx_with(&p, &s, stats);
+        assert_eq!(
+            CacheMisses { raw_value: true }.render(&ctx).as_deref(),
+            Some("5")
+        );
+    }
+
+    #[test]
+    fn cache_misses_none_without_transcript() {
+        let p = payload_no_transcript();
+        let s = default_line();
+        let ctx = RenderContext::new(&p, &s);
+        assert!(CacheMisses::default().render(&ctx).is_none());
     }
 }

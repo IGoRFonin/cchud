@@ -71,6 +71,7 @@ pub const fn widget_supports_raw_value(kind: &WidgetConfig) -> bool {
             | WidgetConfig::OutputSpeed
             | WidgetConfig::TotalSpeed
             | WidgetConfig::ThinkingEffort
+            | WidgetConfig::CacheMisses
     )
 }
 
@@ -95,6 +96,7 @@ pub fn upstream_color_ansi(id: &str) -> Option<u8> {
 
         // ── yellow (3) ───────────────────────────────────────────
         "BlockTimer"
+        | "CacheMisses"
         | "GitChanges"
         | "GitIsFork"
         | "GitStatus"
@@ -466,6 +468,7 @@ fn build_one(item: &WidgetItem) -> Box<dyn Widget> {
         WidgetConfig::ThinkingEffort => {
             Box::new(transcript_meta::ThinkingEffort { raw_value: raw })
         }
+        WidgetConfig::CacheMisses => Box::new(transcript_meta::CacheMisses { raw_value: raw }),
 
         // usage cluster:
         WidgetConfig::SessionUsage => Box::new(usage::SessionUsage),

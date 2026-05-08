@@ -24,6 +24,11 @@ use crate::cache::jsonl_types::{
 
 const FIVE_HOURS_MS: u64 = 5 * 3600 * 1000;
 
+/// TTL prompt-cache у Anthropic — 5 минут. Пауза > 300s = +1 cache miss.
+const CACHE_MISS_GAP_MS: u64 = 300_000;
+/// Маркер `/clear`, который CC пишет в transcript user message.
+const CLEAR_MARKER: &str = "<command-name>/clear</command-name>";
+
 /// Incremental парс от `start`. Возвращает `(stats_for_tail, new_offset)`
 /// — где `new_offset` — позиция после последней успешно прочитанной строки.
 /// Битые строки skip'аются, но offset продвигается всегда.
@@ -87,6 +92,25 @@ pub fn merge_stats(prev: TranscriptStats, tail: TranscriptStats) -> TranscriptSt
     skill_names.sort_unstable();
     skill_names.dedup();
 
+    // Cache miss merge: если в tail был /clear — prev.cache_misses нерелевантны
+    // (контекст обнулён, prior gaps → reset). Иначе складываем + boundary-gap.
+    let (cache_misses, first_event_ts_ms) = if tail.last_clear_ts_ms.is_some() {
+        (tail.cache_misses, tail.first_event_ts_ms)
+    } else {
+        let boundary = match (prev.last_event_ts_ms, tail.first_event_ts_ms) {
+            (Some(p), Some(t)) if t > p && (t - p) > CACHE_MISS_GAP_MS => 1,
+            _ => 0,
+        };
+        let merged_misses = prev
+            .cache_misses
+            .saturating_add(tail.cache_misses)
+            .saturating_add(boundary);
+        let first = prev.first_event_ts_ms.or(tail.first_event_ts_ms);
+        (merged_misses, first)
+    };
+    let last_event_ts_ms = tail.last_event_ts_ms.or(prev.last_event_ts_ms);
+    let last_clear_ts_ms = tail.last_clear_ts_ms.or(prev.last_clear_ts_ms);
+
     TranscriptStats {
         session_started_at_ms,
         session_last_at_ms,
@@ -103,6 +127,10 @@ pub fn merge_stats(prev: TranscriptStats, tail: TranscriptStats) -> TranscriptSt
         blocks,
         last_thinking_effort,
         skill_names,
+        cache_misses,
+        first_event_ts_ms,
+        last_event_ts_ms,
+        last_clear_ts_ms,
     }
 }
 
@@ -140,6 +168,9 @@ struct ParseState {
     current_block: Option<BillingBlock>,
     stats: TranscriptStats,
     skill_set: std::collections::BTreeSet<String>,
+    /// Последний ts (любого kind), увиденный в этом chunk —
+    /// используется для подсчёта пауз > `CACHE_MISS_GAP_MS`.
+    last_event_ts: Option<u64>,
 }
 
 impl ParseState {
@@ -156,6 +187,21 @@ fn apply_entry(state: &mut ParseState, entry: TranscriptEntry) {
     let kind = entry.kind.as_deref().unwrap_or("");
     let ts = entry.timestamp.as_deref().and_then(parse_iso_to_ms);
 
+    // Cache-miss tracking — для ЛЮБОГО entry с валидным ts (user/assistant/system/tool),
+    // паритет с bash-statusline.sh: считаем все timestamps из JSONL.
+    if let Some(ts) = ts {
+        if let Some(prev_ts) = state.last_event_ts {
+            if ts > prev_ts && (ts - prev_ts) > CACHE_MISS_GAP_MS {
+                state.stats.cache_misses = state.stats.cache_misses.saturating_add(1);
+            }
+        }
+        state.last_event_ts = Some(ts);
+        if state.stats.first_event_ts_ms.is_none() {
+            state.stats.first_event_ts_ms = Some(ts);
+        }
+        state.stats.last_event_ts_ms = Some(ts);
+    }
+
     match kind {
         "user" => {
             if let Some(ts) = ts {
@@ -163,13 +209,41 @@ fn apply_entry(state: &mut ParseState, entry: TranscriptEntry) {
                 update_session_bounds(&mut state.stats, ts);
             }
             state.stats.messages = state.stats.messages.saturating_add(1);
+            // /clear — обнуляем cache_misses (контекст пуст, prior misses нерелевантны).
+            if user_content_has_clear(entry.message.as_ref()) {
+                state.stats.cache_misses = 0;
+                if let Some(ts) = ts {
+                    state.stats.last_clear_ts_ms = Some(ts);
+                }
+            }
         }
         "assistant" => {
             apply_assistant(state, entry, ts);
         }
         _ => {
-            // system / tool / etc. — игнорируем; messages не увеличиваем.
+            // system / tool / etc. — messages не увеличиваем, но ts уже учтён выше.
         }
+    }
+}
+
+/// Проверяет user-message content на наличие маркера `/clear`.
+/// Content может быть строкой (legacy) или массивом `text`/`tool_result` блоков.
+fn user_content_has_clear(message: Option<&MessagePayload>) -> bool {
+    let Some(msg) = message else { return false };
+    let Some(content) = msg.content.as_ref() else {
+        return false;
+    };
+    json_value_contains(content, CLEAR_MARKER)
+}
+
+fn json_value_contains(v: &serde_json::Value, needle: &str) -> bool {
+    match v {
+        serde_json::Value::String(s) => s.contains(needle),
+        serde_json::Value::Array(arr) => arr.iter().any(|item| json_value_contains(item, needle)),
+        serde_json::Value::Object(map) => {
+            map.values().any(|item| json_value_contains(item, needle))
+        }
+        _ => false,
     }
 }
 
@@ -614,5 +688,161 @@ mod tests {
         let stats = parse_transcript(b.path()).unwrap();
         // Первая строка распарсилась, вторая — broken JSON, skipped.
         assert_eq!(stats.messages, 1);
+    }
+
+    // ───────────────────── cache_misses tests ─────────────────────
+
+    #[test]
+    fn cache_misses_zero_when_all_gaps_under_300s() {
+        let mut b = TranscriptBuilder::new();
+        b.add_user();
+        b.add_assistant(60_000, 1, 1, 0, 0, None); // +60s
+        b.add_user(); // builder advance: +60s
+        b.add_assistant(60_000, 1, 1, 0, 0, None);
+        let stats = parse_transcript(b.path()).unwrap();
+        assert_eq!(stats.cache_misses, 0);
+    }
+
+    #[test]
+    fn cache_misses_counts_gaps_over_300s() {
+        let mut b = TranscriptBuilder::new();
+        b.add_user();
+        b.add_assistant(100, 1, 1, 0, 0, None);
+        // Прыгаем на 6 минут → следующий user будет с gap > 300s.
+        b.advance(6 * 60_000);
+        b.add_user();
+        b.add_assistant(100, 1, 1, 0, 0, None);
+        // Ещё один прыжок.
+        b.advance(10 * 60_000);
+        b.add_user();
+        b.add_assistant(100, 1, 1, 0, 0, None);
+        let stats = parse_transcript(b.path()).unwrap();
+        assert_eq!(stats.cache_misses, 2, "ожидаем 2 паузы > 300s");
+    }
+
+    #[test]
+    fn cache_misses_300s_exact_does_not_count() {
+        let mut b = TranscriptBuilder::new();
+        b.add_user();
+        b.add_assistant(100, 1, 1, 0, 0, None);
+        // Ровно 5 минут — не должно считаться (нужно строго >).
+        b.advance(5 * 60_000 - 60_000); // builder уже advance +60s в add_user, корректируем
+        b.add_user();
+        let stats = parse_transcript(b.path()).unwrap();
+        assert_eq!(stats.cache_misses, 0);
+    }
+
+    #[test]
+    fn cache_misses_first_event_ts_set() {
+        let mut b = TranscriptBuilder::new();
+        b.add_user();
+        let stats = parse_transcript(b.path()).unwrap();
+        assert!(stats.first_event_ts_ms.is_some());
+        assert!(stats.last_event_ts_ms.is_some());
+    }
+
+    #[test]
+    fn clear_command_resets_cache_misses() {
+        let mut b = TranscriptBuilder::new();
+        b.add_user();
+        b.add_assistant(100, 1, 1, 0, 0, None);
+        b.advance(10 * 60_000); // +10 min → +1 cache miss
+        b.add_user();
+        b.add_assistant(100, 1, 1, 0, 0, None);
+        b.advance(10 * 60_000); // +10 min → +1 cache miss
+        // /clear user-message:
+        b.raw(
+            r#"{"type":"user","timestamp":"2026-01-01T00:21:00Z","message":{"role":"user","content":"<command-name>/clear</command-name><command-message>clear</command-message>"}}"#,
+        );
+        let stats = parse_transcript(b.path()).unwrap();
+        assert_eq!(stats.cache_misses, 0, "после /clear счётчик обнулён");
+        assert!(stats.last_clear_ts_ms.is_some());
+    }
+
+    #[test]
+    fn clear_then_more_misses_count_only_post_clear() {
+        let b = TranscriptBuilder::new();
+        b.raw(r#"{"type":"user","timestamp":"2026-01-01T00:00:00Z"}"#);
+        b.raw(r#"{"type":"user","timestamp":"2026-01-01T00:10:00Z"}"#); // +1 miss
+        b.raw(
+            r#"{"type":"user","timestamp":"2026-01-01T00:11:00Z","message":{"role":"user","content":"<command-name>/clear</command-name>"}}"#,
+        );
+        // После /clear, новые паузы > 300s начинают копить заново:
+        b.raw(r#"{"type":"user","timestamp":"2026-01-01T00:18:00Z"}"#); // +7min от /clear → +1 miss
+        b.raw(r#"{"type":"user","timestamp":"2026-01-01T00:19:00Z"}"#); // +1min, no miss
+        let stats = parse_transcript(b.path()).unwrap();
+        assert_eq!(stats.cache_misses, 1, "только пауза после /clear считается");
+    }
+
+    #[test]
+    fn clear_in_array_content_form_detected() {
+        // CC иногда пишет content как массив: [{type:"text",text:"..."}]
+        let b = TranscriptBuilder::new();
+        b.raw(r#"{"type":"user","timestamp":"2026-01-01T00:00:00Z"}"#);
+        b.raw(r#"{"type":"user","timestamp":"2026-01-01T00:10:00Z"}"#); // +1 miss
+        b.raw(
+            r#"{"type":"user","timestamp":"2026-01-01T00:11:00Z","message":{"role":"user","content":[{"type":"text","text":"<command-name>/clear</command-name>"}]}}"#,
+        );
+        let stats = parse_transcript(b.path()).unwrap();
+        assert_eq!(stats.cache_misses, 0);
+        assert!(stats.last_clear_ts_ms.is_some());
+    }
+
+    #[test]
+    fn merge_stats_boundary_gap_adds_cache_miss() {
+        let prev = TranscriptStats {
+            cache_misses: 0,
+            first_event_ts_ms: Some(0),
+            last_event_ts_ms: Some(1_000_000), // 1000 sec
+            ..TranscriptStats::default()
+        };
+        let tail = TranscriptStats {
+            cache_misses: 0,
+            first_event_ts_ms: Some(2_000_000), // 2000 sec — gap = 1000s > 300s
+            last_event_ts_ms: Some(2_500_000),
+            ..TranscriptStats::default()
+        };
+        let merged = merge_stats(prev, tail);
+        assert_eq!(merged.cache_misses, 1);
+        assert_eq!(merged.first_event_ts_ms, Some(0));
+        assert_eq!(merged.last_event_ts_ms, Some(2_500_000));
+    }
+
+    #[test]
+    fn merge_stats_boundary_under_300s_no_miss() {
+        let prev = TranscriptStats {
+            cache_misses: 1,
+            last_event_ts_ms: Some(1_000_000),
+            first_event_ts_ms: Some(0),
+            ..TranscriptStats::default()
+        };
+        let tail = TranscriptStats {
+            cache_misses: 2,
+            first_event_ts_ms: Some(1_100_000), // 100s gap
+            last_event_ts_ms: Some(1_500_000),
+            ..TranscriptStats::default()
+        };
+        let merged = merge_stats(prev, tail);
+        assert_eq!(merged.cache_misses, 3, "1 + 2 + 0 (boundary < 300s)");
+    }
+
+    #[test]
+    fn merge_stats_clear_in_tail_drops_prev() {
+        let prev = TranscriptStats {
+            cache_misses: 5,
+            last_event_ts_ms: Some(1_000_000),
+            first_event_ts_ms: Some(0),
+            ..TranscriptStats::default()
+        };
+        let tail = TranscriptStats {
+            cache_misses: 1,
+            first_event_ts_ms: Some(2_000_000),
+            last_event_ts_ms: Some(2_500_000),
+            last_clear_ts_ms: Some(2_000_000),
+            ..TranscriptStats::default()
+        };
+        let merged = merge_stats(prev, tail);
+        assert_eq!(merged.cache_misses, 1, "tail.last_clear → prev отброшен");
+        assert_eq!(merged.last_clear_ts_ms, Some(2_000_000));
     }
 }
