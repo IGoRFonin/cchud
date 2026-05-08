@@ -11,6 +11,10 @@ Drop-in replacement for [ccstatusline](https://github.com/sirmalloc/ccstatusline
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](rust-toolchain.toml)
 
+<br>
+
+<img src="docs/preview.png" alt="cchud statusline preview" width="640">
+
 </div>
 
 ---
@@ -18,10 +22,6 @@ Drop-in replacement for [ccstatusline](https://github.com/sirmalloc/ccstatusline
 ## What is it?
 
 `cchud` is the line of text Claude Code shows at the bottom of your terminal — model name, token usage, git branch, cost so far, etc. Claude Code calls the statusline binary up to **3 times per second**, so every millisecond matters.
-
-```text
- Sonnet 4.6   $0.72   25%   main ●3   4h32m
-```
 
 60 widgets out of the box. Plain or Powerline rendering. Interactive TUI configurator. One-shot migration from ccstatusline.
 
