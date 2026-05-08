@@ -1,5 +1,6 @@
 ---
 source: tests/snapshots_transcript.rs
+assertion_line: 113
 expression: rendered
 ---
-<none> | <none> | <none> | <none> | <none> | <none> | <none> | <none>
+Cache: 0 | Total: 0 | <none> | <none> | <none> | <none> | <none> | <none>

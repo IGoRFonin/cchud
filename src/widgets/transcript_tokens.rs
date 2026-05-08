@@ -30,13 +30,10 @@ impl Widget for TokensCached {
         "TokensCached"
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
-        let t = ctx.transcript()?;
-        let cached = t
-            .tokens_cache_read_total
-            .saturating_add(t.tokens_cache_creation_total);
-        if cached == 0 {
-            return None;
-        }
+        let cached = ctx.transcript().map_or(0, |t| {
+            t.tokens_cache_read_total
+                .saturating_add(t.tokens_cache_creation_total)
+        });
         let formatted = format_tokens(cached);
         Some(if self.raw_value {
             formatted
@@ -51,11 +48,7 @@ impl Widget for TokensTotal {
         "TokensTotal"
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
-        let t = ctx.transcript()?;
-        let total = total_tokens(t);
-        if total == 0 {
-            return None;
-        }
+        let total = ctx.transcript().map_or(0, total_tokens);
         let formatted = format_tokens(total);
         Some(if self.raw_value {
             formatted
@@ -145,20 +138,26 @@ mod tests {
     }
 
     #[test]
-    fn tokens_cached_none_when_transcript_missing() {
+    fn tokens_cached_zero_fallback_when_transcript_missing() {
         let p = payload_no_transcript();
         let s = default_line();
         let ctx = RenderContext::new(&p, &s);
-        assert!(TokensCached::default().render(&ctx).is_none());
+        assert_eq!(
+            TokensCached::default().render(&ctx).as_deref(),
+            Some("Cache: 0")
+        );
     }
 
     #[test]
-    fn tokens_cached_none_when_zero() {
+    fn tokens_cached_zero_fallback_when_empty_stats() {
         let p = payload_no_transcript();
         let s = default_line();
         let stats = TranscriptStats::default();
         let ctx = ctx_with_stats(&p, &s, stats);
-        assert!(TokensCached::default().render(&ctx).is_none());
+        assert_eq!(
+            TokensCached::default().render(&ctx).as_deref(),
+            Some("Cache: 0")
+        );
     }
 
     #[test]
@@ -178,12 +177,26 @@ mod tests {
     }
 
     #[test]
-    fn tokens_total_none_when_zero() {
+    fn tokens_total_zero_fallback_when_empty_stats() {
         let p = payload_no_transcript();
         let s = default_line();
         let stats = TranscriptStats::default();
         let ctx = ctx_with_stats(&p, &s, stats);
-        assert!(TokensTotal::default().render(&ctx).is_none());
+        assert_eq!(
+            TokensTotal::default().render(&ctx).as_deref(),
+            Some("Total: 0")
+        );
+    }
+
+    #[test]
+    fn tokens_total_zero_fallback_when_transcript_missing() {
+        let p = payload_no_transcript();
+        let s = default_line();
+        let ctx = RenderContext::new(&p, &s);
+        assert_eq!(
+            TokensTotal::default().render(&ctx).as_deref(),
+            Some("Total: 0")
+        );
     }
 
     #[test]

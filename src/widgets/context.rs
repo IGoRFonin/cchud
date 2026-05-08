@@ -24,8 +24,12 @@ impl Widget for ContextLength {
         "ContextLength"
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
-        let cw = ctx.payload.context_window.as_ref()?;
-        let total = total_tokens(cw)?;
+        let total = ctx
+            .payload
+            .context_window
+            .as_ref()
+            .and_then(total_tokens)
+            .unwrap_or(0);
         let formatted = format_tokens(total);
         Some(if self.raw_value {
             formatted
@@ -42,8 +46,12 @@ impl Widget for ContextPercentage {
         "ContextPercentage"
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
-        let cw = ctx.payload.context_window.as_ref()?;
-        let pct = cw.used_percentage?;
+        let pct = ctx
+            .payload
+            .context_window
+            .as_ref()
+            .and_then(|cw| cw.used_percentage)
+            .unwrap_or(0.0);
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let n = pct.round() as u64;
         Some(format!("{n}%"))
@@ -57,12 +65,16 @@ impl Widget for ContextPercentageUsable {
         "ContextPercentageUsable"
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
-        let cw = ctx.payload.context_window.as_ref()?;
-        let total = total_tokens(cw)?;
         let max = model_context_size::max_tokens_for(&ctx.payload.model.id)?;
         if max == 0 {
             return None;
         }
+        let total = ctx
+            .payload
+            .context_window
+            .as_ref()
+            .and_then(total_tokens)
+            .unwrap_or(0);
         #[allow(clippy::cast_precision_loss)]
         let pct = (total as f64) / (max as f64) * 100.0;
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -80,8 +92,12 @@ impl Widget for ContextBar {
         "ContextBar"
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
-        let cw = ctx.payload.context_window.as_ref()?;
-        let pct = cw.used_percentage?;
+        let pct = ctx
+            .payload
+            .context_window
+            .as_ref()
+            .and_then(|cw| cw.used_percentage)
+            .unwrap_or(0.0);
         Some(ascii_bar::render(pct, self.params.width))
     }
 }
@@ -96,20 +112,22 @@ impl Widget for TokensInput {
         "TokensInput"
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
-        let cw = ctx.payload.context_window.as_ref()?;
-        let usage = cw.current_usage.as_ref()?;
-        match usage {
-            CurrentUsage::Detailed { input_tokens, .. } => {
-                let v = input_tokens.as_ref()?;
-                let formatted = format_tokens(*v);
-                Some(if self.raw_value {
-                    formatted
-                } else {
-                    format!("In: {formatted}")
-                })
-            }
-            CurrentUsage::Total(_) => None,
-        }
+        let v = ctx
+            .payload
+            .context_window
+            .as_ref()
+            .and_then(|cw| cw.current_usage.as_ref())
+            .and_then(|u| match u {
+                CurrentUsage::Detailed { input_tokens, .. } => *input_tokens,
+                CurrentUsage::Total(_) => None,
+            })
+            .unwrap_or(0);
+        let formatted = format_tokens(v);
+        Some(if self.raw_value {
+            formatted
+        } else {
+            format!("In: {formatted}")
+        })
     }
 }
 
@@ -123,20 +141,22 @@ impl Widget for TokensOutput {
         "TokensOutput"
     }
     fn render(&self, ctx: &RenderContext<'_>) -> Option<String> {
-        let cw = ctx.payload.context_window.as_ref()?;
-        let usage = cw.current_usage.as_ref()?;
-        match usage {
-            CurrentUsage::Detailed { output_tokens, .. } => {
-                let v = output_tokens.as_ref()?;
-                let formatted = format_tokens(*v);
-                Some(if self.raw_value {
-                    formatted
-                } else {
-                    format!("Out: {formatted}")
-                })
-            }
-            CurrentUsage::Total(_) => None,
-        }
+        let v = ctx
+            .payload
+            .context_window
+            .as_ref()
+            .and_then(|cw| cw.current_usage.as_ref())
+            .and_then(|u| match u {
+                CurrentUsage::Detailed { output_tokens, .. } => *output_tokens,
+                CurrentUsage::Total(_) => None,
+            })
+            .unwrap_or(0);
+        let formatted = format_tokens(v);
+        Some(if self.raw_value {
+            formatted
+        } else {
+            format!("Out: {formatted}")
+        })
     }
 }
 
@@ -226,19 +246,25 @@ mod tests {
     }
 
     #[test]
-    fn context_length_returns_none_without_cw() {
+    fn context_length_zero_fallback_without_cw() {
         let p = payload_with_cw(None, "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(ContextLength::default().render(&ctx_with(&p, &s)), None);
+        assert_eq!(
+            ContextLength::default().render(&ctx_with(&p, &s)),
+            Some("Ctx: 0".into())
+        );
     }
 
     #[test]
-    fn context_length_returns_none_with_partial_tokens() {
+    fn context_length_zero_fallback_with_partial_tokens() {
         let mut cw = cw_full();
         cw.total_output_tokens = None;
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(ContextLength::default().render(&ctx_with(&p, &s)), None);
+        assert_eq!(
+            ContextLength::default().render(&ctx_with(&p, &s)),
+            Some("Ctx: 0".into())
+        );
     }
 
     // ─── ContextPercentage ──────────────────────────────────────
@@ -256,12 +282,25 @@ mod tests {
     }
 
     #[test]
-    fn context_percentage_none_without_pct_field() {
+    fn context_percentage_zero_fallback_without_pct_field() {
         let mut cw = cw_full();
         cw.used_percentage = None;
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(ContextPercentage.render(&ctx_with(&p, &s)), None);
+        assert_eq!(
+            ContextPercentage.render(&ctx_with(&p, &s)),
+            Some("0%".into())
+        );
+    }
+
+    #[test]
+    fn context_percentage_zero_fallback_without_cw() {
+        let p = payload_with_cw(None, "claude-sonnet-4-6");
+        let s = default_line();
+        assert_eq!(
+            ContextPercentage.render(&ctx_with(&p, &s)),
+            Some("0%".into())
+        );
     }
 
     // ─── ContextPercentageUsable ────────────────────────────────
@@ -285,12 +324,15 @@ mod tests {
     }
 
     #[test]
-    fn context_percentage_usable_none_without_tokens() {
+    fn context_percentage_usable_zero_fallback_without_tokens() {
         let mut cw = cw_full();
         cw.total_input_tokens = None;
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(ContextPercentageUsable.render(&ctx_with(&p, &s)), None);
+        assert_eq!(
+            ContextPercentageUsable.render(&ctx_with(&p, &s)),
+            Some("0%".into())
+        );
     }
 
     // ─── ContextBar ─────────────────────────────────────────────
@@ -324,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn context_bar_returns_none_without_pct() {
+    fn context_bar_empty_fallback_without_pct() {
         let mut cw = cw_full();
         cw.used_percentage = None;
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
@@ -332,7 +374,10 @@ mod tests {
         let w = ContextBar {
             params: ContextBarParams { width: 10 },
         };
-        assert_eq!(w.render(&ctx_with(&p, &s)), None);
+        assert_eq!(
+            w.render(&ctx_with(&p, &s)),
+            Some("[░░░░░░░░░░]".into())
+        );
     }
 
     // ─── TokensInput / TokensOutput ─────────────────────────────
@@ -356,12 +401,15 @@ mod tests {
     }
 
     #[test]
-    fn tokens_input_returns_none_for_total_form() {
+    fn tokens_input_zero_fallback_for_total_form() {
         let mut cw = cw_full();
         cw.current_usage = Some(CurrentUsage::Total(12345));
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(TokensInput::default().render(&ctx_with(&p, &s)), None);
+        assert_eq!(
+            TokensInput::default().render(&ctx_with(&p, &s)),
+            Some("In: 0".into())
+        );
     }
 
     #[test]
@@ -383,16 +431,19 @@ mod tests {
     }
 
     #[test]
-    fn tokens_output_returns_none_for_total_form() {
+    fn tokens_output_zero_fallback_for_total_form() {
         let mut cw = cw_full();
         cw.current_usage = Some(CurrentUsage::Total(12345));
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(TokensOutput::default().render(&ctx_with(&p, &s)), None);
+        assert_eq!(
+            TokensOutput::default().render(&ctx_with(&p, &s)),
+            Some("Out: 0".into())
+        );
     }
 
     #[test]
-    fn tokens_input_none_when_input_field_missing() {
+    fn tokens_input_zero_fallback_when_input_field_missing() {
         let mut cw = cw_full();
         cw.current_usage = Some(CurrentUsage::Detailed {
             input_tokens: None,
@@ -402,6 +453,9 @@ mod tests {
         });
         let p = payload_with_cw(Some(cw), "claude-sonnet-4-6");
         let s = default_line();
-        assert_eq!(TokensInput::default().render(&ctx_with(&p, &s)), None);
+        assert_eq!(
+            TokensInput::default().render(&ctx_with(&p, &s)),
+            Some("In: 0".into())
+        );
     }
 }
