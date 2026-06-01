@@ -37,7 +37,7 @@ supports-hyperlinks = "3"
 wait-timeout = "0.2"
 
 # Phase 5 — git via gix (pure Rust, no libgit2 system dep).
-gix = { version = "=0.83.0", default-features = false, features = ["max-performance-safe", "sha1", "status"] }
+gix = { version = "=0.84.0", default-features = false, features = ["max-performance-safe", "sha1", "status"] }
 
 # Phase 5 — Task 7: GitPr HTTP + cache.
 # ureq sync HTTP (no async runtime); tls feature = rustls (pure Rust).
